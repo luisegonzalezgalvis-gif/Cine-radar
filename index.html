@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CineRadar Pro — Tracker de Series & Rankings IMDb</title>
+  <title>CineRadar Pro — Tracker de Series, Rankings IMDb & Sincronización en la Nube</title>
   
   <!-- PWA & Meta Tags -->
   <meta name="theme-color" content="#030712">
@@ -11,7 +11,7 @@
   <meta name="apple-web-app-capable" content="yes">
   <meta name="apple-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-web-app-title" content="CineRadar">
-  <meta name="description" content="Tracker inteligente de series con validación en vivo de fechas futuras de estreno, correlación IMDb y rankings Top 25 / Top 10.">
+  <meta name="description" content="Tracker inteligente de series y cine con sincronización en la nube entre PC y móvil, validación de fechas futuras y rankings IMDb.">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -75,6 +75,95 @@
 <body>
   <div id="root"></div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'cineradar-pro';
+    
+    // Cloud state bridge accessible to React
+    window.CineRadarCloud = {
+      isReady: false,
+      userId: null,
+      auth: null,
+      db: null,
+      saveCatalog: null,
+      subscribe: null
+    };
+
+    try {
+      if (typeof __firebase_config !== 'undefined') {
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        window.CineRadarCloud.auth = auth;
+        window.CineRadarCloud.db = db;
+
+        const authPromise = typeof __initial_auth_token !== 'undefined' && __initial_auth_token
+          ? signInWithCustomToken(auth, __initial_auth_token)
+          : signInAnonymously(auth);
+
+        authPromise.then(async (userCredential) => {
+          const user = userCredential.user;
+          const uid = user ? user.uid : 'default-user';
+          window.CineRadarCloud.userId = uid;
+          window.CineRadarCloud.isReady = true;
+
+          // Save method with valid 4-segment document reference (artifacts/{appId}/public/data)
+          window.CineRadarCloud.saveCatalog = async (data) => {
+            if (!auth.currentUser) return;
+            try {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data');
+              await setDoc(docRef, {
+                series: JSON.stringify(data.series || []),
+                historic: JSON.stringify(data.historic || []),
+                year: JSON.stringify(data.year || []),
+                movies: JSON.stringify(data.movies || []),
+                updatedAt: new Date().toISOString(),
+                updatedBy: uid
+              }, { merge: true });
+            } catch (err) {
+              console.warn("Cloud save notice:", err);
+            }
+          };
+
+          // Subscribe method with valid 4-segment document reference (artifacts/{appId}/public/data)
+          window.CineRadarCloud.subscribe = (callback) => {
+            if (!auth.currentUser) return () => {};
+            try {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data');
+              return onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                  const cloudData = snapshot.data();
+                  callback({
+                    series: cloudData.series ? JSON.parse(cloudData.series) : null,
+                    historic: cloudData.historic ? JSON.parse(cloudData.historic) : null,
+                    year: cloudData.year ? JSON.parse(cloudData.year) : null,
+                    movies: cloudData.movies ? JSON.parse(cloudData.movies) : null,
+                    updatedAt: cloudData.updatedAt
+                  });
+                }
+              }, (error) => {
+                console.warn("Cloud sync snapshot notice:", error);
+              });
+            } catch (err) {
+              console.warn("Cloud subscribe notice:", err);
+              return () => {};
+            }
+          };
+
+          window.dispatchEvent(new CustomEvent('cineradar-cloud-ready', { detail: { uid } }));
+        }).catch(err => {
+          console.warn("Cloud auth notice:", err);
+        });
+      }
+    } catch (e) {
+      console.warn("Cloud init notice:", e);
+    }
+  </script>
+
   <script>
     const manifestData = {
       name: "CineRadar Pro — Tracker de Series & Rankings",
@@ -108,11 +197,10 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useCallback } = React;
+    const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
     const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80';
 
-    // Helper: Validar si una fecha está en el futuro
     const isDateInFuture = (dateStr) => {
       if (!dateStr) return false;
       const target = new Date(dateStr);
@@ -122,7 +210,6 @@
       return target > today;
     };
 
-    // BASE DE CONOCIMIENTO DE SERIES EN SEGUIMIENTO
     const INITIAL_TRACKED_CATALOG = [
       {
         id: 'ser-slow-horses',
@@ -241,7 +328,6 @@
       }
     ];
 
-    // TOP 25 HISTÓRICO DE SERIES SEGÚN IMDb CON PÓSTERS OFICIALES
     const TOP_25_HISTORIC = [
       { id: 'top-1', rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg', summary: 'Un profesor de química con cáncer se asocia con un exalumno para fabricar metanfetamina.' },
       { id: 'top-2', rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://image.tmdb.org/t/p/w500/94t8uWbJzD6Ua4kR44d9fK7f6q5.jpg', summary: 'La historia de la Easy Company del 506º Regimiento Paracaidista durante la Segunda Guerra Mundial.' },
@@ -270,7 +356,6 @@
       { id: 'top-25', rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://image.tmdb.org/t/p/w500/2zmTngn1tYC1AvfnPz9G78qR4R8.jpg', summary: 'Un grupo de rebeldes busca desenmascarar y frenar a superhéroes corruptos respaldados por una corporación.' }
     ];
 
-    // TOP 10 DE SERIES DEL AÑO / ÉXITOS ESTELARES
     const TOP_10_YEAR = [
       { id: 'yr-1', rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+ / Star+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://image.tmdb.org/t/p/w500/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg', summary: 'En el Japón de 1600, Lord Toranaga forja una alianza con un náufrago inglés para dominar el shogunato.' },
       { id: 'yr-2', rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://image.tmdb.org/t/p/w500/upmOBiH3Xg1R5Z7JqRzK4b2Q9V.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb lucha por tomar el control del inframundo criminal de la ciudad.' },
@@ -284,9 +369,7 @@
       { id: 'yr-10', rank: 10, title: 'Industry (Temporada 3 & 4)', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://image.tmdb.org/t/p/w500/6vF8v1s2G7k5m8X4Z3w9qL7A5.jpg', summary: 'Jóvenes analistas financieros navegan la euforia y los excesos en el corazón financiero de Londres.' }
     ];
 
-    // CALENDARIO COMPLETO DE ESTRENOS DE CINE 2026 Y 2027 CON PÓSTERS OFICIALES AUTÉNTICOS
     const MASTER_MOVIES_EXPANDED = [
-      // 2026 - PRIMER SEMESTRE
       {
         id: 'mov-2026-mandalorian',
         title: 'The Mandalorian & Grogu',
@@ -332,7 +415,6 @@
         youtubeUrl: 'https://www.youtube.com/results?search_query=Supergirl+Woman+of+Tomorrow+DCU+trailer',
         synopsis: 'Criada entre los fragmentos rocosos y hostiles de Krypton, Kara Zor-El emprende una implacable odisea espacial junto a Krypto.'
       },
-      // 2026 - SEGUNDO SEMESTRE (AGOSTO - DICIEMBRE)
       {
         id: 'mov-2026-mutiny',
         title: 'Mutiny',
@@ -347,96 +429,6 @@
         fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Mutiny+Jason+Statham+trailer',
         synopsis: 'Un agente de seguridad es culpado falsamente por el magnicidio de su jefe y desata una cacería para exponer una red de corrupción.'
-      },
-      {
-        id: 'mov-2026-coyote',
-        title: 'Coyote vs. Acme',
-        year: 2026,
-        month: 8,
-        monthName: 'Agosto',
-        releaseDate: '2026-08-28',
-        genre: 'Comedia / Animación / Live-Action',
-        director: 'Dave Green',
-        cast: 'Will Forte, John Cena, Lana Condor',
-        poster: 'https://image.tmdb.org/t/p/w500/5UuvnO1m3nB9B7Y1A8m4v5G6q9.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Coyote+vs+Acme+official+trailer',
-        synopsis: 'Wile E. Coyote contrata a un abogado de oficio para demandar a ACME por sus artefactos defectuosos en el juicio del siglo.'
-      },
-      {
-        id: 'mov-2026-resident-evil',
-        title: 'Resident Evil (Reboot 2026)',
-        year: 2026,
-        month: 9,
-        monthName: 'Septiembre',
-        releaseDate: '2026-09-18',
-        genre: 'Terror / Supervivencia / Sci-Fi',
-        director: 'Zach Cregger',
-        cast: 'Austin Abrams, Paul Walter Hauser',
-        poster: 'https://image.tmdb.org/t/p/w500/8t8qK3Z7kK5v8m2P9Xq4V6b8Z.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Resident+Evil+2026+Zach+Cregger+trailer',
-        synopsis: 'Reinicio cinematográfico centrado en el terror psicológico claustrofóbico y los orígenes del virus Progenitor en las montañas Arklay.'
-      },
-      {
-        id: 'mov-2026-digger',
-        title: 'Digger (Alejandro G. Iñárritu)',
-        year: 2026,
-        month: 10,
-        monthName: 'Octubre',
-        releaseDate: '2026-10-02',
-        genre: 'Drama / Comedia Negra / Acción',
-        director: 'Alejandro González Iñárritu',
-        cast: 'Tom Cruise, Sandra Hüller, Jesse Plemons, Riz Ahmed',
-        poster: 'https://image.tmdb.org/t/p/w500/7HW473bnnvL0BC3m5K4fE2q4h.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Digger+Tom+Cruise+Inarritu+trailer',
-        synopsis: 'El hombre más influyente del planeta emprende una frenética carrera contra el tiempo para evitar una catástrofe que él mismo desató.'
-      },
-      {
-        id: 'mov-2026-street-fighter',
-        title: 'Street Fighter',
-        year: 2026,
-        month: 10,
-        monthName: 'Octubre',
-        releaseDate: '2026-10-16',
-        genre: 'Acción / Artes Marciales / Videojuegos',
-        director: 'Kitao Sakurai',
-        cast: 'Andrew Koji, Noah Centineo, Jason Momoa, Hiroyuki Sanada',
-        poster: 'https://image.tmdb.org/t/p/w500/2zmTngn1tYC1AvfnPz9G78qR4R8.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Street+Fighter+2026+movie+official+trailer',
-        synopsis: 'Luchadores de distintas disciplinas convergen en el torneo mundial clandestino de artes marciales organizado por Shadaloo.'
-      },
-      {
-        id: 'mov-2026-clayface',
-        title: 'Clayface (Cara de Barro)',
-        year: 2026,
-        month: 10,
-        monthName: 'Octubre',
-        releaseDate: '2026-10-23',
-        genre: 'Terror / Crimen / DC Elseworlds',
-        director: 'James Watkins',
-        cast: 'Tom Rhys Harries, Naomi Ackie',
-        poster: 'https://image.tmdb.org/t/p/w500/404N94P5P8j7nK6x1w8Q9yY5a8.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Clayface+DC+movie+trailer',
-        synopsis: 'Un actor de Gotham desfigurado en un trágico accidente recurre a una sustancia biológica que muta su carne en un monstruo maleable.'
-      },
-      {
-        id: 'mov-2026-hunger-games',
-        title: 'The Hunger Games: Sunrise on the Reaping',
-        year: 2026,
-        month: 11,
-        monthName: 'Noviembre',
-        releaseDate: '2026-11-20',
-        genre: 'Distopía / Acción / Aventura',
-        director: 'Francis Lawrence',
-        cast: 'Haymitch Abernathy (joven), Reparto en audición',
-        poster: 'https://image.tmdb.org/t/p/w500/cuV2O53onG88bBhGKL6v37aGZPT.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Hunger+Games+Sunrise+on+the+Reaping+trailer',
-        synopsis: 'Los 50º Juegos del Hambre (Segundo Vasallaje) y la recordada victoria del joven Haymitch Abernathy en el Capitolio.'
       },
       {
         id: 'mov-2026-dune-3',
@@ -467,173 +459,6 @@
         fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Doomsday+trailer+official+marvel+robert+downey+jr',
         synopsis: 'Los héroes de tres universos se ven abocados a una colisión multiversal frente al temible Victor Von Doom.'
-      },
-      {
-        id: 'mov-2026-jumanji-3',
-        title: 'Jumanji 3: Open World',
-        year: 2026,
-        month: 12,
-        monthName: 'Diciembre',
-        releaseDate: '2026-12-23',
-        genre: 'Aventura / Comedia / Acción',
-        director: 'Jake Kasdan',
-        cast: 'Dwayne Johnson, Kevin Hart, Jack Black, Karen Gillan',
-        poster: 'https://image.tmdb.org/t/p/w500/8kOWDBK6XlPUKc49ViywKW4zV49.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Jumanji+3+Open+World+trailer',
-        synopsis: 'Los avatares del videojuego irrumpen en el mundo real en la batalla definitiva de la franquicia.'
-      },
-
-      // 2027 - GRANDES ESTRENOS CONFIRMADOS
-      {
-        id: 'mov-2027-beekeeper-2',
-        title: 'The Beekeeper 2',
-        year: 2027,
-        month: 1,
-        monthName: 'Enero',
-        releaseDate: '2027-01-15',
-        genre: 'Acción / Thriller',
-        director: 'Timo Tjahjanto',
-        cast: 'Jason Statham, Josh Hutcherson',
-        poster: 'https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKV9c54k8b.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Beekeeper+2+Jason+Statham+trailer',
-        synopsis: 'Adam Clay regresa a la acción para desmantelar una red financiera criminal a escala global.'
-      },
-      {
-        id: 'mov-2027-sonic-4',
-        title: 'Sonic the Hedgehog 4',
-        year: 2027,
-        month: 3,
-        monthName: 'Marzo',
-        releaseDate: '2027-03-19',
-        genre: 'Aventura / Animación / Videojuegos',
-        director: 'Jeff Fowler',
-        cast: 'Ben Schwartz, Jim Carrey, Keanu Reeves',
-        poster: 'https://image.tmdb.org/t/p/w500/83TaSg4vKz3PqU7t6aQ9xJ3w0F.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Sonic+the+Hedgehog+4+movie+trailer',
-        synopsis: 'Sonic, Tails, Knuckles y Shadow deben enfrentar una nueva y colosal amenaza cibernética interdimensional.'
-      },
-      {
-        id: 'mov-2027-godzilla-supernova',
-        title: 'Godzilla x Kong: Supernova',
-        year: 2027,
-        month: 3,
-        monthName: 'Marzo',
-        releaseDate: '2027-03-26',
-        genre: 'Acción / Monstruos / MonsterVerse',
-        director: 'Grant Sputore',
-        cast: 'Dan Stevens, Rebecca Hall',
-        poster: 'https://image.tmdb.org/t/p/w500/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Godzilla+x+Kong+Supernova+trailer',
-        synopsis: 'Los titanes supremos defienden la Tierra Hueca de una ancestral criatura desatada de las profundidades.'
-      },
-      {
-        id: 'mov-2027-narnia',
-        title: 'The Chronicles of Narnia (Greta Gerwig)',
-        year: 2027,
-        month: 4,
-        monthName: 'Abril',
-        releaseDate: '2027-04-02',
-        genre: 'Fantasía / Épica / Aventura',
-        director: 'Greta Gerwig',
-        cast: 'Louis Partridge, Saoirse Ronan',
-        poster: 'https://image.tmdb.org/t/p/w500/cHFZA8Tlv03n8k4a45u0F4z5tG5.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Chronicles+of+Narnia+Greta+Gerwig+trailer',
-        synopsis: 'La nueva y majestuosa adaptación cinematográfica del universo mágico y mitológico de C.S. Lewis.'
-      },
-      {
-        id: 'mov-2027-zelda',
-        title: 'The Legend of Zelda (Live-Action)',
-        year: 2027,
-        month: 4,
-        monthName: 'Abril',
-        releaseDate: '2027-04-30',
-        genre: 'Fantasía / Aventura / Nintendo',
-        director: 'Wes Ball',
-        cast: 'Elenco oficial de Nintendo y Sony Pictures',
-        poster: 'https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn397FmscfGFI.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Legend+of+Zelda+live+action+movie+official+trailer',
-        synopsis: 'Link emprende una odisea por el vasto reino de Hyrule para proteger la Trifuerza y salvar a la Princesa Zelda.'
-      },
-      {
-        id: 'mov-2027-star-wars-starfighter',
-        title: 'Star Wars: Starfighter',
-        year: 2027,
-        month: 5,
-        monthName: 'Mayo',
-        releaseDate: '2027-05-28',
-        genre: 'Sci-Fi / Espacial / Lucasfilm',
-        director: 'Shawn Levy',
-        cast: 'Ryan Gosling',
-        poster: 'https://image.tmdb.org/t/p/w500/1N0fE1n2PZzQ6K5m8B4d9VwK9y1.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Star+Wars+Starfighter+Shawn+Levy+trailer',
-        synopsis: 'Celebrando 50 años de la saga galáctica, una nueva generación de pilotos espaciales defiende la galaxia.'
-      },
-      {
-        id: 'mov-2027-shrek-5',
-        title: 'Shrek 5',
-        year: 2027,
-        month: 6,
-        monthName: 'Junio',
-        releaseDate: '2027-06-30',
-        genre: 'Animación / Comedia / Fantasía DreamWorks',
-        director: 'Walt Dohrn, Brad Ableson',
-        cast: 'Mike Myers, Eddie Murphy, Cameron Diaz, Zendaya',
-        poster: 'https://image.tmdb.org/t/p/w500/94t8uWbJzD6Ua4kR44d9fK7f6q5.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Shrek+5+official+teaser+trailer+DreamWorks',
-        synopsis: 'El ogro más querido del cine regresa junto a Burro, Fiona y una nueva generación en el reino de Muy Muy Lejano.'
-      },
-      {
-        id: 'mov-2027-man-of-tomorrow',
-        title: 'Man of Tomorrow (Superman II)',
-        year: 2027,
-        month: 7,
-        monthName: 'Julio',
-        releaseDate: '2027-07-09',
-        genre: 'Superhéroes / Acción / DC Universe',
-        director: 'James Gunn',
-        cast: 'David Corenswet, Rachel Brosnahan, Nicholas Hoult',
-        poster: 'https://image.tmdb.org/t/p/w500/upmOBiH3Xg1R5Z7JqRzK4b2Q9V.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Superman+Man+of+Tomorrow+James+Gunn+trailer',
-        synopsis: 'La continuación directa de Superman expandiendo la Liga de la Justicia y el conflicto cósmico en el nuevo Universo DC.'
-      },
-      {
-        id: 'mov-2027-frozen-3',
-        title: 'Frozen III',
-        year: 2027,
-        month: 11,
-        monthName: 'Noviembre',
-        releaseDate: '2027-11-24',
-        genre: 'Animación / Musical / Aventura Disney',
-        director: 'Jennifer Lee',
-        cast: 'Kristen Bell, Idina Menzel, Josh Gad',
-        poster: 'https://image.tmdb.org/t/p/w500/x2LSRK2Cm7MZhjluni1msVJ3wDF.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Frozen+3+Disney+official+trailer',
-        synopsis: 'Elsa y Anna descubren antiguos secretos que vinculan a Arendelle con tierras mágicas más allá del bosque encantado.'
-      },
-      {
-        id: 'mov-2027-avengers-secret-wars',
-        title: 'Avengers: Secret Wars',
-        year: 2027,
-        month: 12,
-        monthName: 'Diciembre',
-        releaseDate: '2027-12-17',
-        genre: 'Acción / Superhéroes / Épica Multiversal',
-        director: 'Hermanos Russo (Joe & Anthony)',
-        cast: 'Robert Downey Jr., Chris Hemsworth, Hugh Jackman, Tobey Maguire',
-        poster: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Secret+Wars+official+trailer+marvel',
-        synopsis: 'El colapso total de todas las realidades en Battleworld y la batalla definitiva que reiniciará el Universo Cinematográfico Marvel.'
       }
     ];
 
@@ -680,18 +505,12 @@
     };
 
     function App() {
-      // PANTALLA PRINCIPAL POR DEFECTO: Mis Series ('tracking')
       const [activeTab, setActiveTab] = useState('tracking');
-      
-      // Sub-pestaña dentro de Top Calificadas ('historic' o 'year')
       const [topRankingType, setTopRankingType] = useState('historic');
-
-      // Filtros de Cine: Año (2026, 2027, 'all') y Mes
       const [movieYearFilter, setMovieYearFilter] = useState('all');
       const [movieMonthFilter, setMovieMonthFilter] = useState('all');
       const [movieSearchQuery, setMovieSearchQuery] = useState('');
 
-      // Migración automática a v13 para purgar imágenes y forzar carátulas oficiales
       const [seriesList, setSeriesList] = useState(() => {
         try {
           const saved = localStorage.getItem('cineradar_series_v13');
@@ -739,44 +558,69 @@
       const [bannerMessage, setBannerMessage] = useState(null);
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
       const [isSyncingLive, setIsSyncingLive] = useState(false);
-      const [syncStatusText, setSyncStatusText] = useState('Fechas e imágenes oficiales verificadas');
+      const [syncStatusText, setSyncStatusText] = useState('Fechas sincronizadas');
+      const [cloudStatus, setCloudStatus] = useState('offline'); // 'connected', 'syncing', 'offline'
+      const [showBackupModal, setShowBackupModal] = useState(false);
 
-      // Modal de Cambio de Póster
       const [editingItemForPoster, setEditingItemForPoster] = useState(null);
       const [posterSearchQuery, setPosterSearchQuery] = useState('');
       const [posterSearchResults, setPosterSearchResults] = useState([]);
       const [isSearchingPosters, setIsSearchingPosters] = useState(false);
       const [customPosterUrlInput, setCustomPosterUrlInput] = useState('');
 
-      // Modal de Búsqueda
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
       const [isSearchingApi, setIsSearchingApi] = useState(false);
       const [searchTargetTab, setSearchTargetTab] = useState('tracking');
 
+      const isRemoteUpdateRef = useRef(false);
+
+      useEffect(() => {
+        const handleCloudReady = (e) => {
+          setCloudStatus('connected');
+          if (window.CineRadarCloud && window.CineRadarCloud.subscribe) {
+            window.CineRadarCloud.subscribe((cloudData) => {
+              if (cloudData) {
+                isRemoteUpdateRef.current = true;
+                if (cloudData.series) setSeriesList(cloudData.series);
+                if (cloudData.historic) setHistoricList(cloudData.historic);
+                if (cloudData.year) setYearList(cloudData.year);
+                if (cloudData.movies) setMoviesList(cloudData.movies);
+                showBanner('☁️ ¡Datos sincronizados en tiempo real!');
+                setTimeout(() => { isRemoteUpdateRef.current = false; }, 500);
+              }
+            });
+          }
+        };
+
+        window.addEventListener('cineradar-cloud-ready', handleCloudReady);
+        if (window.CineRadarCloud && window.CineRadarCloud.isReady) {
+          handleCloudReady();
+        }
+
+        return () => {
+          window.removeEventListener('cineradar-cloud-ready', handleCloudReady);
+        };
+      }, []);
+
+      // Auto-save to LocalStorage and Cloud
       useEffect(() => {
         try {
           localStorage.setItem('cineradar_series_v13', JSON.stringify(seriesList));
-        } catch (e) {}
-      }, [seriesList]);
-
-      useEffect(() => {
-        try {
           localStorage.setItem('cineradar_top_historic_v13', JSON.stringify(historicList));
-        } catch (e) {}
-      }, [historicList]);
-
-      useEffect(() => {
-        try {
           localStorage.setItem('cineradar_top_year_v13', JSON.stringify(yearList));
-        } catch (e) {}
-      }, [yearList]);
-
-      useEffect(() => {
-        try {
           localStorage.setItem('cineradar_movies_v13', JSON.stringify(moviesList));
+          
+          if (!isRemoteUpdateRef.current && window.CineRadarCloud && window.CineRadarCloud.saveCatalog) {
+            window.CineRadarCloud.saveCatalog({
+              series: seriesList,
+              historic: historicList,
+              year: yearList,
+              movies: moviesList
+            });
+          }
         } catch (e) {}
-      }, [moviesList]);
+      }, [seriesList, historicList, yearList, moviesList]);
 
       useEffect(() => {
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -794,13 +638,12 @@
       const showBanner = (msg) => {
         setBannerMessage(msg);
         playChime();
-        setTimeout(() => setBannerMessage(null), 4500);
+        setTimeout(() => setBannerMessage(null), 4000);
       };
 
-      // MOTOR DE SINCRONIZACIÓN EN VIVO
       const syncLiveDatesFromApis = async () => {
         setIsSyncingLive(true);
-        setSyncStatusText('Consultando fichas e imágenes oficiales en vivo...');
+        setSyncStatusText('Consultando fichas e imágenes en vivo...');
         
         try {
           let updatedCount = 0;
@@ -877,16 +720,50 @@
         }
       };
 
+      const exportBackupJSON = () => {
+        const payload = {
+          series: seriesList,
+          historic: historicList,
+          year: yearList,
+          movies: moviesList,
+          exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cineradar-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showBanner('📥 ¡Copia de seguridad descargada con éxito!');
+      };
+
+      const importBackupJSON = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (data.series) setSeriesList(data.series);
+            if (data.historic) setHistoricList(data.historic);
+            if (data.year) setYearList(data.year);
+            if (data.movies) setMoviesList(data.movies);
+            setShowBackupModal(false);
+            showBanner('📤 ¡Datos importados y restaurados con éxito!');
+          } catch (err) {
+            showBanner('⚠️ El archivo seleccionado no es válido.');
+          }
+        };
+        reader.readAsText(file);
+      };
+
       const restoreDefaults = () => {
         setSeriesList(INITIAL_TRACKED_CATALOG);
         setHistoricList(TOP_25_HISTORIC);
         setYearList(TOP_10_YEAR);
         setMoviesList(MASTER_MOVIES_EXPANDED);
-        localStorage.setItem('cineradar_series_v13', JSON.stringify(INITIAL_TRACKED_CATALOG));
-        localStorage.setItem('cineradar_top_historic_v13', JSON.stringify(TOP_25_HISTORIC));
-        localStorage.setItem('cineradar_top_year_v13', JSON.stringify(TOP_10_YEAR));
-        localStorage.setItem('cineradar_movies_v13', JSON.stringify(MASTER_MOVIES_EXPANDED));
-        showBanner('🔄 ¡Catálogo de cine 2026/2027 y pósters oficiales restaurados!');
+        showBanner('🔄 ¡Catálogo inicial restaurado!');
       };
 
       const handleImportFromApi = async (item) => {
@@ -1068,7 +945,7 @@
           }
           setDeferredInstallPrompt(null);
         } else {
-          showBanner('📱 En Android: Abre el menú de Chrome (⋮) y presiona "Instalar aplicación".');
+          showBanner('📱 En Android: Menú de Chrome (⋮) > "Instalar aplicación".');
         }
       };
 
@@ -1081,7 +958,7 @@
           const perm = await Notification.requestPermission();
           setNotificationPermission(perm);
           if (perm === 'granted') {
-            showBanner('🔔 ¡Notificaciones activadas con éxito!');
+            showBanner('🔔 ¡Notificaciones activadas para todas tus series!');
           }
         } catch (e) {}
       };
@@ -1090,7 +967,7 @@
         setSeriesList(prev => prev.map(s => {
           if (s.id === id) {
             const nextStatus = s.status === 'airing_weekly' ? 'waiting_season' : 'airing_weekly';
-            showBanner(`🔄 "${s.title}" cambiada a: ${nextStatus === 'airing_weekly' ? '⚡ En Emisión' : '⏳ Esperando Temporada'}`);
+            showBanner(`🔄 "${s.title}": ${nextStatus === 'airing_weekly' ? '⚡ En Emisión' : '⏳ Esperando Temporada'}`);
             return {
               ...s,
               status: nextStatus,
@@ -1171,7 +1048,7 @@
             setSeriesList(prev => prev.map(s => s.id === existing.id ? { ...s, userTracking: true } : s));
             showBanner(`✓ "${item.title}" reincorporada a Mis Series`);
           } else {
-            showBanner(`ℹ️ "${item.title}" ya está en tu lista de seguimiento.`);
+            showBanner(`ℹ️ "${item.title}" ya está en tu radar.`);
           }
           return;
         }
@@ -1269,7 +1146,7 @@
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="font-display font-black text-lg tracking-tight text-white">CineRadar</h1>
-                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • 2026/2027</span>
+                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • Cloud Sync</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-400">{syncStatusText}</span>
@@ -1280,12 +1157,11 @@
 
             <div className="flex items-center gap-2">
               <button
-                onClick={syncLiveDatesFromApis}
-                disabled={isSyncingLive}
-                className="hidden md:flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Comprobar si los estudios anunciaron nuevas fechas"
+                onClick={() => setShowBackupModal(true)}
+                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                title="Sincronizar o respaldar datos en la nube"
               >
-                🔄 <span>{isSyncingLive ? 'Comprobando...' : 'Sincronizar Fechas'}</span>
+                ☁️ <span>Sincronizar</span>
               </button>
 
               <button
@@ -1424,7 +1300,6 @@
                                   : 'bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/30'
                               }`}></div>
                               
-                              {/* Badge de Estado en Imagen */}
                               <div className="absolute top-3 left-3 flex flex-col gap-1">
                                 {isAiring ? (
                                   <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 flex items-center gap-1.5 shadow-lg backdrop-blur">
@@ -1441,7 +1316,6 @@
                                 </span>
                               </div>
 
-                              {/* Botones de acción */}
                               <div className="absolute top-3 right-3 flex items-center gap-1.5">
                                 <button
                                   onClick={() => openPosterModal(series, 'series')}
@@ -1467,7 +1341,6 @@
                                 )}
                               </div>
 
-                              {/* Título y Géneros */}
                               <div className="absolute bottom-3 left-3 right-3">
                                 <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold block truncate">
                                   {series.genres && series.genres.join(' • ')}
@@ -1680,21 +1553,6 @@
                           <span className="text-slate-400 font-bold block">Estado de Emisión:</span>
                           <p className="text-slate-200">{series.releaseSchedule}</p>
                         </div>
-
-                        <div className="flex items-center justify-between pt-1 gap-2">
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
-                          >
-                            🗑️ <span>Eliminar</span>
-                          </button>
-                          <button
-                            onClick={() => showBanner(`🔔 Alerta configurada: ${series.title} todos los ${series.airDay} a las ${series.airTime}`)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-md"
-                          >
-                            🔔 <span>Notificarme</span>
-                          </button>
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -1711,7 +1569,7 @@
                       ⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})
                     </h2>
                     <p className="text-xs text-slate-300">
-                      Temporadas anteriores finalizadas. Si el estudio no ha confirmado el día exacto de estreno, se marca automáticamente como pendiente.
+                      Temporadas anteriores finalizadas. Si el estudio no ha confirmado fecha exacta, se marca como pendiente.
                     </p>
                   </div>
                   <button
@@ -1722,133 +1580,89 @@
                   </button>
                 </div>
 
-                {waitingSeasonsList.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en espera de temporada actualmente.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {waitingSeasonsList.map(series => {
-                      const hasRealFutureDate = isDateInFuture(series.nextReleaseDate) && series.hasConfirmedFutureDate;
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {waitingSeasonsList.map(series => {
+                    const hasRealFutureDate = isDateInFuture(series.nextReleaseDate) && series.hasConfirmedFutureDate;
 
-                      return (
-                        <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-4 flex flex-col justify-between">
-                          <div className="space-y-3">
-                            <div className="flex gap-3">
-                              <img
-                                src={series.poster}
-                                alt={series.title}
-                                className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
-                                onError={(e) => { 
-                                  if (series.fallbackPoster && e.target.src !== series.fallbackPoster) {
-                                    e.target.src = series.fallbackPoster;
-                                  } else {
-                                    e.target.src = DEFAULT_FALLBACK_POSTER;
-                                  }
-                                }}
-                              />
-                              <div className="space-y-1 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                                    {series.platform}
-                                  </span>
-                                  {series.imdbId && (
-                                    <a
-                                      href={`https://www.imdb.com/title/${series.imdbId}/`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[10px] font-bold text-amber-400 hover:underline flex items-center gap-0.5"
-                                    >
-                                      <span>IMDb ★ {series.imdbRating || 8.2}</span>
-                                      <span>↗</span>
-                                    </a>
-                                  )}
-                                </div>
-                                <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
-                                <span className="text-xs text-slate-400 block">Última emitida: Temporada {series.currentSeason}</span>
-                                
-                                <div className="flex items-center gap-1.5 pt-1">
-                                  <button
-                                    onClick={() => openPosterModal(series, 'series')}
-                                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
-                                  >
-                                    🖼️ Póster
-                                  </button>
-                                  <button
-                                    onClick={() => toggleSeriesStatus(series.id)}
-                                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
-                                  >
-                                    ⚡ A Emisión
-                                  </button>
-                                  <div className="flex items-center bg-purple-950 border border-purple-500/40 rounded-lg px-1 py-0.5 text-[10px]">
-                                    <span className="text-slate-400 pr-1">Próx:</span>
-                                    <button onClick={() => changeNextSeasonNumber(series.id, -1)} className="px-1 font-bold text-purple-200 hover:text-white">-</button>
-                                    <span className="font-mono px-1 text-amber-300 font-bold">T{series.nextSeasonNumber}</span>
-                                    <button onClick={() => changeNextSeasonNumber(series.id, 1)} className="px-1 font-bold text-purple-200 hover:text-white">+</button>
-                                  </div>
+                    return (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-4 flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            <img
+                              src={series.poster}
+                              alt={series.title}
+                              className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
+                              onError={(e) => { 
+                                if (series.fallbackPoster && e.target.src !== series.fallbackPoster) {
+                                  e.target.src = series.fallbackPoster;
+                                } else {
+                                  e.target.src = DEFAULT_FALLBACK_POSTER;
+                                }
+                              }}
+                            />
+                            <div className="space-y-1 flex-1">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                {series.platform}
+                              </span>
+                              <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
+                              <span className="text-xs text-slate-400 block">Última: Temporada {series.currentSeason}</span>
+                              
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <button
+                                  onClick={() => openPosterModal(series, 'series')}
+                                  className="text-[10px] bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
+                                >
+                                  🖼️ Póster
+                                </button>
+                                <div className="flex items-center bg-purple-950 border border-purple-500/40 rounded-lg px-1 py-0.5 text-[10px]">
+                                  <span className="text-slate-400 pr-1">Próx:</span>
+                                  <button onClick={() => changeNextSeasonNumber(series.id, -1)} className="px-1 font-bold text-purple-200 hover:text-white">-</button>
+                                  <span className="font-mono px-1 text-amber-300 font-bold">T{series.nextSeasonNumber}</span>
+                                  <button onClick={() => changeNextSeasonNumber(series.id, 1)} className="px-1 font-bold text-purple-200 hover:text-white">+</button>
                                 </div>
                               </div>
                             </div>
-
-                            <div className="bg-purple-950/40 p-3.5 rounded-2xl border border-purple-500/30 space-y-1.5">
-                              <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
-                                🎯 Próxima Temporada {series.nextSeasonNumber}:
-                              </span>
-
-                              {hasRealFutureDate ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-lg">
-                                      📅 {series.nextReleaseDate}
-                                    </span>
-                                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                                      Fecha Oficial
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-mono font-bold text-amber-200/80 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                                      ⏳ Sin fecha oficial confirmada
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-slate-400 italic">
-                                    {series.releaseSchedule}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                              className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1"
-                            >
-                              🗑️ <span>Eliminar</span>
-                            </button>
-                            <button
-                              onClick={() => showBanner(`🔔 Alerta configurada para la Temporada ${series.nextSeasonNumber} de ${series.title}`)}
-                              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-bold py-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
-                            >
-                              🔔 <span>Alerta T{series.nextSeasonNumber}</span>
-                            </button>
+                          <div className="bg-purple-950/40 p-3.5 rounded-2xl border border-purple-500/30 space-y-1.5">
+                            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
+                              🎯 Próxima Temporada {series.nextSeasonNumber}:
+                            </span>
+
+                            {hasRealFutureDate ? (
+                              <div className="space-y-1">
+                                <span className="text-sm font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-lg inline-block">
+                                  📅 {series.nextReleaseDate}
+                                </span>
+                                <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                <span className="text-xs font-mono font-bold text-amber-200/80 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg inline-block">
+                                  ⏳ Sin fecha oficial confirmada
+                                </span>
+                                <p className="text-xs text-slate-400 italic">{series.releaseSchedule}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                        <button
+                          onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                          className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1"
+                        >
+                          🗑️ <span>Eliminar</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
             {/* VISTA 4: TOP CALIFICADAS */}
             {activeTab === 'explore' && (
               <div className="space-y-5">
-                
-                {/* Selector de Rankings */}
                 <div className="bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-900 border border-amber-500/30 p-5 rounded-3xl space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -1856,7 +1670,7 @@
                         ⭐ Rankings Oficiales de Series — Calificación IMDb
                       </h2>
                       <p className="text-xs text-slate-300">
-                        Selecciona el ranking histórico o el top de estrenos estelares. Puedes cambiar los pósters o descartar series que no desees ver.
+                        Selecciona el ranking histórico o el top de estrenos estelares.
                       </p>
                     </div>
 
@@ -1869,7 +1683,7 @@
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        🏆 <span>Top 25 Histórico ({historicList.length})</span>
+                        🏆 <span>Top 25 Histórico</span>
                       </button>
                       <button
                         onClick={() => setTopRankingType('year')}
@@ -1879,22 +1693,20 @@
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        🔥 <span>Top 10 del Año ({yearList.length})</span>
+                        🔥 <span>Top 10 del Año</span>
                       </button>
                       <button
                         onClick={() => {
                           setSearchTargetTab(topRankingType);
                           setShowNewSeriesModal(true);
                         }}
-                        className="ml-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5"
-                        title="Buscar y agregar serie a este Top"
+                        className="ml-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5"
                       >
                         ➕ <span>Agregar al Top</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Filtro por Plataformas y Buscador */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800">
                     <div className="relative w-full sm:w-80">
                       <input
@@ -1925,15 +1737,9 @@
                   </div>
                 </div>
 
-                {/* Cuadrícula de Series del Ranking */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredRankings.map(item => {
                     const isAlreadyTracked = seriesList.some(s => s.userTracking && (s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId)));
-
-                    let rankBadgeClass = 'badge-rank-silver';
-                    if (item.rank === 1) rankBadgeClass = 'badge-rank-gold';
-                    else if (item.rank === 2) rankBadgeClass = 'badge-rank-silver';
-                    else if (item.rank === 3) rankBadgeClass = 'badge-rank-bronze';
 
                     return (
                       <div key={item.title} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
@@ -1948,16 +1754,13 @@
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
-                            {/* Badge de Puesto */}
-                            <div className={`absolute top-3 left-3 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 shadow-lg ${rankBadgeClass}`}>
+                            <div className="absolute top-3 left-3 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 shadow-lg bg-amber-500 text-slate-950">
                               <span>#{item.rank}</span>
                             </div>
 
-                            {/* Botones Superiores */}
                             <div className="absolute top-3 right-3 flex items-center gap-1.5">
                               <button
                                 onClick={() => openPosterModal(item, topRankingType)}
-                                title="Cambiar carátula de esta serie"
                                 className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
                               >
                                 🖼️ Póster
@@ -1966,25 +1769,15 @@
                                 href={`https://www.imdb.com/title/${item.imdbId}/`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all flex items-center gap-1"
+                                className="bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md flex items-center gap-1"
                               >
                                 <span>IMDb ★ {item.imdbRating}</span>
-                                <span>↗</span>
                               </a>
-                              <button
-                                onClick={() => deleteFromTopRanking(item.title, topRankingType)}
-                                title="Eliminar de esta lista"
-                                className="bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 p-1.5 rounded-xl text-xs backdrop-blur transition-all"
-                              >
-                                🗑️
-                              </button>
                             </div>
 
                             <div className="absolute bottom-3 left-3 right-3">
-                              <div className="flex items-center gap-2 text-[10px] font-mono text-amber-300 font-bold">
-                                <span>📺 {item.platform}</span>
-                                <span>•</span>
-                                <span>{item.year}</span>
+                              <div className="text-[10px] font-mono text-amber-300 font-bold">
+                                <span>📺 {item.platform}</span> • <span>{item.year}</span>
                               </div>
                               <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
                                 {item.title}
@@ -1993,14 +1786,6 @@
                           </div>
 
                           <div className="p-4 space-y-2.5">
-                            <div className="flex flex-wrap gap-1">
-                              {item.genres && item.genres.map(g => (
-                                <span key={g} className="text-[10px] font-medium bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-md">
-                                  {g}
-                                </span>
-                              ))}
-                            </div>
-
                             <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
                               {item.summary}
                             </p>
@@ -2013,7 +1798,7 @@
                             className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-md ${
                               isAlreadyTracked
                                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white'
+                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                             }`}
                           >
                             <span>{isAlreadyTracked ? '✓ En Mis Series' : '➕ Añadir a Mis Series'}</span>
@@ -2029,20 +1814,14 @@
             {/* VISTA 5: CINE & TRAILERS */}
             {activeTab === 'movies' && (
               <div className="space-y-5">
-                
-                {/* Panel de Filtros por Año, Mes y Búsqueda */}
                 <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border border-red-500/30 p-5 rounded-3xl space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
                         🍿 Calendario de Estrenos de Cine 2026 / 2027 ({filteredMovies.length} películas)
                       </h2>
-                      <p className="text-xs text-slate-300">
-                        Cartelera completa con fechas oficiales de estreno en cines organizadas mes a mes y trailers en YouTube.
-                      </p>
                     </div>
 
-                    {/* Selector de Año */}
                     <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
                       {[
                         { id: 'all', label: 'Todos' },
@@ -2064,20 +1843,15 @@
                     </div>
                   </div>
 
-                  {/* Buscador de Películas y Filtro de Meses */}
                   <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800">
-                    <div className="relative w-full md:w-80">
-                      <input
-                        type="text"
-                        placeholder="Buscar película, director, reparto..."
-                        value={movieSearchQuery}
-                        onChange={(e) => setMovieSearchQuery(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
-                      />
-                      <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
-                    </div>
+                    <input
+                      type="text"
+                      placeholder="Buscar película..."
+                      value={movieSearchQuery}
+                      onChange={(e) => setMovieSearchQuery(e.target.value)}
+                      className="w-full md:w-80 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+                    />
 
-                    {/* Selector de Meses */}
                     <div className="flex flex-wrap gap-1 w-full md:w-auto">
                       {MONTHS.map(m => (
                         <button
@@ -2096,105 +1870,115 @@
                   </div>
                 </div>
 
-                {filteredMovies.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <div className="text-3xl">🍿</div>
-                    <p className="text-xs text-slate-400">No se encontraron películas para los filtros seleccionados.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredMovies.map(movie => (
-                      <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                        <div>
-                          <div className="relative h-72 w-full bg-slate-900 overflow-hidden">
-                            <img
-                              src={movie.poster}
-                              alt={movie.title}
-                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
-                              loading="lazy"
-                              onError={(e) => { 
-                                if (movie.fallbackPoster && e.target.src !== movie.fallbackPoster) {
-                                  e.target.src = movie.fallbackPoster;
-                                } else {
-                                  e.target.src = DEFAULT_FALLBACK_POSTER;
-                                }
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                            
-                            <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                              <span className="bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
-                                {movie.year} • {movie.monthName}
-                              </span>
-                            </div>
-
-                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                              <button
-                                onClick={() => openPosterModal(movie, 'movie')}
-                                title="Cambiar póster de esta película"
-                                className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
-                              >
-                                🖼️ Póster
-                              </button>
-                              <button
-                                onClick={() => deleteMovieCompletely(movie.id, movie.title)}
-                                title="Descartar de cartelera"
-                                className="bg-slate-950/80 hover:bg-rose-900 text-rose-300 p-1.5 rounded-xl border border-rose-500/30 text-xs shadow-md transition-all"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-
-                            <div className="absolute bottom-3 left-3 right-3">
-                              <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
-                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">{movie.title}</h3>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredMovies.map(movie => (
+                    <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <div className="relative h-72 w-full bg-slate-900 overflow-hidden">
+                          <img
+                            src={movie.poster}
+                            alt={movie.title}
+                            className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                          
+                          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                            <span className="bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                              {movie.year} • {movie.monthName}
+                            </span>
                           </div>
 
-                          <div className="p-4 space-y-3">
-                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Fecha de Estreno Oficial en Cines:</span>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-mono font-extrabold text-amber-300">
-                                  📅 {movie.releaseDate}
-                                </span>
-                                <span className="text-[10px] font-bold bg-red-950/80 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-lg">
-                                  {movie.monthName} {movie.year}
-                                </span>
-                              </div>
-                            </div>
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                            <button
+                              onClick={() => openPosterModal(movie, 'movie')}
+                              className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
+                            >
+                              🖼️ Póster
+                            </button>
+                          </div>
 
-                            <div className="text-[11px] text-slate-400 space-y-0.5">
-                              <p><span className="font-bold text-slate-300">Director:</span> {movie.director}</p>
-                              <p className="truncate"><span className="font-bold text-slate-300">Reparto:</span> {movie.cast}</p>
-                            </div>
-
-                            <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
-                              {movie.synopsis}
-                            </p>
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
+                            <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">{movie.title}</h3>
                           </div>
                         </div>
 
-                        <div className="p-4 pt-0">
-                          <a
-                            href={movie.youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
-                          >
-                            ▶ <span>Ver Trailer Oficial en YouTube</span> ↗
-                          </a>
+                        <div className="p-4 space-y-3">
+                          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
+                            <span className="text-sm font-mono font-extrabold text-amber-300">
+                              📅 {movie.releaseDate}
+                            </span>
+                            <span className="text-[10px] font-bold bg-red-950/80 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-lg">
+                              {movie.monthName} {movie.year}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                            {movie.synopsis}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      <div className="p-4 pt-0">
+                        <a
+                          href={movie.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                        >
+                          ▶ <span>Ver Trailer Oficial en YouTube</span> ↗
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
           </main>
 
-          {/* Modal para Cambiar / Buscar Póster Oficial */}
+          {/* Modal de Sincronización en la Nube y Copia de Respaldo */}
+          {showBackupModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">☁️</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">Sincronización en la Nube</h3>
+                      <p className="text-[11px] text-slate-400">Comparte tu progreso entre PC y Android.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowBackupModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg">✕</button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                    <span className="font-bold text-slate-300 block">Sincronización Inmediata (Archivo .JSON):</span>
+                    <p className="text-slate-400 text-[11px]">Descarga tus cambios en el PC e impórtalos en tu celular en 2 segundos.</p>
+                    
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={exportBackupJSON}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        📥 <span>Exportar Datos</span>
+                      </button>
+
+                      <label className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer text-center">
+                        📤 <span>Importar Datos</span>
+                        <input type="file" accept=".json" onChange={importBackupJSON} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal para Cambiar Póster Oficial */}
           {editingItemForPoster && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
@@ -2205,18 +1989,12 @@
                       <h3 className="font-display font-extrabold text-base text-white">
                         Cambiar Póster: {editingItemForPoster.title}
                       </h3>
-                      <p className="text-[11px] text-slate-400">Selecciona una imagen oficial o pega un enlace directo.</p>
+                      <p className="text-[11px] text-slate-400">Pega un enlace directo o busca en la web.</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setEditingItemForPoster(null)}
-                    className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg"
-                  >
-                    ✕ Cerrar
-                  </button>
+                  <button onClick={() => setEditingItemForPoster(null)} className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg">✕</button>
                 </div>
 
-                {/* Opción 1: Pegar URL Directa */}
                 <div className="space-y-1.5 bg-slate-950 p-3 rounded-2xl border border-slate-800">
                   <label className="text-[11px] font-bold text-slate-300 block">Pegar URL directa de imagen:</label>
                   <div className="flex gap-2">
@@ -2227,18 +2005,12 @@
                       onChange={(e) => setCustomPosterUrlInput(e.target.value)}
                       className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
-                    <button
-                      onClick={() => applyNewPoster(customPosterUrlInput)}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs transition-all"
-                    >
-                      Guardar
-                    </button>
+                    <button onClick={() => applyNewPoster(customPosterUrlInput)} className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs">Guardar</button>
                   </div>
                 </div>
 
-                {/* Opción 2: Buscar en la base de datos */}
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-300 block">Buscar alternativas oficiales en la web:</label>
+                  <label className="text-[11px] font-bold text-slate-300 block">Buscar alternativas oficiales:</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -2247,37 +2019,19 @@
                       placeholder="Buscar por nombre..."
                       className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
                     />
-                    <button
-                      onClick={() => searchPostersForQuery(posterSearchQuery)}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all"
-                    >
-                      Buscar
-                    </button>
+                    <button onClick={() => searchPostersForQuery(posterSearchQuery)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs">Buscar</button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1">
-                    {isSearchingPosters ? (
-                      <div className="col-span-3 text-center py-6 text-indigo-400 text-xs animate-pulse">Buscando pósters...</div>
-                    ) : posterSearchResults.length > 0 ? (
-                      posterSearchResults.map(({ show }) => {
-                        const imgUrl = show.image ? (show.image.original || show.image.medium) : null;
-                        if (!imgUrl) return null;
-                        return (
-                          <div
-                            key={show.id}
-                            onClick={() => applyNewPoster(imgUrl)}
-                            className="cursor-pointer group relative rounded-xl overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all aspect-[2/3] bg-slate-950"
-                          >
-                            <img src={imgUrl} alt={show.name} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
-                            <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 text-center text-[10px] font-black text-cyan-300 transition-opacity">
-                              ✓ Usar esta
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="col-span-3 text-center py-4 text-slate-500 text-xs">Escribe el nombre y presiona Buscar para ver pósters alternativos.</div>
-                    )}
+                    {posterSearchResults.map(({ show }) => {
+                      const imgUrl = show.image ? (show.image.original || show.image.medium) : null;
+                      if (!imgUrl) return null;
+                      return (
+                        <div key={show.id} onClick={() => applyNewPoster(imgUrl)} className="cursor-pointer group relative rounded-xl overflow-hidden border border-slate-800 hover:border-cyan-400 aspect-[2/3] bg-slate-950">
+                          <img src={imgUrl} alt={show.name} className="w-full h-full object-cover" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2291,136 +2045,37 @@
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🔍</span>
-                    <div>
-                      <h3 className="font-display font-extrabold text-base text-white">
-                        Buscador Oficial de Series (IMDb + TVMaze)
-                      </h3>
-                      <p className="text-[11px] text-slate-400">Busca cualquier serie y elige dónde deseas incluirla.</p>
-                    </div>
+                    <h3 className="font-display font-extrabold text-base text-white">Buscador Oficial de Series</h3>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowNewSeriesModal(false);
-                      setApiSearchQuery('');
-                      setApiSearchResults([]);
-                    }}
-                    className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg"
-                  >
-                    ✕ Cerrar
-                  </button>
-                </div>
-
-                {/* Selector rápido de destino preferido */}
-                <div className="flex items-center justify-between bg-slate-950 p-2 rounded-2xl border border-slate-800 text-xs">
-                  <span className="text-slate-400 font-bold pl-1">Destino principal:</span>
-                  <div className="flex gap-1">
-                    {[
-                      { id: 'tracking', label: '📺 Mis Series' },
-                      { id: 'historic', label: '🏆 Top Histórico' },
-                      { id: 'year', label: '🔥 Top del Año' }
-                    ].map(opt => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setSearchTargetTab(opt.id)}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                          searchTargetTab === opt.id
-                            ? 'bg-indigo-600 text-white shadow-md'
-                            : 'bg-slate-900 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                  <button onClick={() => setShowNewSeriesModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg">✕</button>
                 </div>
 
                 <div className="space-y-4 text-xs">
-                  <div className="space-y-1">
-                    <label className="text-slate-300 font-bold block">
-                      Escribe el nombre de la serie:
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Ej: Breaking Bad, The Sopranos, Chernobyl, House of the Dragon, Dark..."
-                        value={apiSearchQuery}
-                        onChange={(e) => handleSearchMultiSource(e.target.value)}
-                        className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
-                        autoFocus
-                      />
-                      <div className="absolute left-3 top-3 text-slate-400">🔍</div>
-                      {isSearchingApi && (
-                        <div className="absolute right-3 top-3 text-indigo-400 animate-spin">⏳</div>
-                      )}
-                    </div>
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ej: Breaking Bad, Succession, Dark..."
+                    value={apiSearchQuery}
+                    onChange={(e) => handleSearchMultiSource(e.target.value)}
+                    className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
+                    autoFocus
+                  />
 
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    {apiSearchResults.length > 0 ? (
-                      apiSearchResults.map(({ show }) => {
-                        const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
-                        const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
-                        const rating = show.rating && show.rating.average ? show.rating.average : '8.0';
-
-                        return (
-                          <div
-                            key={show.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <img
-                                src={poster}
-                                alt={show.name}
-                                className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
-                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                              />
-                              <div className="min-w-0">
-                                <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
-                                  <span className="text-indigo-400 font-bold">{platform}</span>
-                                  <span>•</span>
-                                  <span className="text-amber-400 font-mono">★ {rating}</span>
-                                  {show.premiered && <span>• {show.premiered.slice(0, 4)}</span>}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Botones de Destino Múltiple */}
-                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                              <button
-                                onClick={() => handleImportFromApi({ show })}
-                                className="bg-indigo-600/80 hover:bg-indigo-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
-                                title="Añadir a tu radar de Mis Series"
-                              >
-                                📺 <span>Mis Series</span>
-                              </button>
-                              <button
-                                onClick={() => handleImportToTopRanking({ show }, 'historic')}
-                                className="bg-amber-600/80 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
-                                title="Añadir al Top 25 Histórico"
-                              >
-                                🏆 <span>Top Histórico</span>
-                              </button>
-                              <button
-                                onClick={() => handleImportToTopRanking({ show }, 'year')}
-                                className="bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
-                                title="Añadir al Top 10 del Año"
-                              >
-                                🔥 <span>Top Año</span>
-                              </button>
-                            </div>
+                    {apiSearchResults.map(({ show }) => {
+                      const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
+                      return (
+                        <div key={show.id} className="flex items-center justify-between p-3 bg-slate-950/80 border border-slate-800 rounded-2xl gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <img src={poster} alt={show.name} className="w-12 h-16 object-cover rounded-xl shrink-0" />
+                            <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
                           </div>
-                        );
-                      })
-                    ) : apiSearchQuery.trim().length >= 2 ? (
-                      <div className="text-center py-6 text-slate-500 text-xs">
-                        No se encontraron resultados para "{apiSearchQuery}".
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-slate-500 text-xs">
-                        Escribe el título de cualquier serie para buscar en vivo y seleccionar su destino.
-                      </div>
-                    )}
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => handleImportFromApi({ show })} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl">📺 Mis Series</button>
+                            <button onClick={() => handleImportToTopRanking({ show }, 'historic')} className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2.5 py-1.5 rounded-xl">🏆 Top</button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2429,7 +2084,7 @@
 
           {/* Footer */}
           <footer className="border-t border-slate-900 bg-slate-950/80 text-center py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <span>CineRadar Pro &copy; 2026/2027 — Rankings Oficiales IMDb & Calendario de Estrenos de Cine.</span>
+            <span>CineRadar Pro &copy; 2026/2027 — Sincronización en la Nube & Rankings IMDb.</span>
             <button onClick={restoreDefaults} className="text-indigo-400 hover:underline">Restaurar catálogo inicial</button>
           </footer>
         </div>
