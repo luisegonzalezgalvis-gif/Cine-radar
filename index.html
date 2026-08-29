@@ -236,88 +236,399 @@
       }
     ];
 
-    // TOP 25 HISTÓRICO DE SERIES SEGÚN IMDb CON PÓSTERS OFICIALES
+    // TOP 25 HISTÓRICO DE SERIES SEGÚN IMDb CON PÓSTERS OFICIALES DE SERIE
     const TOP_25_HISTORIC = [
-      { rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg', summary: 'Un profesor de química diagnosticado con cáncer se asocia con un exalumno para fabricar metanfetamina.' },
-      { rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10904.jpg', summary: 'La historia de la Easy Company del 506º Regimiento de Infantería Paracaidista durante la Segunda Guerra Mundial.' },
-      { rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/198/496035.jpg', summary: 'Miniserie que dramatiza la catástrofe nuclear de Chernóbil en abril de 1986 y el heroico esfuerzo por contenerla.' },
-      { rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/5/14467.jpg', summary: 'La escena del narcotráfico en Baltimore vista a través de los ojos de policías, traficantes y políticos.' },
-      { rank: 5, title: 'Avatar: The Last Airbender', imdbRating: 9.3, votes: '370K', platform: 'Netflix', year: '2005-2008', genres: ['Animación', 'Aventura', 'Fantasía'], imdbId: 'tt0417299', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/10/26656.jpg', summary: 'En un mundo devastado por la guerra, un niño llamado Aang debe dominar los cuatro elementos.' },
-      { rank: 6, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/5/14461.jpg', summary: 'El jefe de la mafia de Nueva Jersey, Tony Soprano, lidia con problemas personales y profesionales.' },
-      { rank: 7, title: 'Game of Thrones (Juego de Tronos)', imdbRating: 9.2, votes: '2.4M', platform: 'Max (HBO)', year: '2011-2019', genres: ['Fantasía', 'Drama', 'Acción'], imdbId: 'tt0944947', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg', summary: 'Nueve familias nobles luchan por el control de las míticas tierras de Poniente.' },
-      { rank: 8, title: 'Rick and Morty', imdbRating: 9.1, votes: '600K', platform: 'Max (HBO)', year: '2013-Presente', genres: ['Animación', 'Aventura', 'Sci-Fi'], imdbId: 'tt2861424', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg', summary: 'Las desventuras de un científico alcohólico y su nieto fácilmente influenciable a través de universos paralelos.' },
-      { rank: 9, title: 'Better Call Saul', imdbRating: 9.0, votes: '660K', platform: 'Netflix', year: '2015-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt3032476', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/408/1021487.jpg', summary: 'Las pruebas y tribulaciones del abogado Jimmy McGill antes de establecer su bufete como Saul Goodman.' },
-      { rank: 10, title: 'Arcane', imdbRating: 9.0, votes: '300K', platform: 'Netflix', year: '2021-2024', genres: ['Animación', 'Acción', 'Sci-Fi'], imdbId: 'tt11126994', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933189.jpg', summary: 'Ambientada en la región utópica de Piltover y el subsuelo oprimido de Zaun, sigue los orígenes de dos icónicas campeonas.' },
-      { rank: 11, title: 'Batman: The Animated Series', imdbRating: 9.0, votes: '120K', platform: 'Max (HBO)', year: '1992-1995', genres: ['Animación', 'Acción', 'Crimen'], imdbId: 'tt0103359', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10901.jpg', summary: 'El Caballero de la Noche lucha contra el crimen en Gotham City con la ayuda de Robin y Batgirl.' },
-      { rank: 12, title: 'Sherlock', imdbRating: 9.1, votes: '1.0M', platform: 'Prime Video', year: '2010-2017', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt1475582', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10899.jpg', summary: 'Una actualización contemporánea del legendario detective Sherlock Holmes resolviendo crímenes en el Londres del siglo XXI.' },
-      { rank: 13, title: 'Succession', imdbRating: 8.9, votes: '310K', platform: 'Max (HBO)', year: '2018-2023', genres: ['Drama'], imdbId: 'tt7660850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/448/1121087.jpg', summary: 'La familia Roy es conocida por controlar Waystar RoyCo, uno de los mayores conglomerados de medios y entretenimiento del mundo.' },
-      { rank: 14, title: 'Fargo', imdbRating: 8.9, votes: '410K', platform: 'Prime Video', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt2802850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1210803.jpg', summary: 'Varios relatos de engaño, intriga y asesinato en y alrededor de la gélida Minnesota.' },
-      { rank: 15, title: 'True Detective', imdbRating: 8.9, votes: '680K', platform: 'Max (HBO)', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt2356777', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg', summary: 'Investigaciones policiales complejas desentrañan secretos personales y profesionales de los involucrados.' },
-      { rank: 16, title: 'The Last of Us', imdbRating: 8.8, votes: '560K', platform: 'Max (HBO)', year: '2023-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt3581920', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg', summary: 'Joel y Ellie deben sobrevivir a un viaje a través de unos Estados Unidos postapocalípticos.' },
-      { rank: 17, title: 'Peaky Blinders', imdbRating: 8.8, votes: '650K', platform: 'Netflix', year: '2013-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt2442560', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122241.jpg', summary: 'Una banda de gánsteres establecida en Birmingham, Inglaterra, en 1919, liderada por el feroz Tommy Shelby.' },
-      { rank: 18, title: 'Narcos', imdbRating: 8.8, votes: '470K', platform: 'Netflix', year: '2015-2017', genres: ['Biografía', 'Crimen', 'Drama'], imdbId: 'tt2707408', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/20/52019.jpg', summary: 'Una mirada descarnada a la propagación de los carteles de cocaína en Colombia y los esfuerzos de la ley para detenerlos.' },
-      { rank: 19, title: 'Stranger Things', imdbRating: 8.7, votes: '1.4M', platform: 'Netflix', year: '2016-Presente', genres: ['Drama', 'Fantasía', 'Terror'], imdbId: 'tt4574334', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/411/1029239.jpg', summary: 'La desaparición de un niño en un pequeño pueblo destapa misterios sobrenaturales y experimentos gubernamentales secretos.' },
-      { rank: 20, title: 'Severance', imdbRating: 8.7, votes: '240K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Misterio', 'Sci-Fi'], imdbId: 'tt11280740', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg', summary: 'Mark lidera un equipo cuyos recuerdos laborales y personales han sido quirúrgicamente separados.' },
-      { rank: 21, title: 'Dark', imdbRating: 8.7, votes: '460K', platform: 'Netflix', year: '2017-2020', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5753856', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/261/653205.jpg', summary: 'La desaparición de dos niños en un pueblo alemán saca a la luz las relaciones fracturadas y viajes en el tiempo entre cuatro familias.' },
-      { rank: 22, title: 'House of Cards', imdbRating: 8.6, votes: '530K', platform: 'Netflix', year: '2013-2018', genres: ['Drama'], imdbId: 'tt1856010', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/175/438814.jpg', summary: 'Un congresista demócrata y su ambiciosa esposa buscan venganza y poder absoluto en Washington D.C.' },
-      { rank: 23, title: 'Mindhunter', imdbRating: 8.6, votes: '340K', platform: 'Netflix', year: '2017-2019', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5290382', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/207/518600.jpg', summary: 'A finales de los 70, dos agentes del FBI amplían las fronteras de la criminología entrevistando a asesinos en serie.' },
-      { rank: 24, title: 'The Crown', imdbRating: 8.6, votes: '260K', platform: 'Netflix', year: '2016-2023', genres: ['Biografía', 'Drama', 'Historia'], imdbId: 'tt4786824', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1211116.jpg', summary: 'Sigue las rivalidades políticas y los romances durante el reinado de la Reina Isabel II y los eventos del siglo XX.' },
-      { rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1254359.jpg', summary: 'Un grupo de vigilantes se propone acabar con superhéroes corruptos que abusan de sus poderes.' }
+      { id: 'top-1', rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg', summary: 'Un profesor de química diagnosticado con cáncer se asocia con un exalumno para fabricar metanfetamina.' },
+      { id: 'top-2', rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/120464.jpg', summary: 'La historia de la Easy Company del 506º Regimiento de Infantería Paracaidista durante la Segunda Guerra Mundial.' },
+      { id: 'top-3', rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/198/496035.jpg', summary: 'Miniserie que dramatiza la catástrofe nuclear de Chernóbil en abril de 1986 y el heroico esfuerzo por contenerla.' },
+      { id: 'top-4', rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253503.jpg', summary: 'La escena del narcotráfico en Baltimore vista a través de los ojos de policías, traficantes y políticos.' },
+      { id: 'top-5', rank: 5, title: 'Avatar: The Last Airbender', imdbRating: 9.3, votes: '370K', platform: 'Netflix', year: '2005-2008', genres: ['Animación', 'Aventura', 'Fantasía'], imdbId: 'tt0417299', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253488.jpg', summary: 'En un mundo devastado por la guerra, un niño llamado Aang debe dominar los cuatro elementos.' },
+      { id: 'top-6', rank: 6, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253482.jpg', summary: 'El jefe de la mafia de Nueva Jersey, Tony Soprano, lidia con problemas personales y profesionales.' },
+      { id: 'top-7', rank: 7, title: 'Game of Thrones (Juego de Tronos)', imdbRating: 9.2, votes: '2.4M', platform: 'Max (HBO)', year: '2011-2019', genres: ['Fantasía', 'Drama', 'Acción'], imdbId: 'tt0944947', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg', summary: 'Nueve familias nobles luchan por el control de las míticas tierras de Poniente.' },
+      { id: 'top-8', rank: 8, title: 'Rick and Morty', imdbRating: 9.1, votes: '600K', platform: 'Max (HBO)', year: '2013-Presente', genres: ['Animación', 'Aventura', 'Sci-Fi'], imdbId: 'tt2861424', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg', summary: 'Las desventuras de un científico alcohólico y su nieto fácilmente influenciable a través de universos paralelos.' },
+      { id: 'top-9', rank: 9, title: 'Better Call Saul', imdbRating: 9.0, votes: '660K', platform: 'Netflix', year: '2015-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt3032476', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/408/1021487.jpg', summary: 'Las pruebas y tribulaciones del abogado Jimmy McGill antes de establecer su bufete como Saul Goodman.' },
+      { id: 'top-10', rank: 10, title: 'Arcane', imdbRating: 9.0, votes: '300K', platform: 'Netflix', year: '2021-2024', genres: ['Animación', 'Acción', 'Sci-Fi'], imdbId: 'tt11126994', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933189.jpg', summary: 'Ambientada en la región utópica de Piltover y el subsuelo oprimido de Zaun, sigue los orígenes de dos icónicas campeonas.' },
+      { id: 'top-11', rank: 11, title: 'Batman: The Animated Series', imdbRating: 9.0, votes: '120K', platform: 'Max (HBO)', year: '1992-1995', genres: ['Animación', 'Acción', 'Crimen'], imdbId: 'tt0103359', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/120461.jpg', summary: 'El Caballero de la Noche lucha contra el crimen en Gotham City con la ayuda de Robin y Batgirl.' },
+      { id: 'top-12', rank: 12, title: 'Sherlock', imdbRating: 9.1, votes: '1.0M', platform: 'Prime Video', year: '2010-2017', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt1475582', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/120459.jpg', summary: 'Una actualización contemporánea del legendario detective Sherlock Holmes resolviendo crímenes en el Londres del siglo XXI.' },
+      { id: 'top-13', rank: 13, title: 'Succession', imdbRating: 8.9, votes: '310K', platform: 'Max (HBO)', year: '2018-2023', genres: ['Drama'], imdbId: 'tt7660850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/448/1121087.jpg', summary: 'La familia Roy es conocida por controlar Waystar RoyCo, uno de los mayores conglomerados de medios y entretenimiento del mundo.' },
+      { id: 'top-14', rank: 14, title: 'Fargo', imdbRating: 8.9, votes: '410K', platform: 'Prime Video', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt2802850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1210803.jpg', summary: 'Varios relatos de engaño, intriga y asesinato en y alrededor de la gélida Minnesota.' },
+      { id: 'top-15', rank: 15, title: 'True Detective', imdbRating: 8.9, votes: '680K', platform: 'Max (HBO)', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt2356777', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg', summary: 'Investigaciones policiales complejas desentrañan secretos personales y profesionales de los involucrados.' },
+      { id: 'top-16', rank: 16, title: 'The Last of Us', imdbRating: 8.8, votes: '560K', platform: 'Max (HBO)', year: '2023-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt3581920', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg', summary: 'Joel y Ellie deben sobrevivir a un viaje a través de unos Estados Unidos postapocalípticos.' },
+      { id: 'top-17', rank: 17, title: 'Peaky Blinders', imdbRating: 8.8, votes: '650K', platform: 'Netflix', year: '2013-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt2442560', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122241.jpg', summary: 'Una banda de gánsteres establecida en Birmingham, Inglaterra, en 1919, liderada por el feroz Tommy Shelby.' },
+      { id: 'top-18', rank: 18, title: 'Narcos', imdbRating: 8.8, votes: '470K', platform: 'Netflix', year: '2015-2017', genres: ['Biografía', 'Crimen', 'Drama'], imdbId: 'tt2707408', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/20/52019.jpg', summary: 'Una mirada descarnada a la propagación de los carteles de cocaína en Colombia y los esfuerzos de la ley para detenerlos.' },
+      { id: 'top-19', rank: 19, title: 'Stranger Things', imdbRating: 8.7, votes: '1.4M', platform: 'Netflix', year: '2016-Presente', genres: ['Drama', 'Fantasía', 'Terror'], imdbId: 'tt4574334', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/411/1029239.jpg', summary: 'La desaparición de un niño en un pequeño pueblo destapa misterios sobrenaturales y experimentos gubernamentales secretos.' },
+      { id: 'top-20', rank: 20, title: 'Severance', imdbRating: 8.7, votes: '240K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Misterio', 'Sci-Fi'], imdbId: 'tt11280740', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg', summary: 'Mark lidera un equipo cuyos recuerdos laborales y personales han sido quirúrgicamente separados.' },
+      { id: 'top-21', rank: 21, title: 'Dark', imdbRating: 8.7, votes: '460K', platform: 'Netflix', year: '2017-2020', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5753856', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/261/653205.jpg', summary: 'La desaparición de dos niños en un pueblo alemán saca a la luz las relaciones fracturadas y viajes en el tiempo entre cuatro familias.' },
+      { id: 'top-22', rank: 22, title: 'House of Cards', imdbRating: 8.6, votes: '530K', platform: 'Netflix', year: '2013-2018', genres: ['Drama'], imdbId: 'tt1856010', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/175/438814.jpg', summary: 'Un congresista demócrata y su ambiciosa esposa buscan venganza y poder absoluto en Washington D.C.' },
+      { id: 'top-23', rank: 23, title: 'Mindhunter', imdbRating: 8.6, votes: '340K', platform: 'Netflix', year: '2017-2019', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5290382', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/207/518600.jpg', summary: 'A finales de los 70, dos agentes del FBI amplían las fronteras de la criminología entrevistando a asesinos en serie.' },
+      { id: 'top-24', rank: 24, title: 'The Crown', imdbRating: 8.6, votes: '260K', platform: 'Netflix', year: '2016-2023', genres: ['Biografía', 'Drama', 'Historia'], imdbId: 'tt4786824', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1211116.jpg', summary: 'Sigue las rivalidades políticas y los romances durante el reinado de la Reina Isabel II y los eventos del siglo XX.' },
+      { id: 'top-25', rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1254359.jpg', summary: 'Un grupo de vigilantes se propone acabar con superhéroes corruptos que abusan de sus poderes.' }
     ];
 
-    // TOP 10 DE SERIES DEL AÑO / ÉXITOS ESTELARES CON PÓSTERS OFICIALES
+    // TOP 10 DE SERIES DEL AÑO / ÉXITOS ESTELARES CON PÓSTERS OFICIALES DE SERIE
     const TOP_10_YEAR = [
-      { rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+ / Star+', year: '2024', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/500/1251340.jpg', summary: 'En el Japón del año 1600, Lord Toranaga lucha por su vida cuando un misterioso barco europeo encalla en un pueblo cercano.' },
-      { rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/536/1340243.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb busca llenar el vacío de poder dejado en el inframundo criminal.' },
-      { rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/509/1273934.jpg', summary: 'En un futuro postapocalíptico de Los Ángeles devastado por la guerra nuclear, ciudadanos de refugios deben volver a la superficie.' },
-      { rank: 4, title: 'The Bear (Temporada 3)', imdbRating: 8.6, votes: '300K', platform: 'Disney+ / Star+', year: '2022-Presente', genres: ['Comedia', 'Drama'], imdbId: 'tt14452776', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/519/1298418.jpg', summary: 'Un joven chef de alta cocina lucha por transformar la tienda de sándwiches de su familia en Chicago.' },
-      { rank: 5, title: 'Baby Reindeer (Mi Reno de Peluche)', imdbRating: 7.8, votes: '210K', platform: 'Netflix', year: '2024', genres: ['Biografía', 'Drama', 'Thriller'], imdbId: 'tt13649692', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/511/1278216.jpg', summary: 'La relación distorsionada entre un comediante en apuros y una acosadora que impacta profundamente sus vidas.' },
-      { rank: 6, title: 'Slow Horses (Temporada 4)', imdbRating: 8.3, votes: '95K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Thriller', 'Espionaje'], imdbId: 'tt5875444', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/504/1260189.jpg', summary: 'Los agentes marginados del MI5 liderados por Jackson Lamb enfrentan atentados y conspiraciones de alto nivel.' },
-      { rank: 7, title: 'Ripley', imdbRating: 7.9, votes: '65K', platform: 'Netflix', year: '2024', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt11016042', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/510/1276228.jpg', summary: 'En Nueva York de los años 60, Tom Ripley es contratado para viajar a Italia y convencer al hijo de un magnate de volver a casa.' },
-      { rank: 8, title: 'Presumed Innocent (Presunto Inocente)', imdbRating: 7.7, votes: '70K', platform: 'Apple TV+', year: '2024', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt17677860', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/521/1304523.jpg', summary: 'Un horrible asesinato sacude la fiscalía de Chicago cuando uno de sus miembros más prominentes es sospechoso del crimen.' },
-      { rank: 9, title: 'House of the Dragon (Temporada 2)', imdbRating: 8.4, votes: '440K', platform: 'Max (HBO)', year: '2022-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt11198330', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg', summary: 'La Danza de Dragones entra en su punto álgido con la guerra fratricida entre los Verdes y los Negros.' },
-      { rank: 10, title: 'Industry (Temporada 3)', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/528/1321742.jpg', summary: 'Jóvenes banqueros compiten en el vertiginoso y despiadado mundo de las finanzas internacionales en Londres.' }
+      { id: 'yr-1', rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+ / Star+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/500/1251340.jpg', summary: 'En el Japón feudal de 1600, Lord Toranaga lucha por su supervivencia mientras forja alianzas con un náufrago inglés.' },
+      { id: 'yr-2', rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/536/1340243.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb busca llenar el vacío de poder dejado en el inframundo criminal.' },
+      { id: 'yr-3', rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/509/1273934.jpg', summary: 'En un futuro postapocalíptico de Los Ángeles devastado por la guerra nuclear, ciudadanos de refugios deben volver a la superficie.' },
+      { id: 'yr-4', rank: 4, title: 'The Bear (Temporada 3 & 4)', imdbRating: 8.6, votes: '300K', platform: 'Disney+ / Star+', year: '2022-Presente', genres: ['Comedia', 'Drama'], imdbId: 'tt14452776', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/519/1298418.jpg', summary: 'Un joven chef de alta cocina lucha por transformar la tienda de sándwiches de su familia en Chicago.' },
+      { id: 'yr-5', rank: 5, title: 'Baby Reindeer (Mi Reno de Peluche)', imdbRating: 7.8, votes: '210K', platform: 'Netflix', year: '2024-2026', genres: ['Biografía', 'Drama', 'Thriller'], imdbId: 'tt13649692', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/511/1278216.jpg', summary: 'La relación distorsionada entre un comediante en apuros y una acosadora que impacta profundamente sus vidas.' },
+      { id: 'yr-6', rank: 6, title: 'Slow Horses (Temporada 4 & 5)', imdbRating: 8.3, votes: '95K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Thriller', 'Espionaje'], imdbId: 'tt5875444', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/504/1260189.jpg', summary: 'Los agentes marginados del MI5 liderados por Jackson Lamb enfrentan atentados y conspiraciones de alto nivel.' },
+      { id: 'yr-7', rank: 7, title: 'Ripley', imdbRating: 7.9, votes: '65K', platform: 'Netflix', year: '2024-2026', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt11016042', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/510/1276228.jpg', summary: 'En Nueva York de los años 60, Tom Ripley es contratado para viajar a Italia y convencer al hijo de un magnate de volver a casa.' },
+      { id: 'yr-8', rank: 8, title: 'Presumed Innocent (Presunto Inocente)', imdbRating: 7.7, votes: '70K', platform: 'Apple TV+', year: '2024-2026', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt17677860', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/521/1304523.jpg', summary: 'Un horrible asesinato sacude la fiscalía de Chicago cuando uno de sus miembros más prominentes es sospechoso del crimen.' },
+      { id: 'yr-9', rank: 9, title: 'House of the Dragon (Temporada 2 & 3)', imdbRating: 8.4, votes: '440K', platform: 'Max (HBO)', year: '2022-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt11198330', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg', summary: 'La Danza de Dragones entra en su punto álgido con la guerra fratricida entre los Verdes y los Negros.' },
+      { id: 'yr-10', rank: 10, title: 'Industry (Temporada 3 & 4)', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/528/1321742.jpg', summary: 'Jóvenes banqueros compiten en el vertiginoso y despiadado mundo de las finanzas internacionales en Londres.' }
     ];
 
-    const MASTER_MOVIES_INIT = [
+    // CALENDARIO COMPLETO DE ESTRENOS DE CINE 2026 MES POR MES + 2027
+    const MASTER_MOVIES_EXPANDED = [
+      // 2026 - PRIMER SEMESTRE
       {
-        id: 'mov-avengers-doomsday',
-        title: 'Avengers: Doomsday',
-        imdbId: 'tt21361450',
-        releaseDate: '2026-05-01',
-        genre: 'Acción / Superhéroes / Multiverso',
-        director: 'Hermanos Russo',
-        cast: 'Robert Downey Jr. (Doctor Doom), Pedro Pascal, Florence Pugh',
-        poster: 'https://image.tmdb.org/t/p/w500/y4MBh0EjBlMuOzv9NxZBSJ95RJ.jpg',
+        id: 'mov-2026-mandalorian',
+        title: 'The Mandalorian & Grogu',
+        year: 2026,
+        month: 5,
+        monthName: 'Mayo',
+        releaseDate: '2026-05-22',
+        genre: 'Sci-Fi / Aventura / Star Wars',
+        director: 'Jon Favreau',
+        cast: 'Pedro Pascal, Sigourney Weaver',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253503.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Mandalorian+and+Grogu+movie+official+trailer',
+        synopsis: 'Din Djarin y el joven Grogu dan el salto a la gran pantalla en una épica misión para la Nueva República.'
+      },
+      {
+        id: 'mov-2026-supergirl',
+        title: 'Supergirl: Woman of Tomorrow',
+        year: 2026,
+        month: 6,
+        monthName: 'Junio',
+        releaseDate: '2026-06-26',
+        genre: 'Superhéroes / Acción / DC Universe',
+        director: 'Craig Gillespie',
+        cast: 'Milly Alcock (Kara Zor-El), Matthias Schoenaerts',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg',
         fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Doomsday+trailer+official+marvel',
-        synopsis: 'El regreso de los Vengadores enfrentando al Doctor Doom en una colisión multiversal.'
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Supergirl+Woman+of+Tomorrow+DCU+trailer',
+        synopsis: 'La prima de Superman viaja por el cosmos junto a Krypto en una odisea de venganza espacial.'
       },
       {
-        id: 'mov-batman-2',
-        title: 'The Batman: Part II',
-        imdbId: 'tt18778306',
-        releaseDate: '2026-10-02',
-        genre: 'Crimen / Thriller / Neo-Noir',
-        director: 'Matt Reeves',
-        cast: 'Robert Pattinson, Colin Farrell, Andy Serkis',
-        poster: 'https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Batman+Part+II+official+trailer+teaser',
-        synopsis: 'La continuación del detective oscuro en las calles inundadas de Gotham City.'
-      },
-      {
-        id: 'mov-spider-beyond',
+        id: 'mov-2026-spider-beyond',
         title: 'Spider-Man: Beyond the Spider-Verse',
-        imdbId: 'tt9362722',
-        releaseDate: '2026-06-25',
-        genre: 'Animación / Aventura / Multiverso',
+        year: 2026,
+        month: 6,
+        monthName: 'Junio',
+        releaseDate: '2026-06-18',
+        genre: 'Animación / Acción / Multiverso',
         director: 'Joaquim Dos Santos, Kemp Powers',
         cast: 'Shameik Moore, Hailee Steinfeld, Oscar Isaac',
-        poster: 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933189.jpg',
         fallbackPoster: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Spider-Man+Beyond+the+Spider-Verse+trailer',
-        synopsis: 'El desenlace de la trilogía de Miles Morales atrapado en la dimensión Tierra-42.'
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Spider-Man+Beyond+the+Spider-Verse+trailer+official',
+        synopsis: 'El apoteósico desenlace de Miles Morales enfrentando a la Sociedad Arácnida y a su contraparte de Tierra-42.'
+      },
+      // 2026 - SEGUNDO SEMESTRE (AGOSTO - DICIEMBRE)
+      {
+        id: 'mov-2026-mutiny',
+        title: 'Mutiny',
+        year: 2026,
+        month: 8,
+        monthName: 'Agosto',
+        releaseDate: '2026-08-21',
+        genre: 'Acción / Thriller / Venganza',
+        director: 'Jean-François Richet',
+        cast: 'Jason Statham, Annabelle Wallis',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122241.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Mutiny+Jason+Statham+trailer',
+        synopsis: 'Un agente es acusado injustamente por el asesinato de su multimillonario jefe y desata una cacería para limpiar su nombre.'
+      },
+      {
+        id: 'mov-2026-coyote',
+        title: 'Coyote vs. Acme',
+        year: 2026,
+        month: 8,
+        monthName: 'Agosto',
+        releaseDate: '2026-08-28',
+        genre: 'Comedia / Animación / Live-Action',
+        director: 'Dave Green',
+        cast: 'Will Forte, John Cena, Lana Condor',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Coyote+vs+Acme+official+trailer',
+        synopsis: 'Wile E. Coyote contrata a un abogado humano para demandar a la corporación ACME por sus artefactos defectuosos.'
+      },
+      {
+        id: 'mov-2026-resident-evil',
+        title: 'Resident Evil (Reboot 2026)',
+        year: 2026,
+        month: 9,
+        monthName: 'Septiembre',
+        releaseDate: '2026-09-18',
+        genre: 'Terror / Supervivencia / Sci-Fi',
+        director: 'Zach Cregger',
+        cast: 'Austin Abrams, Paul Walter Hauser',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Resident+Evil+2026+Zach+Cregger+trailer',
+        synopsis: 'Nuevo reinicio cinematográfico fiel a las raíces de terror psicológico y supervivencia de la mansión Spencer.'
+      },
+      {
+        id: 'mov-2026-digger',
+        title: 'Digger (Alejandro G. Iñárritu)',
+        year: 2026,
+        month: 10,
+        monthName: 'Octubre',
+        releaseDate: '2026-10-02',
+        genre: 'Drama / Comedia Negra / Acción',
+        director: 'Alejandro González Iñárritu',
+        cast: 'Tom Cruise, Sandra Hüller, Jesse Plemons',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/448/1121087.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Digger+Tom+Cruise+Inarritu+trailer',
+        synopsis: 'El hombre más poderoso del mundo emprende una frenética misión para demostrar que puede salvar a la humanidad de una catástrofe que él mismo desató.'
+      },
+      {
+        id: 'mov-2026-street-fighter',
+        title: 'Street Fighter',
+        year: 2026,
+        month: 10,
+        monthName: 'Octubre',
+        releaseDate: '2026-10-16',
+        genre: 'Acción / Artes Marciales / Videojuegos',
+        director: 'Kitao Sakurai',
+        cast: 'Andrew Koji, Noah Centineo, Jason Momoa',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1254359.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Street+Fighter+2026+movie+official+trailer',
+        synopsis: 'Los mejores luchadores del mundo convergen en el torneo clandestino de Shadaloo liderado por M. Bison.'
+      },
+      {
+        id: 'mov-2026-clayface',
+        title: 'Clayface (Cara de Barro)',
+        year: 2026,
+        month: 10,
+        monthName: 'Octubre',
+        releaseDate: '2026-10-23',
+        genre: 'Terror / Crimen / DC Elseworlds',
+        director: 'James Watkins',
+        cast: 'Tom Rhys Harries, Naomi Ackie',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/120461.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Clayface+DC+movie+trailer',
+        synopsis: 'Un actor de Hollywood desfigurado recurre a un químico experimental que transforma su carne en un monstruo maleable de pesadilla.'
+      },
+      {
+        id: 'mov-2026-hunger-games',
+        title: 'The Hunger Games: Sunrise on the Reaping',
+        year: 2026,
+        month: 11,
+        monthName: 'Noviembre',
+        releaseDate: '2026-11-20',
+        genre: 'Distopía / Acción / Aventura',
+        director: 'Francis Lawrence',
+        cast: 'Haymitch Abernathy (joven), Reparto en audición',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Hunger+Games+Sunrise+on+the+Reaping+trailer',
+        synopsis: 'Los 50º Juegos del Hambre (El Segundo Vasallaje de los Veinticinco) y la legendaria victoria de Haymitch Abernathy en el Capitolio.'
+      },
+      {
+        id: 'mov-2026-dune-3',
+        title: 'Dune: Part Three (Messiah)',
+        year: 2026,
+        month: 12,
+        monthName: 'Diciembre',
+        releaseDate: '2026-12-18',
+        genre: 'Sci-Fi / Épica / Drama',
+        director: 'Denis Villeneuve',
+        cast: 'Timothée Chalamet, Zendaya, Florence Pugh, Anya Taylor-Joy',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/509/1273934.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Dune+Part+3+Messiah+official+trailer+Denis+Villeneuve',
+        synopsis: 'Paul Atreides gobierna como Emperador de Arrakis mientras la Guerra Santa se extiende por todo el universo conocido.'
+      },
+      {
+        id: 'mov-2026-avengers-doomsday',
+        title: 'Avengers: Doomsday',
+        year: 2026,
+        month: 12,
+        monthName: 'Diciembre',
+        releaseDate: '2026-12-18',
+        genre: 'Acción / Superhéroes / Multiverso Marvel',
+        director: 'Hermanos Russo (Joe & Anthony)',
+        cast: 'Robert Downey Jr. (Doctor Doom), Pedro Pascal, Florence Pugh, Tom Holland',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Doomsday+trailer+official+marvel+robert+downey+jr',
+        synopsis: 'Los héroes de la Tierra y el Multiverso chocan contra la amenaza definitiva de Victor Von Doom.'
+      },
+      {
+        id: 'mov-2026-jumanji-3',
+        title: 'Jumanji 3: Open World',
+        year: 2026,
+        month: 12,
+        monthName: 'Diciembre',
+        releaseDate: '2026-12-23',
+        genre: 'Aventura / Comedia / Acción',
+        director: 'Jake Kasdan',
+        cast: 'Dwayne Johnson, Kevin Hart, Jack Black, Karen Gillan',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/500/1251340.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Jumanji+3+Open+World+trailer',
+        synopsis: 'Los avatares del videojuego irrumpen en el mundo real en el capítulo culminante de la saga.'
+      },
+
+      // 2027 - GRANDES ESTRENOS CONFIRMADOS
+      {
+        id: 'mov-2027-beekeeper-2',
+        title: 'The Beekeeper 2',
+        year: 2027,
+        month: 1,
+        monthName: 'Enero',
+        releaseDate: '2027-01-15',
+        genre: 'Acción / Thriller',
+        director: 'Timo Tjahjanto',
+        cast: 'Jason Statham',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122241.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Beekeeper+2+Jason+Statham+trailer',
+        synopsis: 'Adam Clay vuelve al servicio activo para desmantelar una conspiración financiera internacional.'
+      },
+      {
+        id: 'mov-2027-sonic-4',
+        title: 'Sonic the Hedgehog 4',
+        year: 2027,
+        month: 3,
+        monthName: 'Marzo',
+        releaseDate: '2027-03-19',
+        genre: 'Aventura / Animación / Videojuegos',
+        director: 'Jeff Fowler',
+        cast: 'Ben Schwartz, Jim Carrey, Keanu Reeves',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Sonic+the+Hedgehog+4+movie+trailer',
+        synopsis: 'Sonic, Tails, Knuckles y Shadow unen fuerzas contra una nueva amenaza robótica interdimensional.'
+      },
+      {
+        id: 'mov-2027-godzilla-supernova',
+        title: 'Godzilla x Kong: Supernova',
+        year: 2027,
+        month: 3,
+        monthName: 'Marzo',
+        releaseDate: '2027-03-26',
+        genre: 'Acción / Monstruos / MonsterVerse',
+        director: 'Grant Sputore',
+        cast: 'Dan Stevens, Rebecca Hall',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Godzilla+x+Kong+Supernova+trailer',
+        synopsis: 'Los dos titanes supremos defienden la Tierra Hueca de un cataclismo titánico ancestral.'
+      },
+      {
+        id: 'mov-2027-narnia',
+        title: 'The Chronicles of Narnia (Greta Gerwig)',
+        year: 2027,
+        month: 4,
+        monthName: 'Abril',
+        releaseDate: '2027-04-02',
+        genre: 'Fantasía / Épica / Aventura',
+        director: 'Greta Gerwig',
+        cast: 'Louis Partridge, Saoirse Ronan',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253488.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Chronicles+of+Narnia+Greta+Gerwig+trailer',
+        synopsis: 'La nueva y majestuosa adaptación cinematográfica del universo mágico de C.S. Lewis.'
+      },
+      {
+        id: 'mov-2027-zelda',
+        title: 'The Legend of Zelda (Live-Action)',
+        year: 2027,
+        month: 4,
+        monthName: 'Abril',
+        releaseDate: '2027-04-30',
+        genre: 'Fantasía / Aventura / Nintendo',
+        director: 'Wes Ball',
+        cast: 'Elenco en audición oficial de Nintendo/Sony',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933189.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Legend+of+Zelda+live+action+movie+official+trailer',
+        synopsis: 'Link emprende la legendaria odisea por el reino de Hyrule para proteger la Trifuerza y salvar a la Princesa Zelda.'
+      },
+      {
+        id: 'mov-2027-star-wars-starfighter',
+        title: 'Star Wars: Starfighter',
+        year: 2027,
+        month: 5,
+        monthName: 'Mayo',
+        releaseDate: '2027-05-28',
+        genre: 'Sci-Fi / Espacial / Lucasfilm',
+        director: 'Shawn Levy',
+        cast: 'Ryan Gosling',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Star+Wars+Starfighter+Shawn+Levy+trailer',
+        synopsis: 'Celebrando 50 años de la saga, una nueva generación de pilotos espaciales defiende la galaxia.'
+      },
+      {
+        id: 'mov-2027-shrek-5',
+        title: 'Shrek 5',
+        year: 2027,
+        month: 6,
+        monthName: 'Junio',
+        releaseDate: '2027-06-30',
+        genre: 'Animación / Comedia / Fantasía',
+        director: 'Walt Dohrn, Brad Ableson',
+        cast: 'Mike Myers, Eddie Murphy, Cameron Diaz, Zendaya',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/120464.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Shrek+5+official+teaser+trailer+DreamWorks',
+        synopsis: 'El ogro más querido del cine regresa junto a Burro, Fiona y una nueva generación en el reino de Muy Muy Lejano.'
+      },
+      {
+        id: 'mov-2027-man-of-tomorrow',
+        title: 'Man of Tomorrow (Superman II)',
+        year: 2027,
+        month: 7,
+        monthName: 'Julio',
+        releaseDate: '2027-07-09',
+        genre: 'Superhéroes / Acción / DC Universe',
+        director: 'James Gunn',
+        cast: 'David Corenswet, Rachel Brosnahan, Nicholas Hoult',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Superman+Man+of+Tomorrow+James+Gunn+trailer',
+        synopsis: 'La continuación directa de la saga de Superman expandiendo la Liga de la Justicia en el nuevo Universo DC.'
+      },
+      {
+        id: 'mov-2027-frozen-3',
+        title: 'Frozen III',
+        year: 2027,
+        month: 11,
+        monthName: 'Noviembre',
+        releaseDate: '2027-11-24',
+        genre: 'Animación / Musical / Aventura Disney',
+        director: 'Jennifer Lee',
+        cast: 'Kristen Bell, Idina Menzel, Josh Gad',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/10/26656.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1579566346927-c68383817a25?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Frozen+3+Disney+official+trailer',
+        synopsis: 'Elsa y Anna descubren antiguos secretos que vinculan a Arendelle con tierras mágicas más allá del bosque encantado.'
+      },
+      {
+        id: 'mov-2027-avengers-secret-wars',
+        title: 'Avengers: Secret Wars',
+        year: 2027,
+        month: 12,
+        monthName: 'Diciembre',
+        releaseDate: '2027-12-17',
+        genre: 'Acción / Superhéroes / Épica Multiversal',
+        director: 'Hermanos Russo (Joe & Anthony)',
+        cast: 'Robert Downey Jr., Chris Hemsworth, Hugh Jackman, Tobey Maguire',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Secret+Wars+official+trailer+marvel',
+        synopsis: 'El colapso total de todas las realidades en Battleworld. La batalla definitiva que reiniciará el Universo Cinematográfico Marvel.'
       }
     ];
 
@@ -328,6 +639,22 @@
       { name: 'Netflix', id: 'Netflix' },
       { name: 'Prime Video', id: 'Prime Video' },
       { name: 'Disney+ / Star+', id: 'Disney+ / Star+' }
+    ];
+
+    const MONTHS = [
+      { id: 'all', name: 'Todos los Meses' },
+      { id: 1, name: 'Ene' },
+      { id: 2, name: 'Feb' },
+      { id: 3, name: 'Mar' },
+      { id: 4, name: 'Abr' },
+      { id: 5, name: 'May' },
+      { id: 6, name: 'Jun' },
+      { id: 7, name: 'Jul' },
+      { id: 8, name: 'Ago' },
+      { id: 9, name: 'Sep' },
+      { id: 10, name: 'Oct' },
+      { id: 11, name: 'Nov' },
+      { id: 12, name: 'Dic' }
     ];
 
     const playChime = () => {
@@ -354,10 +681,15 @@
       // Sub-pestaña dentro de Top Calificadas ('historic' o 'year')
       const [topRankingType, setTopRankingType] = useState('historic');
 
-      // Migración automática a v10 para purgar imágenes anteriores
+      // Filtros de Cine: Año (2026, 2027, 'all') y Mes
+      const [movieYearFilter, setMovieYearFilter] = useState('all');
+      const [movieMonthFilter, setMovieMonthFilter] = useState('all');
+      const [movieSearchQuery, setMovieSearchQuery] = useState('');
+
+      // Migración automática a v12 para purgar imágenes anteriores
       const [seriesList, setSeriesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_series_v10');
+          const saved = localStorage.getItem('cineradar_series_v12');
           if (saved) return JSON.parse(saved);
           return INITIAL_TRACKED_CATALOG;
         } catch (e) {
@@ -365,13 +697,34 @@
         }
       });
 
+      // Rankings en estado local para permitir edición de póster o eliminación
+      const [historicList, setHistoricList] = useState(() => {
+        try {
+          const saved = localStorage.getItem('cineradar_top_historic_v12');
+          if (saved) return JSON.parse(saved);
+          return TOP_25_HISTORIC;
+        } catch (e) {
+          return TOP_25_HISTORIC;
+        }
+      });
+
+      const [yearList, setYearList] = useState(() => {
+        try {
+          const saved = localStorage.getItem('cineradar_top_year_v12');
+          if (saved) return JSON.parse(saved);
+          return TOP_10_YEAR;
+        } catch (e) {
+          return TOP_10_YEAR;
+        }
+      });
+
       const [moviesList, setMoviesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_movies_v10');
+          const saved = localStorage.getItem('cineradar_movies_v12');
           if (saved) return JSON.parse(saved);
-          return MASTER_MOVIES_INIT;
+          return MASTER_MOVIES_EXPANDED;
         } catch (e) {
-          return MASTER_MOVIES_INIT;
+          return MASTER_MOVIES_EXPANDED;
         }
       });
 
@@ -384,6 +737,13 @@
       const [isSyncingLive, setIsSyncingLive] = useState(false);
       const [syncStatusText, setSyncStatusText] = useState('Fechas e imágenes oficiales verificadas');
 
+      // Modal de Cambio de Póster
+      const [editingItemForPoster, setEditingItemForPoster] = useState(null);
+      const [posterSearchQuery, setPosterSearchQuery] = useState('');
+      const [posterSearchResults, setPosterSearchResults] = useState([]);
+      const [isSearchingPosters, setIsSearchingPosters] = useState(false);
+      const [customPosterUrlInput, setCustomPosterUrlInput] = useState('');
+
       // Modal de Búsqueda
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
@@ -391,13 +751,25 @@
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_series_v10', JSON.stringify(seriesList));
+          localStorage.setItem('cineradar_series_v12', JSON.stringify(seriesList));
         } catch (e) {}
       }, [seriesList]);
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_movies_v10', JSON.stringify(moviesList));
+          localStorage.setItem('cineradar_top_historic_v12', JSON.stringify(historicList));
+        } catch (e) {}
+      }, [historicList]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('cineradar_top_year_v12', JSON.stringify(yearList));
+        } catch (e) {}
+      }, [yearList]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('cineradar_movies_v12', JSON.stringify(moviesList));
         } catch (e) {}
       }, [moviesList]);
 
@@ -420,7 +792,7 @@
         setTimeout(() => setBannerMessage(null), 4500);
       };
 
-      // MOTOR DE SINCRONIZACIÓN EN VIVO CON ACTUALIZACIÓN DE PÓSTERS OFICIALES
+      // MOTOR DE SINCRONIZACIÓN EN VIVO
       const syncLiveDatesFromApis = async () => {
         setIsSyncingLive(true);
         setSyncStatusText('Consultando fichas e imágenes oficiales en vivo...');
@@ -502,10 +874,14 @@
 
       const restoreDefaults = () => {
         setSeriesList(INITIAL_TRACKED_CATALOG);
-        setMoviesList(MASTER_MOVIES_INIT);
-        localStorage.setItem('cineradar_series_v10', JSON.stringify(INITIAL_TRACKED_CATALOG));
-        localStorage.setItem('cineradar_movies_v10', JSON.stringify(MASTER_MOVIES_INIT));
-        showBanner('🔄 ¡Catálogo restaurado con imágenes oficiales!');
+        setHistoricList(TOP_25_HISTORIC);
+        setYearList(TOP_10_YEAR);
+        setMoviesList(MASTER_MOVIES_EXPANDED);
+        localStorage.setItem('cineradar_series_v12', JSON.stringify(INITIAL_TRACKED_CATALOG));
+        localStorage.setItem('cineradar_top_historic_v12', JSON.stringify(TOP_25_HISTORIC));
+        localStorage.setItem('cineradar_top_year_v12', JSON.stringify(TOP_10_YEAR));
+        localStorage.setItem('cineradar_movies_v12', JSON.stringify(MASTER_MOVIES_EXPANDED));
+        showBanner('🔄 ¡Catálogo completo 2026/2027 y pósters restaurados!');
       };
 
       const handleImportFromApi = async (item) => {
@@ -576,6 +952,57 @@
         setApiSearchQuery('');
         setApiSearchResults([]);
         showBanner(`🎉 ¡"${show.name}" añadida con carátula oficial!`);
+      };
+
+      // MOTOR DE CAMBIO DE PÓSTER EN VIVO
+      const openPosterModal = (item, type = 'series') => {
+        setEditingItemForPoster({ ...item, itemType: type });
+        setPosterSearchQuery(item.title);
+        setCustomPosterUrlInput(item.poster || '');
+        searchPostersForQuery(item.title);
+      };
+
+      const searchPostersForQuery = async (q) => {
+        if (!q || q.trim().length < 2) return;
+        setIsSearchingPosters(true);
+        try {
+          const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q.trim())}`);
+          const data = await res.json();
+          setPosterSearchResults(data || []);
+        } catch (e) {
+          setPosterSearchResults([]);
+        } finally {
+          setIsSearchingPosters(false);
+        }
+      };
+
+      const applyNewPoster = (newPosterUrl) => {
+        if (!editingItemForPoster || !newPosterUrl) return;
+        const targetTitle = editingItemForPoster.title;
+
+        // Actualizar en Mis Series si existe
+        setSeriesList(prev => prev.map(s => s.title === targetTitle ? { ...s, poster: newPosterUrl } : s));
+
+        // Actualizar en Top 25
+        setHistoricList(prev => prev.map(s => s.title === targetTitle ? { ...s, poster: newPosterUrl } : s));
+
+        // Actualizar en Top 10
+        setYearList(prev => prev.map(s => s.title === targetTitle ? { ...s, poster: newPosterUrl } : s));
+
+        // Actualizar en Películas
+        setMoviesList(prev => prev.map(m => m.title === targetTitle ? { ...m, poster: newPosterUrl } : m));
+
+        showBanner(`🖼️ ¡Póster de "${targetTitle}" actualizado con éxito!`);
+        setEditingItemForPoster(null);
+      };
+
+      const deleteFromTopRanking = (title, rankingType) => {
+        if (rankingType === 'historic') {
+          setHistoricList(prev => prev.filter(s => s.title !== title));
+        } else {
+          setYearList(prev => prev.filter(s => s.title !== title));
+        }
+        showBanner(`🗑️ "${title}" eliminada de la lista de recomendadas.`);
       };
 
       const handleInstallApp = async () => {
@@ -757,15 +1184,29 @@
       const waitingSeasonsList = useMemo(() => seriesList.filter(s => s.status === 'waiting_season'), [seriesList]);
 
       // Filtrado del Top 25 Histórico y Top 10 del Año
-      const currentRankingSource = topRankingType === 'historic' ? TOP_25_HISTORIC : TOP_10_YEAR;
+      const currentRankingSource = topRankingType === 'historic' ? historicList : yearList;
       const filteredRankings = useMemo(() => {
         return currentRankingSource.filter(item => {
           const matchP = selectedPlatform === 'all' || item.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
           const matchQ = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (item.genres && item.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())));
           return matchP && matchQ;
         });
       }, [currentRankingSource, selectedPlatform, searchQuery]);
+
+      // Filtrado del Catálogo de Películas (Año, Mes, Buscador)
+      const filteredMovies = useMemo(() => {
+        return moviesList.filter(movie => {
+          const matchYear = movieYearFilter === 'all' || movie.year === parseInt(movieYearFilter);
+          const matchMonth = movieMonthFilter === 'all' || movie.month === parseInt(movieMonthFilter);
+          const matchSearch = movieSearchQuery.trim() === '' || 
+                              movie.title.toLowerCase().includes(movieSearchQuery.toLowerCase()) ||
+                              movie.genre.toLowerCase().includes(movieSearchQuery.toLowerCase()) ||
+                              movie.director.toLowerCase().includes(movieSearchQuery.toLowerCase()) ||
+                              movie.cast.toLowerCase().includes(movieSearchQuery.toLowerCase());
+          return matchYear && matchMonth && matchSearch;
+        }).sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate));
+      }, [moviesList, movieYearFilter, movieMonthFilter, movieSearchQuery]);
 
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-24 sm:pb-10">
@@ -779,7 +1220,7 @@
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="font-display font-black text-lg tracking-tight text-white">CineRadar</h1>
-                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • LIVE SYNC</span>
+                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • 2026/2027</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-400">{syncStatusText}</span>
@@ -842,7 +1283,7 @@
                 { id: 'today', label: 'Capítulos Hoy', icon: '⚡', count: weeklyAiringSeries.length },
                 { id: 'seasons', label: 'Próx. Temporadas', icon: '⏳', count: waitingSeasonsList.length },
                 { id: 'explore', label: 'Top Calificadas', icon: '⭐', count: currentRankingSource.length },
-                { id: 'movies', label: 'Cine & Trailers', icon: '🍿', count: moviesList.length }
+                { id: 'movies', label: 'Cine & Trailers', icon: '🍿', count: filteredMovies.length }
               ].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -946,8 +1387,15 @@
                                 </span>
                               </div>
 
-                              {/* Calificación IMDb */}
+                              {/* Botones de acción en Header del Póster */}
                               <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                                <button
+                                  onClick={() => openPosterModal(series, 'series')}
+                                  title="Cambiar o buscar otra imagen oficial"
+                                  className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
+                                >
+                                  🖼️ Póster
+                                </button>
                                 {series.imdbId ? (
                                   <a
                                     href={`https://www.imdb.com/title/${series.imdbId}/`}
@@ -1152,12 +1600,20 @@
                               ⏰ <span>Hora: {series.airTime}</span>
                             </div>
 
-                            <button
-                              onClick={() => toggleSeriesStatus(series.id)}
-                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
-                            >
-                              ⏳ Mover a Próximas Temporadas
-                            </button>
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={() => openPosterModal(series, 'series')}
+                                className="text-[9px] bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
+                              >
+                                🖼️ Cambiar Póster
+                              </button>
+                              <button
+                                onClick={() => toggleSeriesStatus(series.id)}
+                                className="text-[9px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
+                              >
+                                ⏳ A Espera
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -1248,6 +1704,12 @@
                                 
                                 <div className="flex items-center gap-1.5 pt-1">
                                   <button
+                                    onClick={() => openPosterModal(series, 'series')}
+                                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
+                                  >
+                                    🖼️ Póster
+                                  </button>
+                                  <button
                                     onClick={() => toggleSeriesStatus(series.id)}
                                     className="text-[10px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
                                   >
@@ -1318,7 +1780,7 @@
               </div>
             )}
 
-            {/* VISTA 4: TOP CALIFICADAS (TOP 25 HISTÓRICO + TOP 10 DEL AÑO) */}
+            {/* VISTA 4: TOP CALIFICADAS (TOP 25 HISTÓRICO + TOP 10 DEL AÑO CON CAMBIO DE PÓSTER Y ELIMINACIÓN) */}
             {activeTab === 'explore' && (
               <div className="space-y-5">
                 
@@ -1330,7 +1792,7 @@
                         ⭐ Rankings Oficiales de Series — Calificación IMDb
                       </h2>
                       <p className="text-xs text-slate-300">
-                        Selecciona el ranking histórico de todas las épocas o el top con los mayores éxitos del año.
+                        Selecciona el ranking histórico o el top de estrenos estelares. Puedes cambiar los pósters o descartar series que no desees ver.
                       </p>
                     </div>
 
@@ -1343,7 +1805,7 @@
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        🏆 <span>Top 25 Histórico</span>
+                        🏆 <span>Top 25 Histórico ({historicList.length})</span>
                       </button>
                       <button
                         onClick={() => setTopRankingType('year')}
@@ -1353,7 +1815,7 @@
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        🔥 <span>Top 10 del Año</span>
+                        🔥 <span>Top 10 del Año ({yearList.length})</span>
                       </button>
                     </div>
                   </div>
@@ -1402,11 +1864,11 @@
                     return (
                       <div key={item.title} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
                         <div>
-                          <div className="relative h-64 w-full bg-slate-900">
+                          <div className="relative h-64 w-full bg-slate-900 overflow-hidden">
                             <img
                               src={item.poster}
                               alt={item.title}
-                              className="w-full h-full object-cover object-top"
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
                               loading="lazy"
                               onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                             />
@@ -1417,8 +1879,15 @@
                               <span>#{item.rank}</span>
                             </div>
 
-                            {/* Calificación IMDb con Enlace */}
-                            <div className="absolute top-3 right-3 flex items-center gap-1">
+                            {/* Botones Superiores: Cambiar Póster, IMDb y Eliminar */}
+                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                              <button
+                                onClick={() => openPosterModal(item, topRankingType)}
+                                title="Cambiar carátula de esta serie"
+                                className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
+                              >
+                                🖼️ Póster
+                              </button>
                               <a
                                 href={`https://www.imdb.com/title/${item.imdbId}/`}
                                 target="_blank"
@@ -1428,6 +1897,13 @@
                                 <span>IMDb ★ {item.imdbRating}</span>
                                 <span>↗</span>
                               </a>
+                              <button
+                                onClick={() => deleteFromTopRanking(item.title, topRankingType)}
+                                title="Eliminar de esta lista"
+                                className="bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-500/40 p-1.5 rounded-xl text-xs backdrop-blur transition-all"
+                              >
+                                🗑️
+                              </button>
                             </div>
 
                             <div className="absolute bottom-3 left-3 right-3">
@@ -1444,7 +1920,7 @@
 
                           <div className="p-4 space-y-2.5">
                             <div className="flex flex-wrap gap-1">
-                              {item.genres.map(g => (
+                              {item.genres && item.genres.map(g => (
                                 <span key={g} className="text-[10px] font-medium bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-md">
                                   {g}
                                 </span>
@@ -1476,80 +1952,257 @@
               </div>
             )}
 
-            {/* VISTA 5: CINE & TRAILERS */}
+            {/* VISTA 5: CINE & TRAILERS (CALENDARIO COMPLETO 2026/2027 MES A MES) */}
             {activeTab === 'movies' && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border border-red-500/30 p-5 rounded-3xl space-y-1">
-                  <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
-                    🍿 Radar de Estrenos de Cine & Trailers Oficiales ({moviesList.length})
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    Películas más esperadas con fecha de estreno y acceso directo al trailer oficial en YouTube.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {moviesList.map(movie => (
-                    <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                      <div>
-                        <div className="relative h-64 w-full bg-slate-900">
-                          <img
-                            src={movie.poster}
-                            alt={movie.title}
-                            className="w-full h-full object-cover object-top"
-                            loading="lazy"
-                            onError={(e) => { e.target.src = movie.fallbackPoster || DEFAULT_FALLBACK_POSTER; }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                          
-                          <div className="absolute top-3 left-3 bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
-                            Estreno Cine
-                          </div>
-
-                          <button
-                            onClick={() => deleteMovieCompletely(movie.id, movie.title)}
-                            className="absolute top-3 right-3 bg-slate-950/80 hover:bg-rose-900 text-rose-300 p-1.5 rounded-xl border border-rose-500/30 text-xs shadow-md transition-all"
-                          >
-                            🗑️
-                          </button>
-
-                          <div className="absolute bottom-3 left-3 right-3">
-                            <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
-                            <h3 className="font-display font-extrabold text-base sm:text-lg text-white">{movie.title}</h3>
-                          </div>
-                        </div>
-
-                        <div className="p-4 space-y-3">
-                          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1">
-                            <span className="text-[10px] text-slate-400 font-bold block uppercase">Fecha de Estreno en Salas:</span>
-                            <span className="text-sm font-mono font-extrabold text-amber-300 block">
-                              📅 {movie.releaseDate}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-slate-300 leading-relaxed">
-                            {movie.synopsis}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 pt-0">
-                        <a
-                          href={movie.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
-                        >
-                          ▶ <span>Ver Trailer en YouTube</span> ↗
-                        </a>
-                      </div>
+              <div className="space-y-5">
+                
+                {/* Panel de Filtros por Año, Mes y Búsqueda */}
+                <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border border-red-500/30 p-5 rounded-3xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
+                        🍿 Calendario de Estrenos de Cine 2026 / 2027 ({filteredMovies.length} películas)
+                      </h2>
+                      <p className="text-xs text-slate-300">
+                        Cartelera completa con fechas oficiales de estreno en cines organizadas mes a mes y trailers en YouTube.
+                      </p>
                     </div>
-                  ))}
+
+                    {/* Selector de Año */}
+                    <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+                      {[
+                        { id: 'all', label: 'Todos' },
+                        { id: '2026', label: '🎬 Año 2026' },
+                        { id: '2027', label: '🚀 Año 2027' }
+                      ].map(yr => (
+                        <button
+                          key={yr.id}
+                          onClick={() => setMovieYearFilter(yr.id)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
+                            movieYearFilter === yr.id
+                              ? 'bg-red-600 text-white shadow-lg'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {yr.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Buscador de Películas y Filtro de Meses */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                    <div className="relative w-full md:w-80">
+                      <input
+                        type="text"
+                        placeholder="Buscar película, director, reparto..."
+                        value={movieSearchQuery}
+                        onChange={(e) => setMovieSearchQuery(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+                      />
+                      <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
+                    </div>
+
+                    {/* Selector de Meses */}
+                    <div className="flex flex-wrap gap-1 w-full md:w-auto">
+                      {MONTHS.map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => setMovieMonthFilter(m.id.toString())}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-bold border transition-all ${
+                            movieMonthFilter === m.id.toString()
+                              ? 'bg-red-500 text-white border-red-400 shadow-md'
+                              : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                {filteredMovies.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
+                    <div className="text-3xl">🍿</div>
+                    <p className="text-xs text-slate-400">No se encontraron películas para los filtros seleccionados.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredMovies.map(movie => (
+                      <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                        <div>
+                          <div className="relative h-64 w-full bg-slate-900 overflow-hidden">
+                            <img
+                              src={movie.poster}
+                              alt={movie.title}
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                              onError={(e) => { e.target.src = movie.fallbackPoster || DEFAULT_FALLBACK_POSTER; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                            
+                            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                              <span className="bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                                {movie.year} • {movie.monthName}
+                              </span>
+                            </div>
+
+                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                              <button
+                                onClick={() => openPosterModal(movie, 'movie')}
+                                title="Cambiar póster de esta película"
+                                className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all"
+                              >
+                                🖼️ Póster
+                              </button>
+                              <button
+                                onClick={() => deleteMovieCompletely(movie.id, movie.title)}
+                                title="Descartar de cartelera"
+                                className="bg-slate-950/80 hover:bg-rose-900 text-rose-300 p-1.5 rounded-xl border border-rose-500/30 text-xs shadow-md transition-all"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
+                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">{movie.title}</h3>
+                            </div>
+                          </div>
+
+                          <div className="p-4 space-y-3">
+                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1">
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Fecha de Estreno Oficial en Cines:</span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-mono font-extrabold text-amber-300">
+                                  📅 {movie.releaseDate}
+                                </span>
+                                <span className="text-[10px] font-bold bg-red-950/80 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-lg">
+                                  {movie.monthName} {movie.year}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-[11px] text-slate-400 space-y-0.5">
+                              <p><span className="font-bold text-slate-300">Director:</span> {movie.director}</p>
+                              <p className="truncate"><span className="font-bold text-slate-300">Reparto:</span> {movie.cast}</p>
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                              {movie.synopsis}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 pt-0">
+                          <a
+                            href={movie.youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
+                          >
+                            ▶ <span>Ver Trailer Oficial en YouTube</span> ↗
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
           </main>
+
+          {/* Modal para Cambiar / Buscar Póster Oficial */}
+          {editingItemForPoster && (
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🖼️</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">
+                        Cambiar Póster: {editingItemForPoster.title}
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Selecciona una imagen oficial o pega un enlace directo.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingItemForPoster(null)}
+                    className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg"
+                  >
+                    ✕ Cerrar
+                  </button>
+                </div>
+
+                {/* Opción 1: Pegar URL Directa */}
+                <div className="space-y-1.5 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                  <label className="text-[11px] font-bold text-slate-300 block">Pegar URL directa de imagen:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="https://... (JPG, PNG, WebP)"
+                      value={customPosterUrlInput}
+                      onChange={(e) => setCustomPosterUrlInput(e.target.value)}
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                    />
+                    <button
+                      onClick={() => applyNewPoster(customPosterUrlInput)}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs transition-all"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Opción 2: Buscar en la base de datos TVMaze / Web */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-300 block">Buscar alternativas oficiales en la web:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={posterSearchQuery}
+                      onChange={(e) => setPosterSearchQuery(e.target.value)}
+                      placeholder="Buscar por nombre..."
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    />
+                    <button
+                      onClick={() => searchPostersForQuery(posterSearchQuery)}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all"
+                    >
+                      Buscar
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1">
+                    {isSearchingPosters ? (
+                      <div className="col-span-3 text-center py-6 text-indigo-400 text-xs animate-pulse">Buscando pósters...</div>
+                    ) : posterSearchResults.length > 0 ? (
+                      posterSearchResults.map(({ show }) => {
+                        const imgUrl = show.image ? (show.image.original || show.image.medium) : null;
+                        if (!imgUrl) return null;
+                        return (
+                          <div
+                            key={show.id}
+                            onClick={() => applyNewPoster(imgUrl)}
+                            className="cursor-pointer group relative rounded-xl overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all aspect-[2/3] bg-slate-950"
+                          >
+                            <img src={imgUrl} alt={show.name} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                            <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 text-center text-[10px] font-black text-cyan-300 transition-opacity">
+                              ✓ Usar esta
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-3 text-center py-4 text-slate-500 text-xs">Escribe el nombre y presiona Buscar para ver pósters alternativos.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Modal de Búsqueda Online */}
           {showNewSeriesModal && (
@@ -1647,7 +2300,7 @@
 
           {/* Footer */}
           <footer className="border-t border-slate-900 bg-slate-950/80 text-center py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <span>CineRadar Pro &copy; {new Date().getFullYear()} — Rankings Oficiales IMDb & Sincronización TVMaze.</span>
+            <span>CineRadar Pro &copy; 2026/2027 — Rankings Oficiales IMDb & Calendario de Estrenos de Cine.</span>
             <button onClick={restoreDefaults} className="text-indigo-400 hover:underline">Restaurar catálogo inicial</button>
           </footer>
         </div>
