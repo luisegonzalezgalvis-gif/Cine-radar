@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CineRadar Pro — Tracker Inteligente de Series & Próximas Temporadas</title>
+  <title>CineRadar Pro — Tracker de Series & Rankings IMDb</title>
   
   <!-- PWA & Meta Tags -->
   <meta name="theme-color" content="#030712">
@@ -11,7 +11,7 @@
   <meta name="apple-web-app-capable" content="yes">
   <meta name="apple-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-web-app-title" content="CineRadar">
-  <meta name="description" content="Tracker inteligente de series con validación en vivo de fechas futuras de estreno y correlación IMDb.">
+  <meta name="description" content="Tracker inteligente de series con validación en vivo de fechas futuras de estreno, correlación IMDb y rankings Top 25 / Top 10.">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -45,10 +45,10 @@
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
     
     .glass-panel {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.78);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .card-hover {
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -57,8 +57,19 @@
       transform: translateY(-3px);
       box-shadow: 0 16px 30px -10px rgba(0, 0, 0, 0.8), 0 0 20px 2px rgba(99, 102, 241, 0.2);
     }
-    .glow-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.35); }
-    .glow-purple { box-shadow: 0 0 15px rgba(168, 85, 247, 0.35); }
+    .badge-rank-gold {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #030712;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+    .badge-rank-silver {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      color: #030712;
+    }
+    .badge-rank-bronze {
+      background: linear-gradient(135deg, #b45309, #78350f);
+      color: #fef3c7;
+    }
   </style>
 </head>
 <body>
@@ -66,7 +77,7 @@
 
   <script>
     const manifestData = {
-      name: "CineRadar Pro — Tracker de Series & Estrenos",
+      name: "CineRadar Pro — Tracker de Series & Rankings",
       short_name: "CineRadar",
       start_url: "./index.html",
       display: "standalone",
@@ -111,8 +122,8 @@
       return target > today;
     };
 
-    // BASE DE CONOCIMIENTO CORRELACIONADA CON IMDb Y ESTADOS REALES
-    const INITIAL_CATALOG = [
+    // BASE DE CONOCIMIENTO DE SERIES EN SEGUIMIENTO
+    const INITIAL_TRACKED_CATALOG = [
       {
         id: 'ser-slow-horses',
         tvmazeId: 44058,
@@ -124,7 +135,7 @@
         status: 'waiting_season',
         currentSeason: 4,
         nextSeasonNumber: 5,
-        nextReleaseDate: '2025-09-03', // Fecha futura oficial confirmada
+        nextReleaseDate: '2025-09-03',
         hasConfirmedFutureDate: true,
         releaseSchedule: 'Temporada 4 emitida ("Spook Street"). Próxima Temporada 5 ("London Rules") confirmada oficialmente en Apple TV+.',
         airDay: 'Miércoles',
@@ -146,7 +157,7 @@
         status: 'waiting_season',
         currentSeason: 2,
         nextSeasonNumber: 3,
-        nextReleaseDate: null, // Sin fecha futura confirmada aún por HBO
+        nextReleaseDate: null,
         hasConfirmedFutureDate: false,
         releaseSchedule: 'Temporada 2 concluida. Temporada 3 en fase de producción/rodaje en Reino Unido. HBO no ha fijado día exacto de estreno.',
         airDay: 'Domingos',
@@ -168,9 +179,9 @@
         status: 'waiting_season',
         currentSeason: 1,
         nextSeasonNumber: 2,
-        nextReleaseDate: null, // Rodada pero sin día exacto fijado
+        nextReleaseDate: null,
         hasConfirmedFutureDate: false,
-        releaseSchedule: 'Temporada 1 concluida. Temporada 2 rodada con Pedro Pascal y Bella Ramsey; estreno previsto para 2025 (día exacto por confirmar por HBO).',
+        releaseSchedule: 'Temporada 1 concluida. Temporada 2 rodada con Pedro Pascal y Bella Ramsey; fecha de estreno por confirmar por HBO.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
@@ -192,7 +203,7 @@
         nextSeasonNumber: 3,
         nextReleaseDate: null,
         hasConfirmedFutureDate: false,
-        releaseSchedule: 'Temporada 2 emitida. Temporada 3 en rodaje confirmado por Apple TV+.',
+        releaseSchedule: 'Temporada 2 emitida. Temporada 3 en producción confirmada por Apple TV+.',
         airDay: 'Viernes',
         airTime: '02:00 AM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/460/1151605.jpg',
@@ -223,6 +234,49 @@
         userProgressEpisode: 6,
         notes: 'Misterios dentro de Lumon Industries.'
       }
+    ];
+
+    // TOP 25 HISTÓRICO DE SERIES SEGÚN IMDb
+    const TOP_25_HISTORIC = [
+      { rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg', summary: 'Un profesor de química diagnosticado con cáncer se asocia con un exalumno para fabricar metanfetamina.' },
+      { rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10904.jpg', summary: 'La historia de la Easy Company del 506º Regimiento de Infantería Paracaidista durante la Segunda Guerra Mundial.' },
+      { rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/198/496035.jpg', summary: 'Miniserie que dramatiza la catástrofe nuclear de Chernóbil en abril de 1986 y el heroico esfuerzo por contenerla.' },
+      { rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/5/14467.jpg', summary: 'La escena del narcotráfico en Baltimore vista a través de los ojos de policías, traficantes y políticos.' },
+      { rank: 5, title: 'Avatar: The Last Airbender', imdbRating: 9.3, votes: '370K', platform: 'Netflix', year: '2005-2008', genres: ['Animación', 'Aventura', 'Fantasía'], imdbId: 'tt0417299', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/10/26656.jpg', summary: 'En un mundo devastado por la guerra, un niño llamado Aang debe dominar los cuatro elementos.' },
+      { rank: 6, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/5/14461.jpg', summary: 'El jefe de la mafia de Nueva Jersey, Tony Soprano, lidia con problemas personales y profesionales.' },
+      { rank: 7, title: 'Game of Thrones (Juego de Tronos)', imdbRating: 9.2, votes: '2.4M', platform: 'Max (HBO)', year: '2011-2019', genres: ['Fantasía', 'Drama', 'Acción'], imdbId: 'tt0944947', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg', summary: 'Nueve familias nobles luchan por el control de las míticas tierras de Poniente.' },
+      { rank: 8, title: 'Rick and Morty', imdbRating: 9.1, votes: '600K', platform: 'Max (HBO)', year: '2013-Presente', genres: ['Animación', 'Aventura', 'Sci-Fi'], imdbId: 'tt2861424', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg', summary: 'Las desventuras de un científico alcohólico y su nieto fácilmente influenciable a través de universos paralelos.' },
+      { rank: 9, title: 'Better Call Saul', imdbRating: 9.0, votes: '660K', platform: 'Netflix', year: '2015-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt3032476', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/408/1021487.jpg', summary: 'Las pruebas y tribulaciones del abogado Jimmy McGill antes de establecer su bufete como Saul Goodman.' },
+      { rank: 10, title: 'Arcane', imdbRating: 9.0, votes: '300K', platform: 'Netflix', year: '2021-2024', genres: ['Animación', 'Acción', 'Sci-Fi'], imdbId: 'tt11126994', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933189.jpg', summary: 'Ambientada en la región utópica de Piltover y el subsuelo oprimido de Zaun, sigue los orígenes de dos icónicas campeonas.' },
+      { rank: 11, title: 'Batman: The Animated Series', imdbRating: 9.0, votes: '120K', platform: 'Max (HBO)', year: '1992-1995', genres: ['Animación', 'Acción', 'Crimen'], imdbId: 'tt0103359', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10901.jpg', summary: 'El Caballero de la Noche lucha contra el crimen en Gotham City con la ayuda de Robin y Batgirl.' },
+      { rank: 12, title: 'Sherlock', imdbRating: 9.1, votes: '1.0M', platform: 'Prime Video', year: '2010-2017', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt1475582', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10899.jpg', summary: 'Una actualización contemporánea del legendario detective Sherlock Holmes resolviendo crímenes en el Londres del siglo XXI.' },
+      { rank: 13, title: 'Succession', imdbRating: 8.9, votes: '310K', platform: 'Max (HBO)', year: '2018-2023', genres: ['Drama'], imdbId: 'tt7660850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/448/1121087.jpg', summary: 'La familia Roy es conocida por controlar Waystar RoyCo, uno de los mayores conglomerados de medios y entretenimiento del mundo.' },
+      { rank: 14, title: 'Fargo', imdbRating: 8.9, votes: '410K', platform: 'Prime Video', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt2802850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1210803.jpg', summary: 'Varios relatos de engaño, intriga y asesinato en y alrededor de la gélida Minnesota.' },
+      { rank: 15, title: 'True Detective', imdbRating: 8.9, votes: '680K', platform: 'Max (HBO)', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt2356777', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg', summary: 'Investigaciones policiales complejas desentrañan secretos personales y profesionales de los involucrados.' },
+      { rank: 16, title: 'The Last of Us', imdbRating: 8.8, votes: '560K', platform: 'Max (HBO)', year: '2023-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt3581920', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg', summary: 'Joel y Ellie deben sobrevivir a un viaje a través de unos Estados Unidos postapocalípticos.' },
+      { rank: 17, title: 'Peaky Blinders', imdbRating: 8.8, votes: '650K', platform: 'Netflix', year: '2013-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt2442560', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122241.jpg', summary: 'Una banda de gánsteres establecida en Birmingham, Inglaterra, en 1919, liderada por el feroz Tommy Shelby.' },
+      { rank: 18, title: 'Narcos', imdbRating: 8.8, votes: '470K', platform: 'Netflix', year: '2015-2017', genres: ['Biografía', 'Crimen', 'Drama'], imdbId: 'tt2707408', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/20/52019.jpg', summary: 'Una mirada descarnada a la propagación de los carteles de cocaína en Colombia y los esfuerzos de la ley para detenerlos.' },
+      { rank: 19, title: 'Stranger Things', imdbRating: 8.7, votes: '1.4M', platform: 'Netflix', year: '2016-Presente', genres: ['Drama', 'Fantasía', 'Terror'], imdbId: 'tt4574334', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/411/1029239.jpg', summary: 'La desaparición de un niño en un pequeño pueblo destapa misterios sobrenaturales y experimentos gubernamentales secretos.' },
+      { rank: 20, title: 'Severance', imdbRating: 8.7, votes: '240K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Misterio', 'Sci-Fi'], imdbId: 'tt11280740', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg', summary: 'Mark lidera un equipo cuyos recuerdos laborales y personales han sido quirúrgicamente separados.' },
+      { rank: 21, title: 'Dark', imdbRating: 8.7, votes: '460K', platform: 'Netflix', year: '2017-2020', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5753856', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/261/653205.jpg', summary: 'La desaparición de dos niños en un pueblo alemán saca a la luz las relaciones fracturadas y viajes en el tiempo entre cuatro familias.' },
+      { rank: 22, title: 'House of Cards', imdbRating: 8.6, votes: '530K', platform: 'Netflix', year: '2013-2018', genres: ['Drama'], imdbId: 'tt1856010', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/175/438814.jpg', summary: 'Un congresista demócrata y su ambiciosa esposa buscan venganza y poder absoluto en Washington D.C.' },
+      { rank: 23, title: 'Mindhunter', imdbRating: 8.6, votes: '340K', platform: 'Netflix', year: '2017-2019', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5290382', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/207/518600.jpg', summary: 'A finales de los 70, dos agentes del FBI amplían las fronteras de la criminología entrevistando a asesinos en serie.' },
+      { rank: 24, title: 'The Crown', imdbRating: 8.6, votes: '260K', platform: 'Netflix', year: '2016-2023', genres: ['Biografía', 'Drama', 'Historia'], imdbId: 'tt4786824', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1211116.jpg', summary: 'Sigue las rivalidades políticas y los romances durante el reinado de la Reina Isabel II y los eventos del siglo XX.' },
+      { rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1254359.jpg', summary: 'Un grupo de vigilantes se propone acabar con superhéroes corruptos que abusan de sus poderes.' }
+    ];
+
+    // TOP 10 DE SERIES DEL AÑO / ÉXITOS ESTELARES RECIENTES
+    const TOP_10_YEAR = [
+      { rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+ / Star+', year: '2024', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/499/1248408.jpg', summary: 'En el Japón del año 1600, Lord Toranaga lucha por su vida cuando un misterioso barco europeo encalla en un pueblo cercano.' },
+      { rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/536/1340243.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb busca llenar el vacío de poder dejado en el inframundo criminal.' },
+      { rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/509/1273934.jpg', summary: 'En un futuro postapocalíptico de Los Ángeles devastado por la guerra nuclear, ciudadanos de refugios deben volver a la superficie.' },
+      { rank: 4, title: 'The Bear (Temporada 3)', imdbRating: 8.6, votes: '300K', platform: 'Disney+ / Star+', year: '2022-Presente', genres: ['Comedia', 'Drama'], imdbId: 'tt14452776', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/519/1298418.jpg', summary: 'Un joven chef de alta cocina lucha por transformar la tienda de sándwiches de su familia en Chicago.' },
+      { rank: 5, title: 'Baby Reindeer (Mi Reno de Peluche)', imdbRating: 7.8, votes: '210K', platform: 'Netflix', year: '2024', genres: ['Biografía', 'Drama', 'Thriller'], imdbId: 'tt13649692', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/511/1278216.jpg', summary: 'La relación distorsionada entre un comediante en apuros y una acosadora que impacta profundamente sus vidas.' },
+      { rank: 6, title: 'Slow Horses (Temporada 4)', imdbRating: 8.3, votes: '95K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Thriller', 'Espionaje'], imdbId: 'tt5875444', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/406/1015694.jpg', summary: 'Los agentes marginados del MI5 liderados por Jackson Lamb enfrentan atentados y conspiraciones de alto nivel.' },
+      { rank: 7, title: 'Ripley', imdbRating: 7.9, votes: '65K', platform: 'Netflix', year: '2024', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt11016042', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/510/1276228.jpg', summary: 'En Nueva York de los años 60, Tom Ripley es contratado para viajar a Italia y convencer al hijo de un magnate de volver a casa.' },
+      { rank: 8, title: 'Presumed Innocent (Presunto Inocente)', imdbRating: 7.7, votes: '70K', platform: 'Apple TV+', year: '2024', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt17677860', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/521/1304523.jpg', summary: 'Un horrible asesinato sacude la fiscalía de Chicago cuando uno de sus miembros más prominentes es sospechoso del crimen.' },
+      { rank: 9, title: 'House of the Dragon (Temporada 2)', imdbRating: 8.4, votes: '440K', platform: 'Max (HBO)', year: '2022-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt11198330', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg', summary: 'La Danza de Dragones entra en su punto álgido con la guerra fratricida entre los Verdes y los Negros.' },
+      { rank: 10, title: 'Industry (Temporada 3)', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/528/1321742.jpg', summary: 'Jóvenes banqueros compiten en el vertiginoso y despiadado mundo de las finanzas internacionales en Londres.' }
     ];
 
     const MASTER_MOVIES_INIT = [
@@ -294,21 +348,25 @@
     };
 
     function App() {
-      const [activeTab, setActiveTab] = useState('seasons');
+      // PANTALLA PRINCIPAL POR DEFECTO: Mis Series ('tracking')
+      const [activeTab, setActiveTab] = useState('tracking');
       
+      // Sub-pestaña dentro de Top Calificadas ('historic' o 'year')
+      const [topRankingType, setTopRankingType] = useState('historic');
+
       const [seriesList, setSeriesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_series_v8');
+          const saved = localStorage.getItem('cineradar_series_v9');
           if (saved) return JSON.parse(saved);
-          return INITIAL_CATALOG;
+          return INITIAL_TRACKED_CATALOG;
         } catch (e) {
-          return INITIAL_CATALOG;
+          return INITIAL_TRACKED_CATALOG;
         }
       });
 
       const [moviesList, setMoviesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_movies_v8');
+          const saved = localStorage.getItem('cineradar_movies_v9');
           if (saved) return JSON.parse(saved);
           return MASTER_MOVIES_INIT;
         } catch (e) {
@@ -323,36 +381,22 @@
       const [bannerMessage, setBannerMessage] = useState(null);
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
       const [isSyncingLive, setIsSyncingLive] = useState(false);
-      const [syncStatusText, setSyncStatusText] = useState('Sincronizado con IMDb & TVMaze');
+      const [syncStatusText, setSyncStatusText] = useState('Fechas validadas con APIs oficiales');
 
       // Modal de Búsqueda
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
       const [isSearchingApi, setIsSearchingApi] = useState(false);
-      const [modalTab, setModalTab] = useState('search');
-
-      // Formulario Manual
-      const [formTitle, setFormTitle] = useState('');
-      const [formImdbId, setFormImdbId] = useState('');
-      const [formPlatform, setFormPlatform] = useState('Max (HBO)');
-      const [formStatus, setFormStatus] = useState('waiting_season');
-      const [formAirDay, setFormAirDay] = useState('Domingos');
-      const [formAirTime, setFormAirTime] = useState('08:00 PM COT');
-      const [formNextDate, setFormNextDate] = useState('');
-      const [formCurrentSeason, setFormCurrentSeason] = useState('2');
-      const [formNextSeason, setFormNextSeason] = useState('3');
-      const [formPoster, setFormPoster] = useState('');
-      const [formRating, setFormRating] = useState('8.5');
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_series_v8', JSON.stringify(seriesList));
+          localStorage.setItem('cineradar_series_v9', JSON.stringify(seriesList));
         } catch (e) {}
       }, [seriesList]);
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_movies_v8', JSON.stringify(moviesList));
+          localStorage.setItem('cineradar_movies_v9', JSON.stringify(moviesList));
         } catch (e) {}
       }, [moviesList]);
 
@@ -366,7 +410,6 @@
           setNotificationPermission(Notification.permission);
         }
 
-        // Sincronización automática de fechas oficiales al cargar la app
         syncLiveDatesFromApis();
       }, []);
 
@@ -376,7 +419,7 @@
         setTimeout(() => setBannerMessage(null), 4500);
       };
 
-      // MOTOR DE SINCRONIZACIÓN EN VIVO: Verifica si ya hay una fecha futura oficial
+      // MOTOR DE SINCRONIZACIÓN EN VIVO
       const syncLiveDatesFromApis = async () => {
         setIsSyncingLive(true);
         setSyncStatusText('Consultando fechas oficiales en vivo...');
@@ -394,7 +437,6 @@
                 const nextEp = data._embedded && data._embedded.nextepisode;
                 const prevEp = data._embedded && data._embedded.previousepisode;
 
-                // Si hay un próximo episodio fechado en el futuro
                 if (nextEp && isDateInFuture(nextEp.airdate)) {
                   updatedCount++;
                   const daysDiff = (new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24);
@@ -416,10 +458,8 @@
                   };
                 }
 
-                // Si NO hay próximo episodio fechado pero ya hubo episodios pasados
                 if (prevEp) {
                   const lastSeasonNum = prevEp.season || series.currentSeason;
-                  // Si no tiene fecha futura explícita guardada que sea válida
                   if (!isDateInFuture(series.nextReleaseDate)) {
                     return {
                       ...series,
@@ -498,7 +538,7 @@
 
       const deleteSeriesCompletely = (id, title) => {
         setSeriesList(prev => prev.filter(s => s.id !== id));
-        showBanner(`🗑️ "${title}" eliminada de todas las listas.`);
+        showBanner(`🗑️ "${title}" eliminada de tus listas.`);
       };
 
       const deleteMovieCompletely = (id, title) => {
@@ -507,10 +547,10 @@
       };
 
       const restoreDefaults = () => {
-        setSeriesList(INITIAL_CATALOG);
+        setSeriesList(INITIAL_TRACKED_CATALOG);
         setMoviesList(MASTER_MOVIES_INIT);
-        localStorage.setItem('cineradar_series_v8', JSON.stringify(INITIAL_CATALOG));
-        localStorage.setItem('cineradar_movies_v8', JSON.stringify(MASTER_MOVIES_INIT));
+        localStorage.setItem('cineradar_series_v9', JSON.stringify(INITIAL_TRACKED_CATALOG));
+        localStorage.setItem('cineradar_movies_v9', JSON.stringify(MASTER_MOVIES_INIT));
         showBanner('🔄 ¡Catálogo restaurado y verificado!');
       };
 
@@ -565,7 +605,46 @@
         }));
       };
 
-      // Búsqueda en Vivo
+      // Agregar desde los rankings Top 25 o Top 10 a "Mis Series"
+      const addFromRankingsToTracking = (item) => {
+        const existing = seriesList.find(s => s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId));
+        if (existing) {
+          if (!existing.userTracking) {
+            setSeriesList(prev => prev.map(s => s.id === existing.id ? { ...s, userTracking: true } : s));
+            showBanner(`✓ "${item.title}" reincorporada a Mis Series`);
+          } else {
+            showBanner(`ℹ️ "${item.title}" ya está en tu lista de seguimiento.`);
+          }
+          return;
+        }
+
+        const newSeries = {
+          id: 'rank-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          title: item.title,
+          imdbId: item.imdbId,
+          imdbRating: item.imdbRating,
+          platform: item.platform,
+          genres: item.genres,
+          status: 'waiting_season',
+          currentSeason: 1,
+          nextSeasonNumber: 2,
+          nextReleaseDate: null,
+          hasConfirmedFutureDate: false,
+          releaseSchedule: `${item.summary} (Calificación IMDb ★ ${item.imdbRating})`,
+          airDay: 'Viernes',
+          airTime: '02:00 AM COT',
+          poster: item.poster,
+          userTracking: true,
+          userProgressSeason: 1,
+          userProgressEpisode: 1,
+          notes: `Añadida desde los rankings oficiales de IMDb.`
+        };
+
+        setSeriesList(prev => [newSeries, ...prev]);
+        showBanner(`🎉 ¡"${item.title}" añadida a Mis Series!`);
+      };
+
+      // Búsqueda en Vivo con TVMaze
       const handleSearchMultiSource = async (query) => {
         setApiSearchQuery(query);
         if (!query || query.trim().length < 2) {
@@ -585,7 +664,6 @@
         }
       };
 
-      // Importar desde API con validación estricta de fechas
       const handleImportFromApi = async (item) => {
         const show = item.show;
         if (!show) return;
@@ -660,14 +738,16 @@
       const weeklyAiringSeries = useMemo(() => seriesList.filter(s => s.status === 'airing_weekly'), [seriesList]);
       const waitingSeasonsList = useMemo(() => seriesList.filter(s => s.status === 'waiting_season'), [seriesList]);
 
-      const filteredExplore = useMemo(() => {
-        return seriesList.filter(s => {
-          const matchP = selectedPlatform === 'all' || s.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
-          const matchQ = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         s.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
+      // Filtrado del Top 25 Histórico y Top 10 del Año
+      const currentRankingSource = topRankingType === 'historic' ? TOP_25_HISTORIC : TOP_10_YEAR;
+      const filteredRankings = useMemo(() => {
+        return currentRankingSource.filter(item => {
+          const matchP = selectedPlatform === 'all' || item.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
+          const matchQ = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
           return matchP && matchQ;
-        }).sort((a, b) => (b.imdbRating || b.rating || 0) - (a.imdbRating || a.rating || 0));
-      }, [seriesList, selectedPlatform, searchQuery]);
+        });
+      }, [currentRankingSource, selectedPlatform, searchQuery]);
 
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-24 sm:pb-10">
@@ -735,15 +815,16 @@
             </div>
           )}
 
-          {/* Barra de Navegación por Pestañas */}
+          {/* BARRA DE NAVEGACIÓN EN ORDEN EXACTO */}
+          {/* 1º: Mis Series | 2º: Capítulos Hoy | 3º: Próx. Temporadas | 4º: Top Calificadas | 5º: Cine & Trailers */}
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 pt-4">
             <div className="grid grid-cols-5 gap-1 sm:gap-2 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-bold">
               {[
-                { id: 'seasons', label: 'Próx. Temporadas', icon: '⏳', count: waitingSeasonsList.length },
-                { id: 'today', label: 'Capítulos Hoy', icon: '⚡', count: weeklyAiringSeries.length },
                 { id: 'tracking', label: 'Mis Series', icon: '📺', count: myTrackedSeries.length },
-                { id: 'movies', label: 'Cine & Trailers', icon: '🍿', count: moviesList.length },
-                { id: 'explore', label: 'Top Calificadas', icon: '⭐', count: filteredExplore.length }
+                { id: 'today', label: 'Capítulos Hoy', icon: '⚡', count: weeklyAiringSeries.length },
+                { id: 'seasons', label: 'Próx. Temporadas', icon: '⏳', count: waitingSeasonsList.length },
+                { id: 'explore', label: 'Top Calificadas', icon: '⭐', count: currentRankingSource.length },
+                { id: 'movies', label: 'Cine & Trailers', icon: '🍿', count: moviesList.length }
               ].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -772,7 +853,214 @@
           {/* Contenido Principal */}
           <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-5 flex-1 space-y-6">
 
-            {/* VISTA 1: PRÓXIMAS TEMPORADAS (Con Validación Real de Fechas) */}
+            {/* VISTA 1: MIS SERIES (PANTALLA PRINCIPAL) */}
+            {activeTab === 'tracking' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/70 p-4 rounded-3xl border border-slate-800">
+                  <div>
+                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                      📺 Mi Radar de Series en Seguimiento ({myTrackedSeries.length})
+                    </h2>
+                    <p className="text-xs text-slate-400">Control de progreso de episodios y temporadas vistas.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowNewSeriesModal(true)}
+                    className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
+                  >
+                    🔍 Buscar y Seguir Serie
+                  </button>
+                </div>
+
+                {myTrackedSeries.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-3">
+                    <div className="text-4xl">📺</div>
+                    <h3 className="font-display font-bold text-white text-base">No tienes series en seguimiento</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Explora el Top 25 o busca en vivo para agregar series a tu radar.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {myTrackedSeries.map(series => (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
+                        <div>
+                          <div className="relative h-64 w-full overflow-hidden bg-slate-900">
+                            <img
+                              src={series.poster}
+                              alt={series.title}
+                              className="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity"
+                              loading="lazy"
+                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                            
+                            <div className="absolute top-3 left-3">
+                              <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-slate-950/80 backdrop-blur border border-white/10 text-white shadow-md">
+                                📺 {series.platform}
+                              </span>
+                            </div>
+
+                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                              {series.imdbId ? (
+                                <a
+                                  href={`https://www.imdb.com/title/${series.imdbId}/`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all active:scale-95"
+                                >
+                                  <span>IMDb</span>
+                                  <span>★ {series.imdbRating || 8.2}</span>
+                                </a>
+                              ) : (
+                                <div className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-lg shadow-md">
+                                  ★ {series.imdbRating || 8.0}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400 font-bold block">
+                                {series.genres.join(' • ')}
+                              </span>
+                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
+                                {series.title}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="p-4 space-y-3">
+                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                              <div className="flex items-center justify-between text-[11px] font-bold">
+                                <span className="text-slate-400">Tu Progreso Visto:</span>
+                                <span className="font-mono text-cyan-300">
+                                  T{series.userProgressSeason || 1} • Ep {series.userProgressEpisode || 1}
+                                </span>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                                  <span className="text-[10px] text-slate-400 font-bold">Temp:</span>
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => changeSeason(series.id, -1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">-</button>
+                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressSeason || 1}</span>
+                                    <button onClick={() => changeSeason(series.id, 1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">+</button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                                  <span className="text-[10px] text-slate-400 font-bold">Cap:</span>
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => changeEpisode(series.id, -1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">-</button>
+                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressEpisode || 1}</span>
+                                    <button onClick={() => changeEpisode(series.id, 1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">+</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed">{series.releaseSchedule}</p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => toggleTracking(series.id)}
+                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all"
+                          >
+                            👁️ <span>Ocultar</span>
+                          </button>
+                          <button
+                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all"
+                          >
+                            🗑️ <span>Eliminar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA 2: CAPÍTULOS HOY (EMISIÓN SEMANAL) */}
+            {activeTab === 'today' && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white">
+                      ⚡ Calendario de Emisión Semanal ({weeklyAiringSeries.length})
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    Capítulos transmitidos semana a semana con día, hora exacta en Colombia (COT) y plataforma.
+                  </p>
+                </div>
+
+                {weeklyAiringSeries.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
+                    <p className="text-xs text-slate-400">No hay series en emisión semanal activa actualmente.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {weeklyAiringSeries.map(series => (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div className="flex gap-4">
+                          <img
+                            src={series.poster}
+                            alt={series.title}
+                            className="w-24 h-36 rounded-2xl object-cover shadow-lg shrink-0 border border-slate-700"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="space-y-1.5 flex-1">
+                            <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                              {series.platform}
+                            </span>
+                            <h3 className="font-display font-black text-base text-white">{series.title}</h3>
+                            
+                            <div className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
+                              📅 <span>Día de Emisión: {series.airDay}</span>
+                            </div>
+
+                            <div className="text-xs text-cyan-300 font-mono font-bold flex items-center gap-1.5">
+                              ⏰ <span>Hora: {series.airTime}</span>
+                            </div>
+
+                            <button
+                              onClick={() => toggleSeriesStatus(series.id)}
+                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
+                            >
+                              ⏳ Mover a Próximas Temporadas
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs space-y-1">
+                          <span className="text-slate-400 font-bold block">Estado de Emisión:</span>
+                          <p className="text-slate-200">{series.releaseSchedule}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 gap-2">
+                          <button
+                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
+                          >
+                            🗑️ <span>Eliminar</span>
+                          </button>
+                          <button
+                            onClick={() => showBanner(`🔔 Alerta configurada: ${series.title} todos los ${series.airDay} a las ${series.airTime}`)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-md"
+                          >
+                            🔔 <span>Notificarme</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA 3: PRÓXIMAS TEMPORADAS */}
             {activeTab === 'seasons' && (
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 border border-purple-500/30 p-5 rounded-3xl space-y-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -903,214 +1191,165 @@
               </div>
             )}
 
-            {/* VISTA 2: CAPÍTULOS HOY (Emisión Semanal) */}
-            {activeTab === 'today' && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white">
-                      ⚡ Calendario de Emisión Semanal ({weeklyAiringSeries.length})
-                    </h2>
+            {/* VISTA 4: TOP CALIFICADAS (TOP 25 HISTÓRICO + TOP 10 DEL AÑO) */}
+            {activeTab === 'explore' && (
+              <div className="space-y-5">
+                
+                {/* Selector de Rankings: Top 25 Histórico vs Top 10 del Año */}
+                <div className="bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-900 border border-amber-500/30 p-5 rounded-3xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-display font-black text-lg text-white flex items-center gap-2">
+                        ⭐ Rankings Oficiales de Series — Calificación IMDb
+                      </h2>
+                      <p className="text-xs text-slate-300">
+                        Selecciona el ranking histórico de todas las épocas o el top con los mayores éxitos del año.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+                      <button
+                        onClick={() => setTopRankingType('historic')}
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                          topRankingType === 'historic'
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-lg'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        🏆 <span>Top 25 Histórico</span>
+                      </button>
+                      <button
+                        onClick={() => setTopRankingType('year')}
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+                          topRankingType === 'year'
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-lg'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        🔥 <span>Top 10 del Año</span>
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-300">
-                    Capítulos transmitidos semana a semana con día, hora exacta en Colombia (COT) y plataforma.
-                  </p>
+
+                  {/* Filtro por Plataformas y Buscador */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                    <div className="relative w-full sm:w-80">
+                      <input
+                        type="text"
+                        placeholder="Buscar por título o género..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                      <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
+                      {PLATFORMS.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => setSelectedPlatform(p.id)}
+                          className={`text-xs px-3 py-1.5 rounded-xl font-bold border transition-all ${
+                            selectedPlatform === p.id 
+                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md' 
+                              : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                {weeklyAiringSeries.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en emisión semanal activa actualmente.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {weeklyAiringSeries.map(series => (
-                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-4 flex flex-col justify-between">
-                        <div className="flex gap-4">
-                          <img
-                            src={series.poster}
-                            alt={series.title}
-                            className="w-24 h-36 rounded-2xl object-cover shadow-lg shrink-0 border border-slate-700"
-                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                          />
-                          <div className="space-y-1.5 flex-1">
-                            <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                              {series.platform}
-                            </span>
-                            <h3 className="font-display font-black text-base text-white">{series.title}</h3>
-                            
-                            <div className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
-                              📅 <span>Día de Emisión: {series.airDay}</span>
-                            </div>
+                {/* Cuadrícula de Series del Ranking */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredRankings.map(item => {
+                    const isAlreadyTracked = seriesList.some(s => s.userTracking && (s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId)));
 
-                            <div className="text-xs text-cyan-300 font-mono font-bold flex items-center gap-1.5">
-                              ⏰ <span>Hora: {series.airTime}</span>
-                            </div>
+                    let rankBadgeClass = 'badge-rank-silver';
+                    if (item.rank === 1) rankBadgeClass = 'badge-rank-gold';
+                    else if (item.rank === 2) rankBadgeClass = 'badge-rank-silver';
+                    else if (item.rank === 3) rankBadgeClass = 'badge-rank-bronze';
 
-                            <button
-                              onClick={() => toggleSeriesStatus(series.id)}
-                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
-                            >
-                              ⏳ Mover a Próximas Temporadas
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs space-y-1">
-                          <span className="text-slate-400 font-bold block">Estado de Emisión:</span>
-                          <p className="text-slate-200">{series.releaseSchedule}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1 gap-2">
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
-                          >
-                            🗑️ <span>Eliminar</span>
-                          </button>
-                          <button
-                            onClick={() => showBanner(`🔔 Alerta configurada: ${series.title} todos los ${series.airDay} a las ${series.airTime}`)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-md"
-                          >
-                            🔔 <span>Notificarme</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* VISTA 3: MIS SERIES */}
-            {activeTab === 'tracking' && (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/70 p-4 rounded-3xl border border-slate-800">
-                  <div>
-                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
-                      📺 Mi Radar de Series en Seguimiento ({myTrackedSeries.length})
-                    </h2>
-                    <p className="text-xs text-slate-400">Control de progreso de episodios y temporadas vistas.</p>
-                  </div>
-                  <button
-                    onClick={() => setShowNewSeriesModal(true)}
-                    className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
-                  >
-                    🔍 Buscar y Seguir Serie
-                  </button>
-                </div>
-
-                {myTrackedSeries.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-3">
-                    <div className="text-4xl">📺</div>
-                    <h3 className="font-display font-bold text-white text-base">No tienes series en seguimiento</h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Busca series en vivo para agregarlas a tu radar.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {myTrackedSeries.map(series => (
-                      <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
+                    return (
+                      <div key={item.title} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
                         <div>
-                          <div className="relative h-60 w-full overflow-hidden bg-slate-900">
+                          <div className="relative h-64 w-full bg-slate-900">
                             <img
-                              src={series.poster}
-                              alt={series.title}
-                              className="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity"
+                              src={item.poster}
+                              alt={item.title}
+                              className="w-full h-full object-cover object-top"
                               loading="lazy"
                               onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                            
-                            <div className="absolute top-3 left-3">
-                              <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-slate-950/80 backdrop-blur border border-white/10 text-white shadow-md">
-                                📺 {series.platform}
-                              </span>
+
+                            {/* Badge de Puesto */}
+                            <div className={`absolute top-3 left-3 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 shadow-lg ${rankBadgeClass}`}>
+                              <span>#{item.rank}</span>
                             </div>
 
-                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                              {series.imdbId ? (
-                                <a
-                                  href={`https://www.imdb.com/title/${series.imdbId}/`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all active:scale-95"
-                                >
-                                  <span>IMDb</span>
-                                  <span>★ {series.imdbRating || 8.2}</span>
-                                </a>
-                              ) : (
-                                <div className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-lg shadow-md">
-                                  ★ {series.imdbRating || 8.0}
-                                </div>
-                              )}
+                            {/* Calificación IMDb con Enlace */}
+                            <div className="absolute top-3 right-3 flex items-center gap-1">
+                              <a
+                                href={`https://www.imdb.com/title/${item.imdbId}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all flex items-center gap-1"
+                              >
+                                <span>IMDb ★ {item.imdbRating}</span>
+                                <span>↗</span>
+                              </a>
                             </div>
 
                             <div className="absolute bottom-3 left-3 right-3">
-                              <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400 font-bold block">
-                                {series.genres.join(' • ')}
-                              </span>
+                              <div className="flex items-center gap-2 text-[10px] font-mono text-amber-300 font-bold">
+                                <span>📺 {item.platform}</span>
+                                <span>•</span>
+                                <span>{item.year}</span>
+                              </div>
                               <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
-                                {series.title}
+                                {item.title}
                               </h3>
                             </div>
                           </div>
 
-                          <div className="p-4 space-y-3">
-                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
-                              <div className="flex items-center justify-between text-[11px] font-bold">
-                                <span className="text-slate-400">Tu Progreso Visto:</span>
-                                <span className="font-mono text-cyan-300">
-                                  T{series.userProgressSeason || 1} • Ep {series.userProgressEpisode || 1}
+                          <div className="p-4 space-y-2.5">
+                            <div className="flex flex-wrap gap-1">
+                              {item.genres.map(g => (
+                                <span key={g} className="text-[10px] font-medium bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-md">
+                                  {g}
                                 </span>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
-                                  <span className="text-[10px] text-slate-400 font-bold">Temp:</span>
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => changeSeason(series.id, -1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">-</button>
-                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressSeason || 1}</span>
-                                    <button onClick={() => changeSeason(series.id, 1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">+</button>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
-                                  <span className="text-[10px] text-slate-400 font-bold">Cap:</span>
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => changeEpisode(series.id, -1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">-</button>
-                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressEpisode || 1}</span>
-                                    <button onClick={() => changeEpisode(series.id, 1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">+</button>
-                                  </div>
-                                </div>
-                              </div>
+                              ))}
                             </div>
 
-                            <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
+                            <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                              {item.summary}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                        <div className="p-4 pt-0">
                           <button
-                            onClick={() => toggleTracking(series.id)}
-                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all"
+                            onClick={() => addFromRankingsToTracking(item)}
+                            className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-md ${
+                              isAlreadyTracked
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white'
+                            }`}
                           >
-                            👁️ <span>Ocultar</span>
-                          </button>
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all"
-                          >
-                            🗑️ <span>Eliminar</span>
+                            <span>{isAlreadyTracked ? '✓ En Mis Series' : '➕ Añadir a Mis Series'}</span>
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* VISTA 4: ESTRENOS DE CINE */}
+            {/* VISTA 5: CINE & TRAILERS */}
             {activeTab === 'movies' && (
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border border-red-500/30 p-5 rounded-3xl space-y-1">
@@ -1183,100 +1422,6 @@
               </div>
             )}
 
-            {/* VISTA 5: TOP CALIFICADAS */}
-            {activeTab === 'explore' && (
-              <div className="space-y-5">
-                <div className="glass-panel p-4 rounded-3xl border border-slate-800 space-y-3">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="relative w-full sm:w-80">
-                      <input
-                        type="text"
-                        placeholder="Buscar en catálogo..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                      />
-                      <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-                      {PLATFORMS.map(p => (
-                        <button
-                          key={p.id}
-                          onClick={() => setSelectedPlatform(p.id)}
-                          className={`text-xs px-3 py-1.5 rounded-xl font-bold border transition-all ${
-                            selectedPlatform === p.id 
-                              ? 'bg-indigo-600 text-white border-indigo-400 shadow-md' 
-                              : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-white'
-                          }`}
-                        >
-                          {p.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {filteredExplore.map(series => (
-                    <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                      <div>
-                        <div className="relative h-64 w-full bg-slate-900">
-                          <img
-                            src={series.poster}
-                            alt={series.title}
-                            className="w-full h-full object-cover object-top"
-                            loading="lazy"
-                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
-
-                          <div className="absolute top-3 right-3 bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md">
-                            ★ {series.imdbRating || 8.0}
-                          </div>
-
-                          <div className="absolute top-3 left-3">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-950/80 backdrop-blur text-white border border-white/10">
-                              {series.platform}
-                            </span>
-                          </div>
-
-                          <div className="absolute bottom-2 left-3 right-3">
-                            <h3 className="font-display font-extrabold text-sm text-white">{series.title}</h3>
-                          </div>
-                        </div>
-
-                        <div className="p-3.5 space-y-2 text-xs">
-                          <p className="text-[11px] text-slate-300 line-clamp-2">
-                            {series.releaseSchedule}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 pt-0 grid grid-cols-3 gap-1.5">
-                        <button
-                          onClick={() => toggleTracking(series.id)}
-                          className={`col-span-2 py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                            series.userTracking 
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
-                              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
-                          }`}
-                        >
-                          <span>{series.userTracking ? '✓ Siguiendo' : '➕ Seguir'}</span>
-                        </button>
-                        <button
-                          onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                          className="col-span-1 py-2 rounded-xl text-xs font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 flex items-center justify-center"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
           </main>
 
           {/* Modal de Búsqueda Online */}
@@ -1310,7 +1455,7 @@
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Ej: House of the Dragon, The Last of Us, Slow Horses..."
+                        placeholder="Ej: House of the Dragon, The Last of Us, Slow Horses, Succession..."
                         value={apiSearchQuery}
                         onChange={(e) => handleSearchMultiSource(e.target.value)}
                         className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
@@ -1375,7 +1520,7 @@
 
           {/* Footer */}
           <footer className="border-t border-slate-900 bg-slate-950/80 text-center py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <span>CineRadar Pro &copy; {new Date().getFullYear()} — Correlación IMDb & TVMaze.</span>
+            <span>CineRadar Pro &copy; {new Date().getFullYear()} — Rankings Oficiales IMDb & Sincronización TVMaze.</span>
             <button onClick={restoreDefaults} className="text-indigo-400 hover:underline">Restaurar catálogo inicial</button>
           </footer>
         </div>
