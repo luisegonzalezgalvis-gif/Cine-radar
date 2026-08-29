@@ -17,25 +17,21 @@ name: Despachar Alerta Series 7 AM
 runs-on: ubuntu-latest
 steps:
 - name: Enviar Resumen de Capitulos y Estrenos a Gmail
-continue-on-error: true
 run: |
 echo "Despachando alerta diaria de CineRadar Pro..."
-curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" 
+curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
 
--X POST "https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com" 
+-F '_subject=🎬 CineRadar Pro - Alerta de Capitulos y Estrenos (7:00 AM COT)' 
 
--F "_subject=CineRadar Pro - Alerta de Capitulos y Estrenos (7:00 AM COT)" 
+-F '_captcha=false' 
 
--F "_captcha=false" 
+-F '_template=table' 
 
--F "_template=table" 
+-F 'Emision_Semanal=Severance T2 (Apple TV+) | Anillos de Poder T2 (Prime Video)' 
 
--F "Emision_Semanal=Severance T2 (Apple TV+) | Anillos de Poder T2 (Prime Video)" 
+-F 'Proximas_Temporadas=House of the Dragon T3 | The Last of Us T2 | Stranger Things T5 | The Boys T5' 
 
--F "Proximas_Temporadas=House of the Dragon T3 (2027) | The Last of Us T2 (2027) | Stranger Things T5 (2027) | The Boys T5 (2027)" 
+-F 'Estrenos_Cine_Trailers=Avengers: Doomsday | The Batman Part II | Spider-Man: Beyond the Spider-Verse | Dune: Messiah' 
 
--F "Estrenos_Cine_Trailers=Avengers: Doomsday | The Batman Part II | Spider-Man: Beyond the Spider-Verse | Dune: Messiah" 
-
--F "Nota=Rastreador inteligente CineRadar Pro sincronizado con tu zona horaria." || true
+-F 'Nota=Rastreador inteligente CineRadar Pro sincronizado con tu zona horaria.' || true
 echo "Alerta despachada correctamente."
-exit 0
