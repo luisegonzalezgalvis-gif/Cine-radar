@@ -748,6 +748,7 @@
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
       const [isSearchingApi, setIsSearchingApi] = useState(false);
+      const [searchTargetTab, setSearchTargetTab] = useState('tracking'); // 'tracking', 'historic', 'year'
 
       useEffect(() => {
         try {
@@ -952,6 +953,64 @@
         setApiSearchQuery('');
         setApiSearchResults([]);
         showBanner(`🎉 ¡"${show.name}" añadida con carátula oficial!`);
+      };
+
+      // Importar serie directamente a Top 25 Histórico o Top 10 del Año
+      const handleImportToTopRanking = async (item, targetType = 'historic') => {
+        const show = item.show;
+        if (!show) return;
+
+        const platformName = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
+        const ratingVal = show.rating && show.rating.average ? show.rating.average : 8.5;
+        const imdbCode = show.externals && show.externals.imdb ? show.externals.imdb : null;
+        const posterUrl = show.image ? (show.image.original || show.image.medium) : DEFAULT_FALLBACK_POSTER;
+        const premiereYear = show.premiered ? show.premiered.slice(0, 4) : '2024';
+        const endedYear = show.ended ? show.ended.slice(0, 4) : 'Presente';
+        const yearDisplay = show.ended ? `${premiereYear}-${endedYear}` : `${premiereYear}-Presente`;
+
+        const strippedSummary = show.summary 
+          ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 160) + '...'
+          : 'Aclamada serie de televisión con gran recepción de la crítica y audiencia.';
+
+        if (targetType === 'historic') {
+          const newRank = historicList.length + 1;
+          const newTopItem = {
+            id: 'top-custom-' + Date.now(),
+            rank: newRank,
+            title: show.name,
+            imdbRating: ratingVal,
+            votes: 'Popular',
+            platform: platformName,
+            year: yearDisplay,
+            genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
+            imdbId: imdbCode,
+            poster: posterUrl,
+            summary: strippedSummary
+          };
+          setHistoricList(prev => [...prev, newTopItem]);
+          showBanner(`🏆 ¡"${show.name}" agregada al Top 25 Histórico!`);
+        } else {
+          const newRank = yearList.length + 1;
+          const newYearItem = {
+            id: 'yr-custom-' + Date.now(),
+            rank: newRank,
+            title: show.name,
+            imdbRating: ratingVal,
+            votes: '2024-2026',
+            platform: platformName,
+            year: yearDisplay,
+            genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
+            imdbId: imdbCode,
+            poster: posterUrl,
+            summary: strippedSummary
+          };
+          setYearList(prev => [...prev, newYearItem]);
+          showBanner(`🔥 ¡"${show.name}" agregada al Top 10 del Año!`);
+        }
+
+        setShowNewSeriesModal(false);
+        setApiSearchQuery('');
+        setApiSearchResults([]);
       };
 
       // MOTOR DE CAMBIO DE PÓSTER EN VIVO
@@ -1817,6 +1876,16 @@
                       >
                         🔥 <span>Top 10 del Año ({yearList.length})</span>
                       </button>
+                      <button
+                        onClick={() => {
+                          setSearchTargetTab(topRankingType);
+                          setShowNewSeriesModal(true);
+                        }}
+                        className="ml-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                        title="Buscar y agregar serie a este Top"
+                      >
+                        ➕ <span>Agregar al Top</span>
+                      </button>
                     </div>
                   </div>
 
@@ -2207,13 +2276,16 @@
           {/* Modal de Búsqueda Online */}
           {showNewSeriesModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-xl w-full space-y-4 shadow-2xl my-auto">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🔍</span>
-                    <h3 className="font-display font-extrabold text-base text-white">
-                      Buscador de Series (IMDb + TVMaze)
-                    </h3>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">
+                        Buscador Oficial de Series (IMDb + TVMaze)
+                      </h3>
+                      <p className="text-[11px] text-slate-400">Busca cualquier serie y elige dónde deseas incluirla.</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
@@ -2227,6 +2299,30 @@
                   </button>
                 </div>
 
+                {/* Selector rápido de destino preferido */}
+                <div className="flex items-center justify-between bg-slate-950 p-2 rounded-2xl border border-slate-800 text-xs">
+                  <span className="text-slate-400 font-bold pl-1">Destino principal:</span>
+                  <div className="flex gap-1">
+                    {[
+                      { id: 'tracking', label: '📺 Mis Series' },
+                      { id: 'historic', label: '🏆 Top Histórico' },
+                      { id: 'year', label: '🔥 Top del Año' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setSearchTargetTab(opt.id)}
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                          searchTargetTab === opt.id
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'bg-slate-900 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-4 text-xs">
                   <div className="space-y-1">
                     <label className="text-slate-300 font-bold block">
@@ -2235,7 +2331,7 @@
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Ej: House of the Dragon, The Last of Us, Slow Horses, Succession..."
+                        placeholder="Ej: Breaking Bad, The Sopranos, Chernobyl, House of the Dragon, Dark..."
                         value={apiSearchQuery}
                         onChange={(e) => handleSearchMultiSource(e.target.value)}
                         className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
@@ -2248,7 +2344,7 @@
                     </div>
                   </div>
 
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                     {apiSearchResults.length > 0 ? (
                       apiSearchResults.map(({ show }) => {
                         const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
@@ -2258,28 +2354,50 @@
                         return (
                           <div
                             key={show.id}
-                            className="flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
                           >
-                            <img
-                              src={poster}
-                              alt={show.name}
-                              className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
-                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
-                                <span className="text-indigo-400 font-bold">{platform}</span>
-                                <span>•</span>
-                                <span className="text-amber-400 font-mono">★ {rating}</span>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img
+                                src={poster}
+                                alt={show.name}
+                                className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
+                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                              />
+                              <div className="min-w-0">
+                                <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
+                                  <span className="text-indigo-400 font-bold">{platform}</span>
+                                  <span>•</span>
+                                  <span className="text-amber-400 font-mono">★ {rating}</span>
+                                  {show.premiered && <span>• {show.premiered.slice(0, 4)}</span>}
+                                </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => handleImportFromApi({ show })}
-                              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl shrink-0 transition-all shadow-md"
-                            >
-                              ➕ Seguir
-                            </button>
+
+                            {/* Botones de Destino Múltiple */}
+                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                              <button
+                                onClick={() => handleImportFromApi({ show })}
+                                className="bg-indigo-600/80 hover:bg-indigo-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
+                                title="Añadir a tu radar de Mis Series"
+                              >
+                                📺 <span>Mis Series</span>
+                              </button>
+                              <button
+                                onClick={() => handleImportToTopRanking({ show }, 'historic')}
+                                className="bg-amber-600/80 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
+                                title="Añadir al Top 25 Histórico"
+                              >
+                                🏆 <span>Top Histórico</span>
+                              </button>
+                              <button
+                                onClick={() => handleImportToTopRanking({ show }, 'year')}
+                                className="bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1"
+                                title="Añadir al Top 10 del Año"
+                              >
+                                🔥 <span>Top Año</span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })
@@ -2289,7 +2407,7 @@
                       </div>
                     ) : (
                       <div className="text-center py-6 text-slate-500 text-xs">
-                        Escribe el título de cualquier serie para buscar en vivo.
+                        Escribe el título de cualquier serie para buscar en vivo y seleccionar su destino.
                       </div>
                     )}
                   </div>
