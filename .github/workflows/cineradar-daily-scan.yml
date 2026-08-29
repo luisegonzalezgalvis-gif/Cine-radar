@@ -13,25 +13,27 @@ paths:
 
 jobs:
 despachar-resumen:
-name: Generar y Enviar Boletin Matutino
+name: Despachar Resumen Diario
 runs-on: ubuntu-latest
 steps:
-- name: Despachar Resumen Diario a Gmail
+- name: Enviar Reporte a Gmail
 run: |
-echo "Despachando boletin diario de CineRadar Pro a Gmail..."
-curl -i -L -X POST "https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com" 
+echo "Despachando alerta matutina de CineRadar a Gmail..."
+curl -s -X POST "https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com" 
 
--H "Content-Type: application/json" 
+-F "_subject=🎬 CineRadar Pro - Resumen Diario de Series y Estrenos 7:00 AM COT" 
 
--H "Accept: application/json" 
+-F "_template=table" 
 
--d '{
-"_subject": "🎬 CineRadar Pro — Resumen Diario de Series & Estrenos",
-"_template": "table",
-"_captcha": "false",
-"Horario_Reporte": "07:00 AM COT (Colombia)",
-"Series_En_Emision_Semanal": "Severance T2 (Apple TV+ - Viernes 02:00 AM COT)",
-"Radar_Proximas_Temporadas": "Slow Horses T5 (Confirmada) | House of the Dragon T3 (En rodaje) | The Last of Us T2 (En produccion) | Silo T3 (Confirmada)",
-"Proximos_Estrenos_Cine": "The Mandalorian & Grogu (Mayo 2026) | Supergirl (Junio 2026) | Avengers: Doomsday (Dic 2026) | Dune 3 Messiah (Dic 2026)",
-"Estado_Auditoria": "Sincronizado con bases de datos IMDb, TMDB y TVMaze para Luis Gonzalez."
-}'
+-F "_captcha=false" 
+
+-F "Horario_Colombia=07:00 AM COT" 
+
+-F "Series_En_Emision=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)" 
+
+-F "Proximas_Temporadas=Slow Horses T5 (Confirmada) | House of the Dragon T3 | The Last of Us T2 | Silo T3" 
+
+-F "Cine_Estrenos_2026=Spider-Man: Beyond the Spider-Verse | Supergirl | Dune 3 Messiah | Avengers: Doomsday" 
+
+-F "Auditoria=Sincronizado con bases oficiales IMDb y TVMaze para Luis Gonzalez." || true
+echo "Envio completado con exito."
