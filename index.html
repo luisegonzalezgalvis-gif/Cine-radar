@@ -742,7 +742,17 @@
         }
       };
 
-      const myTrackedSeries = useMemo(() => seriesList.filter(s => s.userTracking), [seriesList]);
+      // MIS SERIES: Siempre ordenadas con las que están EN EMISIÓN SEMANAL al principio
+      const myTrackedSeries = useMemo(() => {
+        return seriesList
+          .filter(s => s.userTracking)
+          .sort((a, b) => {
+            if (a.status === 'airing_weekly' && b.status !== 'airing_weekly') return -1;
+            if (a.status !== 'airing_weekly' && b.status === 'airing_weekly') return 1;
+            return 0;
+          });
+      }, [seriesList]);
+
       const weeklyAiringSeries = useMemo(() => seriesList.filter(s => s.status === 'airing_weekly'), [seriesList]);
       const waitingSeasonsList = useMemo(() => seriesList.filter(s => s.status === 'waiting_season'), [seriesList]);
 
@@ -869,11 +879,13 @@
                     <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
                       📺 Mi Radar de Series en Seguimiento ({myTrackedSeries.length})
                     </h2>
-                    <p className="text-xs text-slate-400">Control de progreso de episodios y temporadas vistas.</p>
+                    <p className="text-xs text-slate-400">
+                      Prioridad automática: series en emisión semanal primero, seguidas por series esperando nueva temporada.
+                    </p>
                   </div>
                   <button
                     onClick={() => setShowNewSeriesModal(true)}
-                    className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
+                    className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto"
                   >
                     🔍 Buscar y Seguir Serie
                   </button>
@@ -887,103 +899,210 @@
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {myTrackedSeries.map(series => (
-                      <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
-                        <div>
-                          <div className="relative h-64 w-full overflow-hidden bg-slate-900">
-                            <img
-                              src={series.poster}
-                              alt={series.title}
-                              className="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity"
-                              loading="lazy"
-                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                            
-                            <div className="absolute top-3 left-3">
-                              <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-slate-950/80 backdrop-blur border border-white/10 text-white shadow-md">
-                                📺 {series.platform}
-                              </span>
-                            </div>
+                    {myTrackedSeries.map(series => {
+                      const isAiring = series.status === 'airing_weekly';
+                      const hasRealFutureDate = isDateInFuture(series.nextReleaseDate) && series.hasConfirmedFutureDate;
 
-                            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                              {series.imdbId ? (
-                                <a
-                                  href={`https://www.imdb.com/title/${series.imdbId}/`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all active:scale-95"
-                                >
-                                  <span>IMDb</span>
-                                  <span>★ {series.imdbRating || 8.2}</span>
-                                </a>
-                              ) : (
-                                <div className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-lg shadow-md">
-                                  ★ {series.imdbRating || 8.0}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="absolute bottom-3 left-3 right-3">
-                              <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400 font-bold block">
-                                {series.genres.join(' • ')}
-                              </span>
-                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
-                                {series.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          <div className="p-4 space-y-3">
-                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
-                              <div className="flex items-center justify-between text-[11px] font-bold">
-                                <span className="text-slate-400">Tu Progreso Visto:</span>
-                                <span className="font-mono text-cyan-300">
-                                  T{series.userProgressSeason || 1} • Ep {series.userProgressEpisode || 1}
+                      return (
+                        <div 
+                          key={series.id} 
+                          className={`card-hover rounded-3xl overflow-hidden flex flex-col justify-between border transition-all ${
+                            isAiring 
+                              ? 'glass-panel border-emerald-500/50 shadow-xl shadow-emerald-950/40 bg-slate-900/90 ring-1 ring-emerald-500/20' 
+                              : 'bg-slate-950/70 border-slate-800/80 backdrop-blur-md opacity-90 hover:opacity-100 ring-1 ring-purple-500/10'
+                          }`}
+                        >
+                          <div>
+                            <div className="relative h-64 w-full overflow-hidden bg-slate-900">
+                              <img
+                                src={series.poster}
+                                alt={series.title}
+                                className={`w-full h-full object-cover object-top transition-all duration-300 ${
+                                  isAiring ? 'opacity-95 hover:scale-105' : 'opacity-70 hover:opacity-90 grayscale-[25%] hover:grayscale-0 hover:scale-105'
+                                }`}
+                                loading="lazy"
+                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                              />
+                              <div className={`absolute inset-0 ${
+                                isAiring 
+                                  ? 'bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent' 
+                                  : 'bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/30'
+                              }`}></div>
+                              
+                              {/* Badge de Estado en Imagen */}
+                              <div className="absolute top-3 left-3 flex flex-col gap-1">
+                                {isAiring ? (
+                                  <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 flex items-center gap-1.5 shadow-lg backdrop-blur">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                    ⚡ EN EMISIÓN
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-purple-950/90 text-purple-300 border border-purple-500/40 flex items-center gap-1 shadow-lg backdrop-blur">
+                                    <span>⏳ EN ESPERA T{series.nextSeasonNumber || (series.currentSeason + 1)}</span>
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-slate-950/80 text-slate-300 border border-white/10 w-fit backdrop-blur">
+                                  📺 {series.platform}
                                 </span>
                               </div>
-                              
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
-                                  <span className="text-[10px] text-slate-400 font-bold">Temp:</span>
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => changeSeason(series.id, -1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">-</button>
-                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressSeason || 1}</span>
-                                    <button onClick={() => changeSeason(series.id, 1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">+</button>
-                                  </div>
-                                </div>
 
-                                <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
-                                  <span className="text-[10px] text-slate-400 font-bold">Cap:</span>
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => changeEpisode(series.id, -1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">-</button>
-                                    <span className="text-xs font-mono font-bold px-1">{series.userProgressEpisode || 1}</span>
-                                    <button onClick={() => changeEpisode(series.id, 1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">+</button>
+                              {/* Calificación IMDb */}
+                              <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                                {series.imdbId ? (
+                                  <a
+                                    href={`https://www.imdb.com/title/${series.imdbId}/`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all active:scale-95"
+                                  >
+                                    <span>IMDb</span>
+                                    <span>★ {series.imdbRating || 8.2}</span>
+                                  </a>
+                                ) : (
+                                  <div className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-lg shadow-md">
+                                    ★ {series.imdbRating || 8.0}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Título y Géneros */}
+                              <div className="absolute bottom-3 left-3 right-3">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold block truncate">
+                                  {series.genres && series.genres.join(' • ')}
+                                </span>
+                                <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight flex items-center gap-2">
+                                  <span>{series.title}</span>
+                                  {!isAiring && (
+                                    <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded-md shrink-0">
+                                      En receso
+                                    </span>
+                                  )}
+                                </h3>
+                              </div>
+                            </div>
+
+                            <div className="p-4 space-y-3">
+                              {/* INSIGNIA Y PANEL DIFERENCIADOR DE ESTADO */}
+                              {isAiring ? (
+                                <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-3.5 space-y-2 shadow-inner">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                      <span className="text-[11px] font-mono font-black text-emerald-300 uppercase tracking-wider">
+                                        ⚡ CAPÍTULO SEMANAL ACTIVO
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => toggleSeriesStatus(series.id)}
+                                      className="text-[9px] bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-lg font-bold transition-all"
+                                      title="Mover a Esperando Temporada"
+                                    >
+                                      ⏳ Cambiar a Espera
+                                    </button>
+                                  </div>
+
+                                  <div className="text-xs font-bold text-emerald-200 flex items-center justify-between bg-emerald-950/80 p-2 rounded-xl border border-emerald-500/30">
+                                    <span>📅 Estrena cada {series.airDay || 'Viernes'}</span>
+                                    <span className="font-mono text-cyan-300">⏰ {series.airTime || '02:00 AM COT'}</span>
+                                  </div>
+
+                                  <p className="text-[11px] text-slate-200 leading-snug">
+                                    {series.releaseSchedule}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="bg-slate-900/80 border border-purple-500/30 rounded-2xl p-3.5 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[11px] font-mono font-black text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                                        ⏳ EN ESPERA DE NUEVA TEMPORADA
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => toggleSeriesStatus(series.id)}
+                                      className="text-[9px] bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold transition-all"
+                                      title="Mover a En Emisión Semanal"
+                                    >
+                                      ⚡ A Emisión
+                                    </button>
+                                  </div>
+
+                                  <div className="flex items-center justify-between bg-slate-950/80 p-2 rounded-xl border border-slate-800 text-[11px]">
+                                    <span className="text-slate-400 font-bold">Próxima entrega:</span>
+                                    <span className="font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+                                      Temporada {series.nextSeasonNumber || (series.currentSeason + 1)}
+                                    </span>
+                                  </div>
+
+                                  {hasRealFutureDate ? (
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="font-mono font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md">
+                                        📅 {series.nextReleaseDate}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-emerald-400">Fecha confirmada</span>
+                                    </div>
+                                  ) : (
+                                    <div className="text-[11px] text-slate-400 italic flex items-center gap-1">
+                                      <span>🛠️</span>
+                                      <span>Temporada concluida • En producción (sin fecha oficial)</span>
+                                    </div>
+                                  )}
+
+                                  <p className="text-[11px] text-slate-300 leading-snug">
+                                    {series.releaseSchedule}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* CONTROLES DE PROGRESO VISTO */}
+                              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                  <span className="text-slate-400">Tu Progreso Visto:</span>
+                                  <span className="font-mono text-cyan-300">
+                                    T{series.userProgressSeason || 1} • Ep {series.userProgressEpisode || 1}
+                                  </span>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                                    <span className="text-[10px] text-slate-400 font-bold">Temp:</span>
+                                    <div className="flex items-center gap-1">
+                                      <button onClick={() => changeSeason(series.id, -1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">-</button>
+                                      <span className="text-xs font-mono font-bold px-1">{series.userProgressSeason || 1}</span>
+                                      <button onClick={() => changeSeason(series.id, 1)} className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">+</button>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2 py-1">
+                                    <span className="text-[10px] text-slate-400 font-bold">Cap:</span>
+                                    <div className="flex items-center gap-1">
+                                      <button onClick={() => changeEpisode(series.id, -1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">-</button>
+                                      <span className="text-xs font-mono font-bold px-1">{series.userProgressEpisode || 1}</span>
+                                      <button onClick={() => changeEpisode(series.id, 1)} className="w-6 h-6 rounded bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 text-xs font-bold">+</button>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
+                          </div>
 
-                            <p className="text-xs text-slate-300 leading-relaxed">{series.releaseSchedule}</p>
+                          <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => toggleTracking(series.id)}
+                              className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all"
+                            >
+                              👁️ <span>Ocultar</span>
+                            </button>
+                            <button
+                              onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                              className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all"
+                            >
+                              🗑️ <span>Eliminar</span>
+                            </button>
                           </div>
                         </div>
-
-                        <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => toggleTracking(series.id)}
-                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all"
-                          >
-                            👁️ <span>Ocultar</span>
-                          </button>
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all"
-                          >
-                            🗑️ <span>Eliminar</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
