@@ -105,9 +105,11 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
-    // BASE DE DATOS MAESTRA CON PÓSTERS OFICIALES DE TMDB
+    const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop&q=80';
+
+    // BASE DE DATOS MAESTRA CON PÓSTERS VERIFICADOS DE ALTA DISPONIBILIDAD
     const MASTER_SERIES = [
       {
         id: 'ser-hotd',
@@ -125,7 +127,7 @@
         releaseSchedule: 'Finalizada Temporada 2. Temporada 3 en producción con estreno programado para 2027.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/1X4h40fcB4WWUmIBK0auT4zRBAV.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg',
         userTracking: true,
         userProgressSeason: 2,
         userProgressEpisode: 8,
@@ -147,7 +149,7 @@
         releaseSchedule: 'Temporada 2 confirmada para principios de 2027 con Pedro Pascal y Bella Ramsey.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2V7JMrne.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
         userTracking: true,
         userProgressSeason: 1,
         userProgressEpisode: 9,
@@ -169,7 +171,7 @@
         releaseSchedule: 'Nuevo episodio cada Viernes a las 02:00 AM COT en Apple TV+.',
         airDay: 'Viernes',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/jtAh65bX998JysoYp45bVSu90j6.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg',
         userTracking: true,
         userProgressSeason: 2,
         userProgressEpisode: 7,
@@ -191,7 +193,7 @@
         releaseSchedule: 'Temporada 5 (Temporada Final) anunciada para mediados de 2027.',
         airDay: 'Jueves',
         airTime: '07:00 PM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/2zmTngn1tYC1AvfnNDBpQIavBk8.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1194300.jpg',
         userTracking: true,
         userProgressSeason: 4,
         userProgressEpisode: 8,
@@ -213,7 +215,7 @@
         releaseSchedule: 'Nuevo episodio semanal cada Jueves a las 02:00 AM COT.',
         airDay: 'Jueves',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/mYLOqiStMxDK3fYZFirgrMt8z5d.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/424/1061900.jpg',
         userTracking: true,
         userProgressSeason: 2,
         userProgressEpisode: 4,
@@ -235,7 +237,7 @@
         releaseSchedule: 'Temporada 5 (Temporada Final) programada para 2027.',
         airDay: 'Jueves',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/410/1025528.jpg',
         userTracking: true,
         userProgressSeason: 4,
         userProgressEpisode: 9,
@@ -257,7 +259,7 @@
         releaseSchedule: 'Temporada 2 rodando actualmente con ambientación en New Vegas.',
         airDay: 'Jueves',
         airTime: '07:00 PM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/AnsZu4O4g9Jp26sN6fW3kYtD2XW.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/506/1266014.jpg',
         userTracking: true,
         userProgressSeason: 1,
         userProgressEpisode: 8,
@@ -279,7 +281,7 @@
         releaseSchedule: 'Temporada 4 filmada en simultáneo para estreno a mediados de 2027.',
         airDay: 'Miércoles',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/sHFlbvdv0lWbknj4w94mYm1X26b.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/469/1173775.jpg',
         userTracking: true,
         userProgressSeason: 3,
         userProgressEpisode: 10,
@@ -301,7 +303,7 @@
         releaseSchedule: 'Temporadas 2 y 3 confirmadas por FX y Disney+.',
         airDay: 'Martes',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/497/1244030.jpg',
         userTracking: false,
         userProgressSeason: 1,
         userProgressEpisode: 10,
@@ -323,7 +325,7 @@
         releaseSchedule: 'Universo expandido de Runeterra por Riot Games y Netflix.',
         airDay: 'Sábados',
         airTime: '02:00 AM COT',
-        poster: 'https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn396mlX3ODMM.jpg',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/373/933869.jpg',
         userTracking: false,
         userProgressSeason: 2,
         userProgressEpisode: 9,
@@ -340,6 +342,7 @@
         director: 'Hermanos Russo',
         cast: 'Robert Downey Jr. (Doctor Doom), Pedro Pascal, Florence Pugh',
         poster: 'https://image.tmdb.org/t/p/w500/y4MBh0EjBlMuOzv9NxZBSJ95RJ.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Avengers+Doomsday+trailer+official+marvel',
         synopsis: 'El regreso de los Vengadores enfrentando al Doctor Doom en una escala multiversal.',
         hype: 99
@@ -352,6 +355,7 @@
         director: 'Matt Reeves',
         cast: 'Robert Pattinson, Colin Farrell, Andy Serkis',
         poster: 'https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=The+Batman+Part+II+official+trailer+teaser',
         synopsis: 'La continuación del detective oscuro en las calles inundadas de Gotham City.',
         hype: 96
@@ -364,6 +368,7 @@
         director: 'Joaquim Dos Santos, Kemp Powers',
         cast: 'Shameik Moore, Hailee Steinfeld, Oscar Isaac',
         poster: 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Spider-Man+Beyond+the+Spider-Verse+trailer',
         synopsis: 'El desenlace de la trilogía de Miles Morales atrapado en la dimensión Tierra-42.',
         hype: 98
@@ -376,6 +381,7 @@
         director: 'Denis Villeneuve',
         cast: 'Timothée Chalamet, Zendaya, Florence Pugh, Anya Taylor-Joy',
         poster: 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Dune+Messiah+trailer+official+denis+villeneuve',
         synopsis: 'El mandato de Paul Atreides como Emperador y la guerra santa a través del universo.',
         hype: 97
@@ -388,6 +394,7 @@
         director: 'James Cameron',
         cast: 'Sam Worthington, Zoe Saldaña, Michelle Yeoh',
         poster: 'https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',
+        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
         youtubeUrl: 'https://www.youtube.com/results?search_query=Avatar+Fire+and+Ash+trailer+official+james+cameron',
         synopsis: 'Jake Sully y Neytiri conocen al Pueblo de las Cenizas, una tribu Na\'vi de fuego hostil.',
         hype: 95
@@ -425,10 +432,11 @@
       
       const [seriesList, setSeriesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_series_v3');
+          const saved = localStorage.getItem('cineradar_series_v4');
           if (saved) return JSON.parse(saved);
-          // Si había versión antigua con fotos genéricas, limpiar
+          // Limpiar versiones anteriores de caché para actualizar pósters
           localStorage.removeItem('cineradar_series_v2');
+          localStorage.removeItem('cineradar_series_v3');
           return MASTER_SERIES;
         } catch (e) {
           return MASTER_SERIES;
@@ -443,9 +451,25 @@
       const [bannerMessage, setBannerMessage] = useState(null);
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
 
+      // Estados del Modal de Búsqueda Online (TVMaze API)
+      const [apiSearchQuery, setApiSearchQuery] = useState('');
+      const [apiSearchResults, setApiSearchResults] = useState([]);
+      const [isSearchingApi, setIsSearchingApi] = useState(false);
+      const [modalTab, setModalTab] = useState('search'); // 'search' | 'manual'
+
+      // Formulario Manual
+      const [formTitle, setFormTitle] = useState('');
+      const [formPlatform, setFormPlatform] = useState('Max (HBO)');
+      const [formStatus, setFormStatus] = useState('airing_weekly');
+      const [formAirDay, setFormAirDay] = useState('Sábados');
+      const [formAirTime, setFormAirTime] = useState('08:00 PM COT');
+      const [formNextDate, setFormNextDate] = useState('');
+      const [formPoster, setFormPoster] = useState('');
+      const [formRating, setFormRating] = useState('8.5');
+
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_series_v3', JSON.stringify(seriesList));
+          localStorage.setItem('cineradar_series_v4', JSON.stringify(seriesList));
         } catch (e) {}
       }, [seriesList]);
 
@@ -536,16 +560,77 @@
         }));
       };
 
-      // Formulario de nueva serie
-      const [formTitle, setFormTitle] = useState('');
-      const [formPlatform, setFormPlatform] = useState('Max (HBO)');
-      const [formStatus, setFormStatus] = useState('airing_weekly');
-      const [formAirDay, setFormAirDay] = useState('Sábados');
-      const [formAirTime, setFormAirTime] = useState('08:00 PM COT');
-      const [formNextDate, setFormNextDate] = useState('');
-      const [formPoster, setFormPoster] = useState('');
-      const [formRating, setFormRating] = useState('8.5');
+      // Búsqueda en Vivo en API TVMaze (Gratuita, sin API key)
+      const handleSearchTVMaze = async (query) => {
+        setApiSearchQuery(query);
+        if (!query || query.trim().length < 2) {
+          setApiSearchResults([]);
+          return;
+        }
 
+        setIsSearchingApi(true);
+        try {
+          const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query.trim())}`);
+          const data = await res.json();
+          setApiSearchResults(data || []);
+        } catch (err) {
+          console.error("Error al buscar en TVMaze:", err);
+        } finally {
+          setIsSearchingApi(false);
+        }
+      };
+
+      // Importar serie desde los resultados de TVMaze
+      const handleImportFromApi = (item) => {
+        const show = item.show;
+        if (!show) return;
+
+        // Limpiar resumen HTML
+        const cleanSummary = show.summary ? show.summary.replace(/<[^>]*>?/gm, '') : '';
+        const platformName = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
+        const airDay = show.schedule && show.schedule.days && show.schedule.days.length > 0 ? show.schedule.days[0] : 'Domingos';
+        const airTime = show.schedule && show.schedule.time ? `${show.schedule.time} COT` : '08:00 PM COT';
+        const isRunning = show.status === 'Running';
+
+        const posterUrl = show.image 
+          ? (show.image.original || show.image.medium) 
+          : DEFAULT_FALLBACK_POSTER;
+
+        const newSeries = {
+          id: 'tvmaze-' + show.id + '-' + Date.now(),
+          title: show.name,
+          platform: platformName,
+          platformBg: platformName.toLowerCase().includes('hbo') || platformName.toLowerCase().includes('max') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
+                      platformName.toLowerCase().includes('netflix') ? 'bg-red-900/60 text-red-200 border-red-500/40' :
+                      platformName.toLowerCase().includes('prime') || platformName.toLowerCase().includes('amazon') ? 'bg-sky-900/60 text-sky-200 border-sky-500/40' :
+                      platformName.toLowerCase().includes('apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
+                      'bg-slate-800 text-slate-200 border-slate-700',
+          rating: show.rating && show.rating.average ? show.rating.average : 8.2,
+          genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
+          status: isRunning ? 'airing_weekly' : 'waiting_season',
+          currentSeason: 1,
+          currentEpisode: 1,
+          totalEpisodesSeason: 10,
+          nextSeasonNumber: 2,
+          nextReleaseDate: '2027-05-15',
+          releaseSchedule: isRunning ? `Nuevo episodio cada ${airDay} a las ${airTime} por ${platformName}.` : `Temporada finalizada. Próxima entrega en producción.`,
+          airDay: airDay,
+          airTime: airTime,
+          poster: posterUrl,
+          userTracking: true,
+          userProgressSeason: 1,
+          userProgressEpisode: 1,
+          notes: cleanSummary.slice(0, 120) + (cleanSummary.length > 120 ? '...' : '')
+        };
+
+        setSeriesList(prev => [newSeries, ...prev]);
+        setShowNewSeriesModal(false);
+        setApiSearchQuery('');
+        setApiSearchResults([]);
+        showBanner(`🎉 ¡"${show.name}" importada e incorporada a tu radar!`);
+      };
+
+      // Formulario de nueva serie manual
       const handleAddCustomSeries = (e) => {
         e.preventDefault();
         if (!formTitle.trim()) return;
@@ -569,7 +654,7 @@
           releaseSchedule: formStatus === 'airing_weekly' ? `Nuevo episodio todos los ${formAirDay} a las ${formAirTime}` : `Nueva temporada el ${formNextDate}`,
           airDay: formAirDay,
           airTime: formAirTime,
-          poster: formPoster.trim() || 'https://image.tmdb.org/t/p/w500/1X4h40fcB4WWUmIBK0auT4zRBAV.jpg',
+          poster: formPoster.trim() || DEFAULT_FALLBACK_POSTER,
           userTracking: true,
           userProgressSeason: 1,
           userProgressEpisode: 1,
@@ -589,7 +674,7 @@
 
       const filteredExplore = useMemo(() => {
         return seriesList.filter(s => {
-          const matchP = selectedPlatform === 'all' || s.platform === selectedPlatform;
+          const matchP = selectedPlatform === 'all' || s.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
           const matchQ = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          s.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
           return matchP && matchQ;
@@ -637,9 +722,9 @@
 
               <button
                 onClick={() => setShowNewSeriesModal(true)}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
               >
-                ➕ <span className="hidden sm:inline">Seguir Serie</span>
+                🔍 <span>Buscar y Seguir Serie</span>
               </button>
             </div>
           </header>
@@ -703,7 +788,7 @@
                     onClick={() => setShowNewSeriesModal(true)}
                     className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 w-fit"
                   >
-                    ➕ Agregar otra serie
+                    🔍 Buscar otra serie en vivo
                   </button>
                 </div>
 
@@ -711,13 +796,17 @@
                   {myTrackedSeries.map(series => (
                     <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
                       <div>
-                        {/* Poster Oficial TMDB */}
-                        <div className="relative h-56 w-full overflow-hidden bg-slate-900">
+                        {/* Poster de Alta Fidelidad con Fallback */}
+                        <div className="relative h-60 w-full overflow-hidden bg-slate-900">
                           <img
                             src={series.poster}
                             alt={series.title}
                             className="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity"
                             loading="lazy"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = DEFAULT_FALLBACK_POSTER;
+                            }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                           
@@ -801,7 +890,7 @@
                           </div>
 
                           {series.notes && (
-                            <p className="text-[11px] text-slate-400 italic">💡 {series.notes}</p>
+                            <p className="text-[11px] text-slate-400 italic line-clamp-2">💡 {series.notes}</p>
                           )}
                         </div>
                       </div>
@@ -843,6 +932,7 @@
                           src={series.poster}
                           alt={series.title}
                           className="w-24 h-36 rounded-2xl object-cover shadow-lg shrink-0 border border-slate-700"
+                          onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                         />
                         <div className="space-y-1.5 flex-1">
                           <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
@@ -901,6 +991,7 @@
                             src={series.poster}
                             alt={series.title}
                             className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                           />
                           <div>
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
@@ -958,6 +1049,7 @@
                             alt={movie.title}
                             className="w-full h-full object-cover object-top"
                             loading="lazy"
+                            onError={(e) => { e.target.src = movie.fallbackPoster || DEFAULT_FALLBACK_POSTER; }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                           
@@ -1014,7 +1106,7 @@
                     <div className="relative w-full sm:w-80">
                       <input
                         type="text"
-                        placeholder="Buscar series por nombre o género..."
+                        placeholder="Buscar en catálogo por título o género..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -1050,6 +1142,7 @@
                             alt={series.title}
                             className="w-full h-full object-cover object-top"
                             loading="lazy"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
 
@@ -1103,132 +1196,243 @@
 
           </main>
 
-          {/* Modal para Añadir Nueva Serie Personalizada */}
+          {/* Modal de Búsqueda Online e Importación de Series */}
           {showNewSeriesModal && (
-            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-extrabold text-base text-white flex items-center gap-2">
-                    ➕ Seguir Serie Personalizada
-                  </h3>
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🔍</span>
+                    <h3 className="font-display font-extrabold text-base text-white">
+                      Añadir Serie al Radar
+                    </h3>
+                  </div>
                   <button
-                    onClick={() => setShowNewSeriesModal(false)}
-                    className="text-slate-400 hover:text-white text-xs font-bold"
+                    onClick={() => {
+                      setShowNewSeriesModal(false);
+                      setApiSearchQuery('');
+                      setApiSearchResults([]);
+                    }}
+                    className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg"
                   >
                     ✕ Cerrar
                   </button>
                 </div>
 
-                <form onSubmit={handleAddCustomSeries} className="space-y-3 text-xs">
-                  <div>
-                    <label className="text-slate-300 font-bold block mb-1">Nombre de la Serie *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej: Euphoria, Peaky Blinders, Succession..."
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
+                {/* Pestañas del Modal */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-bold">
+                  <button
+                    onClick={() => setModalTab('search')}
+                    className={`py-1.5 rounded-lg transition-all ${
+                      modalTab === 'search' 
+                        ? 'bg-indigo-600 text-white shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🌐 Buscar en Vivo (TVMaze API)
+                  </button>
+                  <button
+                    onClick={() => setModalTab('manual')}
+                    className={`py-1.5 rounded-lg transition-all ${
+                      modalTab === 'manual' 
+                        ? 'bg-indigo-600 text-white shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    ✏️ Ingreso Manual
+                  </button>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-slate-300 font-bold block mb-1">Plataforma *</label>
-                      <select
-                        value={formPlatform}
-                        onChange={(e) => setFormPlatform(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="Max (HBO)">Max (HBO)</option>
-                        <option value="Netflix">Netflix</option>
-                        <option value="Prime Video">Prime Video</option>
-                        <option value="Disney+ / Star+">Disney+ / Star+</option>
-                        <option value="Apple TV+">Apple TV+</option>
-                        <option value="Paramount+">Paramount+</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-slate-300 font-bold block mb-1">Tipo de Emisión *</label>
-                      <select
-                        value={formStatus}
-                        onChange={(e) => setFormStatus(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="airing_weekly">Capítulo Semanal</option>
-                        <option value="waiting_season">Esperando Temporada</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {formStatus === 'airing_weekly' ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Día de Estreno</label>
-                        <select
-                          value={formAirDay}
-                          onChange={(e) => setFormAirDay(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                        >
-                          <option value="Lunes">Lunes</option>
-                          <option value="Martes">Martes</option>
-                          <option value="Miércoles">Miércoles</option>
-                          <option value="Jueves">Jueves</option>
-                          <option value="Viernes">Viernes</option>
-                          <option value="Sábados">Sábados</option>
-                          <option value="Domingos">Domingos</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Hora (COT)</label>
+                {/* MODO 1: BÚSQUEDA ONLINE EN TIEMPO REAL */}
+                {modalTab === 'search' && (
+                  <div className="space-y-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="text-slate-300 font-bold block">
+                        Escribe el nombre de cualquier serie mundial:
+                      </label>
+                      <div className="relative">
                         <input
                           type="text"
-                          value={formAirTime}
-                          onChange={(e) => setFormAirTime(e.target.value)}
+                          placeholder="Ej: Breaking Bad, Succession, Dark, The Penguin, Loki..."
+                          value={apiSearchQuery}
+                          onChange={(e) => handleSearchTVMaze(e.target.value)}
+                          className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
+                          autoFocus
+                        />
+                        <div className="absolute left-3 top-3 text-slate-400">🔍</div>
+                        {isSearchingApi && (
+                          <div className="absolute right-3 top-3 text-indigo-400 animate-spin">⏳</div>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        ✨ Importará automáticamente el póster oficial, plataforma, horario y calificación.
+                      </p>
+                    </div>
+
+                    {/* Lista de Resultados de la API */}
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {apiSearchResults.length > 0 ? (
+                        apiSearchResults.map(({ show }) => {
+                          const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
+                          const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'TV');
+                          const rating = show.rating && show.rating.average ? show.rating.average : '8.0';
+
+                          return (
+                            <div
+                              key={show.id}
+                              className="flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
+                            >
+                              <img
+                                src={poster}
+                                alt={show.name}
+                                className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
+                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
+                                  <span className="text-indigo-400 font-bold">{platform}</span>
+                                  <span>•</span>
+                                  <span className="text-amber-400 font-mono">★ {rating}</span>
+                                  <span>•</span>
+                                  <span>{show.genres && show.genres.slice(0, 2).join(', ')}</span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleImportFromApi({ show })}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl shrink-0 transition-all shadow-md"
+                              >
+                                ➕ Seguir
+                              </button>
+                            </div>
+                          );
+                        })
+                      ) : apiSearchQuery.trim().length >= 2 ? (
+                        <div className="text-center py-6 text-slate-500 text-xs">
+                          No se encontraron series con ese nombre. Prueba con otro título.
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-slate-500 text-xs">
+                          Escribe al menos 2 letras para buscar en el catálogo mundial.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* MODO 2: INGRESO MANUAL */}
+                {modalTab === 'manual' && (
+                  <form onSubmit={handleAddCustomSeries} className="space-y-3 text-xs">
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">Nombre de la Serie *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Silo, Slow Horses..."
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">Plataforma *</label>
+                        <select
+                          value={formPlatform}
+                          onChange={(e) => setFormPlatform(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="Max (HBO)">Max (HBO)</option>
+                          <option value="Netflix">Netflix</option>
+                          <option value="Prime Video">Prime Video</option>
+                          <option value="Disney+ / Star+">Disney+ / Star+</option>
+                          <option value="Apple TV+">Apple TV+</option>
+                          <option value="Paramount+">Paramount+</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">Tipo de Emisión *</label>
+                        <select
+                          value={formStatus}
+                          onChange={(e) => setFormStatus(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="airing_weekly">Capítulo Semanal</option>
+                          <option value="waiting_season">Esperando Temporada</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {formStatus === 'airing_weekly' ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-slate-300 font-bold block mb-1">Día de Estreno</label>
+                          <select
+                            value={formAirDay}
+                            onChange={(e) => setFormAirDay(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                          >
+                            <option value="Lunes">Lunes</option>
+                            <option value="Martes">Martes</option>
+                            <option value="Miércoles">Miércoles</option>
+                            <option value="Jueves">Jueves</option>
+                            <option value="Viernes">Viernes</option>
+                            <option value="Sábados">Sábados</option>
+                            <option value="Domingos">Domingos</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-bold block mb-1">Hora (COT)</label>
+                          <input
+                            type="text"
+                            value={formAirTime}
+                            onChange={(e) => setFormAirTime(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">Fecha Próxima Temporada</label>
+                        <input
+                          type="date"
+                          value={formNextDate}
+                          onChange={(e) => setFormNextDate(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
                         />
                       </div>
-                    </div>
-                  ) : (
+                    )}
+
                     <div>
-                      <label className="text-slate-300 font-bold block mb-1">Fecha Próxima Temporada</label>
+                      <label className="text-slate-300 font-bold block mb-1">URL Imagen Póster (Opcional)</label>
                       <input
-                        type="date"
-                        value={formNextDate}
-                        onChange={(e) => setFormNextDate(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                        type="url"
+                        placeholder="https://..."
+                        value={formPoster}
+                        onChange={(e) => setFormPoster(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
                       />
                     </div>
-                  )}
 
-                  <div>
-                    <label className="text-slate-300 font-bold block mb-1">URL Imagen Poster (Opcional)</label>
-                    <input
-                      type="url"
-                      placeholder="https://..."
-                      value={formPoster}
-                      onChange={(e) => setFormPoster(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
-                    />
-                  </div>
-
-                  <div className="pt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowNewSeriesModal(false)}
-                      className="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30"
-                    >
-                      Guardar y Seguir
-                    </button>
-                  </div>
-                </form>
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowNewSeriesModal(false)}
+                        className="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        className="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30"
+                      >
+                        Guardar y Seguir
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           )}
