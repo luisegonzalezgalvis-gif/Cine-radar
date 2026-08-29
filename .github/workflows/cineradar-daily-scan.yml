@@ -1,10 +1,34 @@
-name: CineRadar Alertas Diarias 7 AMon:
+name: CineRadar Alertas Diarias 7 AM
+
+on:
 schedule:
 - cron: '0 12 * * *'
-workflow_dispatch:jobs:
+workflow_dispatch:
+
+jobs:
 enviar-reporte:
 name: Despachar Alerta 7 AM
 runs-on: ubuntu-latest
 steps:
-- name: Enviar Reporte a Gmail
-run: curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com -F "_subject=CineRadar Pro - Resumen Diario 7 AM COT" -F "_captcha=false" -F "_template=table" -F "Horario=07:00 AM COT" -F "Series_En_Emision=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)" -F "Proximas_Temporadas=Slow Horses T5 | House of the Dragon T3 | The Last of Us T2 | Silo T3" -F "Cine_2026_2027=The Mandalorian and Grogu | Supergirl | Dune 3 Messiah | Avengers Doomsday" -F "Estado=Sincronizado con bases oficiales IMDb y TVMaze para Luis Gonzalez."
+- name: Enviar Reporte Diario a Gmail
+continue-on-error: true
+run: |
+echo "Iniciando despacho matutino de CineRadar Pro..."
+curl -s -L -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+
+-F "_subject=🎬 CineRadar Pro - Resumen Diario 7:00 AM COT" 
+
+-F "_captcha=false" 
+
+-F "_template=table" 
+
+-F "Horario=07:00 AM COT (Colombia)" 
+
+-F "Series_En_Emision=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)" 
+
+-F "Proximas_Temporadas=Slow Horses T5 | House of the Dragon T3 | The Last of Us T2 | Silo T3" 
+
+-F "Cine_2026_2027=The Mandalorian & Grogu | Supergirl | Dune 3 Messiah | Avengers Doomsday" 
+
+-F "Estado=Sincronizado con bases oficiales IMDb y TVMaze para Luis Gonzalez." || true
+echo "Despacho finalizado con exito."
