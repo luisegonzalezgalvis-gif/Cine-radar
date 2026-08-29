@@ -18,20 +18,6 @@ runs-on: ubuntu-latest
 steps:
 - name: Enviar Reporte de Series a Gmail
 run: |
-echo "Iniciando despacho de alertas de series y estrenos..."
-curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
-
--F '_subject=🎬 CineRadar Pro - Alerta de Series & Estrenos 7:00 AM COT' 
-
--F '_captcha=false' 
-
--F '_template=table' 
-
--F 'Emision_Semanal=Severance T2 (Viernes 2 AM Apple TV+) | Rings of Power T2 (Jueves 2 AM Prime Video)' 
-
--F 'Esperando_Temporada=House of the Dragon T3 (Max - 2027) | The Last of Us T2 (Max - 2027) | Stranger Things T5 (Netflix - 2027) | Fallout T2 (Prime - 2027)' 
-
--F 'Proximos_Estrenos_Cine=Avengers: Doomsday (Mayo 2027) | The Batman Part II (Oct 2027) | Spider-Man Beyond (Jun 2027)' 
-
--F 'Nota_Radar=Monitoreo diario automatizado por CineRadar Pro para Luis Gonzalez.' || true
-echo "Alerta despachada exitosamente."
+echo "Despachando alerta automatizada de CineRadar..."
+curl -s -X POST https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com -H "Content-Type: application/json" -d '{"_subject":"🎬 CineRadar Pro - Alerta Diaria de Series 7:00 AM COT","_captcha":"false","_template":"table","Emision_Semanal":"Severance T2 (Viernes 2 AM Apple TV+) | Rings of Power T2 (Jueves 2 AM Prime Video)","Esperando_Temporada":"House of the Dragon T3 (Max - 2027) | The Last of Us T2 (Max - 2027) | Stranger Things T5 (Netflix - 2027) | Fallout T2 (Prime - 2027)","Proximos_Estrenos_Cine":"Avengers: Doomsday (Mayo 2027) | The Batman Part II (Oct 2027) | Spider-Man Beyond (Jun 2027)","Nota_Radar":"Monitoreo diario automatizado de series y estrenos para Luis Gonzalez."}' || true
+echo "Alerta despachada correctamente."
