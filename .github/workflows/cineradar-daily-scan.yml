@@ -17,9 +17,7 @@ name: Despachar Alerta CineRadar
 runs-on: ubuntu-latest
 steps:
 - name: Enviar Reporte de Series a Gmail
-continue-on-error: true
 run: |
-set +e
 echo "Despachando alerta automatizada de CineRadar..."
 curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
 
@@ -29,12 +27,11 @@ curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com
 
 -F '_template=table' 
 
--F 'Emision_Semanal=Severance T2 (Viernes 2 AM Apple TV+) | Rings of Power T2 (Jueves 2 AM Prime Video)' 
+-F 'Emision_Semanal=Slow Horses T4 (Apple TV+ - Miercoles) | Severance T2 (Apple TV+ - Viernes) | Rings of Power T2 (Prime Video - Jueves)' 
 
--F 'Esperando_Temporada=House of the Dragon T3 (Max - 2027) | The Last of Us T2 (Max - 2027) | Stranger Things T5 (Netflix - 2027) | Fallout T2 (Prime - 2027)' 
+-F 'Esperando_Temporada=Silo T2 (Apple TV+ - Nov 2024) | House of the Dragon T3 (Max - 2026) | The Last of Us T2 (Max - 2025) | Stranger Things T5 (Netflix - 2025) | Fallout T2 (Prime - 2026)' 
 
--F 'Proximos_Estrenos_Cine=Avengers: Doomsday (Mayo 2027) | The Batman Part II (Oct 2027) | Spider-Man Beyond (Jun 2027)' 
+-F 'Proximos_Estrenos_Cine=Avengers: Doomsday | The Batman Part II | Spider-Man Beyond the Spider-Verse' 
 
 -F 'Nota_Radar=Monitoreo diario automatizado de series y estrenos para Luis Gonzalez.' || true
 echo "Proceso finalizado correctamente."
-exit 0
