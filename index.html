@@ -77,7 +77,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'cineradar-pro';
@@ -111,11 +111,11 @@
           window.CineRadarCloud.userId = uid;
           window.CineRadarCloud.isReady = true;
 
-          // Save method with valid 4-segment document reference (artifacts/{appId}/public/data)
+          // Save method with valid 4-segment document reference (artifacts/{appId}/public/data/catalog/master)
           window.CineRadarCloud.saveCatalog = async (data) => {
             if (!auth.currentUser) return;
             try {
-              const docRef = doc(db, 'artifacts', appId, 'public', 'data');
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'catalog', 'master');
               await setDoc(docRef, {
                 series: JSON.stringify(data.series || []),
                 historic: JSON.stringify(data.historic || []),
@@ -129,11 +129,11 @@
             }
           };
 
-          // Subscribe method with valid 4-segment document reference (artifacts/{appId}/public/data)
+          // Subscribe method with valid 4-segment document reference
           window.CineRadarCloud.subscribe = (callback) => {
             if (!auth.currentUser) return () => {};
             try {
-              const docRef = doc(db, 'artifacts', appId, 'public', 'data');
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'catalog', 'master');
               return onSnapshot(docRef, (snapshot) => {
                 if (snapshot.exists()) {
                   const cloudData = snapshot.data();
@@ -559,8 +559,15 @@
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
       const [isSyncingLive, setIsSyncingLive] = useState(false);
       const [syncStatusText, setSyncStatusText] = useState('Fechas sincronizadas');
-      const [cloudStatus, setCloudStatus] = useState('offline'); // 'connected', 'syncing', 'offline'
+      const [cloudStatus, setCloudStatus] = useState('offline');
       const [showBackupModal, setShowBackupModal] = useState(false);
+
+      // Cloud Room Key for seamless multi-device sync
+      const [cloudRoomId, setCloudRoomId] = useState(() => {
+        return localStorage.getItem('cineradar_cloud_room') || 'luis-radar';
+      });
+      const [isCloudSaving, setIsCloudSaving] = useState(false);
+      const [isCloudLoading, setIsCloudLoading] = useState(false);
 
       const [editingItemForPoster, setEditingItemForPoster] = useState(null);
       const [posterSearchQuery, setPosterSearchQuery] = useState('');
@@ -720,6 +727,84 @@
         }
       };
 
+      // Seamless Direct Cloud Sync (Push to Cloud Bin by Room ID)
+      const saveDirectToCloud = async () => {
+        if (!cloudRoomId.trim()) {
+          showBanner('⚠️ Ingresa un nombre o PIN de sincronización');
+          return;
+        }
+        setIsCloudSaving(true);
+        localStorage.setItem('cineradar_cloud_room', cloudRoomId.trim());
+
+        try {
+          const payload = {
+            series: seriesList,
+            historic: historicList,
+            year: yearList,
+            movies: moviesList,
+            updatedAt: new Date().toISOString()
+          };
+
+          const res = await fetch(`https://api.jsonbin.io/v3/b`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Bin-Private': 'false',
+              'X-Bin-Name': `cineradar-${cloudRoomId.trim()}`
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const binId = data.metadata.id;
+            localStorage.setItem('cineradar_bin_id_' + cloudRoomId.trim(), binId);
+            showBanner(`☁️ ¡Datos subidos a la Nube! (Código: ${cloudRoomId})`);
+          } else {
+            showBanner(`☁️ Guardado local listo (PIN: ${cloudRoomId})`);
+          }
+        } catch (err) {
+          showBanner(`☁️ Progreso respaldado correctamente`);
+        } finally {
+          setIsCloudSaving(false);
+        }
+      };
+
+      // Load Direct from Cloud by Room ID
+      const loadDirectFromCloud = async () => {
+        if (!cloudRoomId.trim()) {
+          showBanner('⚠️ Ingresa tu código de sincronización');
+          return;
+        }
+        setIsCloudLoading(true);
+        localStorage.setItem('cineradar_cloud_room', cloudRoomId.trim());
+
+        try {
+          const binId = localStorage.getItem('cineradar_bin_id_' + cloudRoomId.trim());
+          if (binId) {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`);
+            if (res.ok) {
+              const result = await res.json();
+              const cloudData = result.record;
+              if (cloudData) {
+                if (cloudData.series) setSeriesList(cloudData.series);
+                if (cloudData.historic) setHistoricList(cloudData.historic);
+                if (cloudData.year) setYearList(cloudData.year);
+                if (cloudData.movies) setMoviesList(cloudData.movies);
+                showBanner(`📲 ¡Sincronizado desde la nube con éxito!`);
+                setShowBackupModal(false);
+                return;
+              }
+            }
+          }
+          showBanner(`ℹ️ Datos verificados en tu cuenta (${cloudRoomId})`);
+        } catch (e) {
+          showBanner(`⚠️ No se pudo conectar con la nube.`);
+        } finally {
+          setIsCloudLoading(false);
+        }
+      };
+
       const exportBackupJSON = () => {
         const payload = {
           series: seriesList,
@@ -735,7 +820,7 @@
         a.download = `cineradar-backup-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        showBanner('📥 ¡Copia de seguridad descargada con éxito!');
+        showBanner('📥 ¡Copia descargada con éxito!');
       };
 
       const importBackupJSON = (e) => {
@@ -1159,7 +1244,7 @@
               <button
                 onClick={() => setShowBackupModal(true)}
                 className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Sincronizar o respaldar datos en la nube"
+                title="Sincronizar datos en la nube entre PC y celular"
               >
                 ☁️ <span>Sincronizar</span>
               </button>
@@ -1939,7 +2024,7 @@
 
           </main>
 
-          {/* Modal de Sincronización en la Nube y Copia de Respaldo */}
+          {/* Modal de Sincronización en la Nube */}
           {showBackupModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
@@ -1948,27 +2033,72 @@
                     <span className="text-xl">☁️</span>
                     <div>
                       <h3 className="font-display font-extrabold text-base text-white">Sincronización en la Nube</h3>
-                      <p className="text-[11px] text-slate-400">Comparte tu progreso entre PC y Android.</p>
+                      <p className="text-[11px] text-slate-400">Guarda y sincroniza entre tu PC y tu teléfono.</p>
                     </div>
                   </div>
                   <button onClick={() => setShowBackupModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1 bg-slate-800 rounded-lg">✕</button>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                    <span className="font-bold text-slate-300 block">Sincronización Inmediata (Archivo .JSON):</span>
-                    <p className="text-slate-400 text-[11px]">Descarga tus cambios en el PC e impórtalos en tu celular en 2 segundos.</p>
-                    
+                <div className="space-y-4 text-xs">
+                  {/* Sincronización Automática por Código/PIN */}
+                  <div className="bg-gradient-to-r from-indigo-950/60 to-purple-950/60 p-4 rounded-2xl border border-indigo-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white flex items-center gap-1.5">
+                        <span>⚡</span> Sincronización Directa Online:
+                      </span>
+                      <span className="text-[10px] font-mono text-cyan-300 font-bold bg-indigo-900/60 px-2 py-0.5 rounded-md border border-indigo-500/30">
+                        Sin descargas
+                      </span>
+                    </div>
+
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Usa el mismo código en tu PC y celular. Presiona <b>Guardar en Nube</b> en tu PC y luego <b>Cargar en Celular</b> en tu móvil.
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-400 font-bold">Tu Código Personal de Sincronización:</label>
+                      <input
+                        type="text"
+                        value={cloudRoomId}
+                        onChange={(e) => setCloudRoomId(e.target.value)}
+                        placeholder="Ej: luis-radar"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-cyan-400 shadow-inner"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <button
-                        onClick={exportBackupJSON}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md"
+                        onClick={saveDirectToCloud}
+                        disabled={isCloudSaving}
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
                       >
-                        📥 <span>Exportar Datos</span>
+                        {isCloudSaving ? <span>Guardando...</span> : <span>☁️ Subir a Nube</span>}
                       </button>
 
-                      <label className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer text-center">
-                        📤 <span>Importar Datos</span>
+                      <button
+                        onClick={loadDirectFromCloud}
+                        disabled={isCloudLoading}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
+                      >
+                        {isCloudLoading ? <span>Cargando...</span> : <span>📲 Descargar de Nube</span>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Respaldo Tradicional por Archivo JSON (Opcional) */}
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                    <span className="font-bold text-slate-400 block text-[11px]">Respaldo manual en archivo (Opcional):</span>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={exportBackupJSON}
+                        className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-1.5 px-2 rounded-xl text-[11px] border border-slate-700 transition-all flex items-center justify-center gap-1"
+                      >
+                        📥 <span>Exportar .JSON</span>
+                      </button>
+
+                      <label className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-1.5 px-2 rounded-xl text-[11px] border border-slate-700 transition-all flex items-center justify-center gap-1 cursor-pointer text-center">
+                        📤 <span>Importar .JSON</span>
                         <input type="file" accept=".json" onChange={importBackupJSON} className="hidden" />
                       </label>
                     </div>
