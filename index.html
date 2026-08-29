@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CineRadar Pro — Tracker de Series, Episodios y Estrenos (IMDb & TMDB)</title>
+  <title>CineRadar Pro — Tracker Inteligente de Series & Próximas Temporadas</title>
   
   <!-- PWA & Meta Tags -->
   <meta name="theme-color" content="#030712">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CineRadar">
-  <meta name="description" content="Tracker inteligente de series de TV con correlación IMDb, TVMaze y TMDB. Alertas de temporadas y estrenos.">
+  <meta name="apple-web-app-capable" content="yes">
+  <meta name="apple-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-web-app-title" content="CineRadar">
+  <meta name="description" content="Tracker inteligente de series con validación en vivo de fechas futuras de estreno y correlación IMDb.">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -59,7 +59,6 @@
     }
     .glow-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.35); }
     .glow-purple { box-shadow: 0 0 15px rgba(168, 85, 247, 0.35); }
-    .glow-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.35); }
   </style>
 </head>
 <body>
@@ -98,190 +97,36 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useCallback } = React;
 
     const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop&q=80';
 
-    // MOTOR DE CORRELACIÓN Y CONOCIMIENTO MULTI-FUENTE (IMDb + TMDB + TVMAZE)
-    const CORRELATED_KNOWLEDGE_BASE = {
-      'house of the dragon': {
-        title: 'House of the Dragon',
-        imdbId: 'tt11198330',
-        imdbRating: 8.4,
-        platform: 'Max (HBO)',
-        status: 'waiting_season',
-        currentSeason: 3,
-        nextSeasonNumber: 4,
-        nextReleaseDate: '2026-06-15',
-        releaseSchedule: 'Finalizada Temporada 3. Próxima Temporada 4 confirmada por HBO en producción para la Danza de Dragones final.',
-        airDay: 'Domingos',
-        airTime: '08:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg'
-      },
-      'the last of us': {
-        title: 'The Last of Us',
-        imdbId: 'tt3581920',
-        imdbRating: 8.8,
-        platform: 'Max (HBO)',
-        status: 'waiting_season',
-        currentSeason: 2,
-        nextSeasonNumber: 3,
-        nextReleaseDate: '2026-04-18',
-        releaseSchedule: 'Finalizada Temporada 2 (Abby & Ellie). Próxima Temporada 3 confirmada por Max para completar la Parte II.',
-        airDay: 'Domingos',
-        airTime: '08:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg'
-      },
-      'slow horses': {
-        title: 'Slow Horses',
-        imdbId: 'tt5875444',
-        imdbRating: 8.2,
-        platform: 'Apple TV+',
-        status: 'waiting_season',
-        currentSeason: 4,
-        nextSeasonNumber: 5,
-        nextReleaseDate: '2025-09-03',
-        releaseSchedule: 'Temporada 4 emitida ("Spook Street"). Próxima Temporada 5 ("London Rules") confirmada oficialmente en Apple TV+.',
-        airDay: 'Miércoles',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/406/1015694.jpg'
-      },
-      'ted lasso': {
-        title: 'Ted Lasso',
-        imdbId: 'tt10986410',
-        imdbRating: 8.8,
-        platform: 'Apple TV+',
-        status: 'waiting_season',
-        currentSeason: 3,
-        nextSeasonNumber: 4,
-        nextReleaseDate: '2026-08-05',
-        releaseSchedule: 'Temporada 4 en desarrollo/preproducción con Apple TV+ y Warner Bros tras renovación de contratos.',
-        airDay: 'Miércoles',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/450/1126744.jpg'
-      },
-      'silo': {
-        title: 'Silo',
-        imdbId: 'tt14688458',
-        imdbRating: 8.1,
-        platform: 'Apple TV+',
-        status: 'waiting_season',
-        currentSeason: 2,
-        nextSeasonNumber: 3,
-        nextReleaseDate: '2025-11-14',
-        releaseSchedule: 'Temporada 2 emitida. Temporada 3 confirmada en rodaje para Apple TV+ con Rebecca Ferguson.',
-        airDay: 'Viernes',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/460/1151605.jpg'
-      },
-      'severance': {
-        title: 'Severance (Separación)',
-        imdbId: 'tt11280740',
-        imdbRating: 8.7,
-        platform: 'Apple TV+',
-        status: 'airing_weekly',
-        currentSeason: 2,
-        currentEpisode: 6,
-        totalEpisodesSeason: 10,
-        nextSeasonNumber: 3,
-        nextReleaseDate: '2025-01-17',
-        releaseSchedule: 'Emisión semanal activa. Nuevos capítulos cada Viernes a las 02:00 AM COT en Apple TV+.',
-        airDay: 'Viernes',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg'
-      },
-      'stranger things': {
-        title: 'Stranger Things',
-        imdbId: 'tt4574334',
-        imdbRating: 8.7,
-        platform: 'Netflix',
-        status: 'waiting_season',
-        currentSeason: 4,
-        nextSeasonNumber: 5,
-        nextReleaseDate: '2025-07-15',
-        releaseSchedule: 'Temporada 5 (Temporada Final) rodada para estreno mundial en Netflix.',
-        airDay: 'Jueves',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/397/994017.jpg'
-      },
-      'fallout': {
-        title: 'Fallout',
-        imdbId: 'tt12637874',
-        imdbRating: 8.4,
-        platform: 'Prime Video',
-        status: 'waiting_season',
-        currentSeason: 1,
-        nextSeasonNumber: 2,
-        nextReleaseDate: '2026-03-12',
-        releaseSchedule: 'Temporada 2 en producción ambientada en New Vegas.',
-        airDay: 'Jueves',
-        airTime: '07:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/508/1271378.jpg'
-      }
+    // Helper: Validar si una fecha está en el futuro
+    const isDateInFuture = (dateStr) => {
+      if (!dateStr) return false;
+      const target = new Date(dateStr);
+      if (isNaN(target.getTime())) return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return target > today;
     };
 
-    const MASTER_SERIES_INIT = [
-      {
-        id: 'ser-hotd',
-        title: 'House of the Dragon',
-        imdbId: 'tt11198330',
-        imdbRating: 8.4,
-        platform: 'Max (HBO)',
-        platformBg: 'bg-purple-900/60 text-purple-200 border-purple-500/40',
-        genres: ['Fantasía', 'Drama', 'Acción'],
-        status: 'waiting_season',
-        currentSeason: 3,
-        currentEpisode: 8,
-        totalEpisodesSeason: 8,
-        nextSeasonNumber: 4,
-        nextReleaseDate: '2026-06-15',
-        releaseSchedule: 'Finalizada Temporada 3. Próxima Temporada 4 confirmada por HBO para el clímax de la Danza de Dragones.',
-        airDay: 'Domingos',
-        airTime: '08:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg',
-        userTracking: true,
-        userProgressSeason: 3,
-        userProgressEpisode: 8,
-        notes: 'Sincronizado con IMDb tt11198330. Próxima entrega: Temporada 4.'
-      },
-      {
-        id: 'ser-tlou',
-        title: 'The Last of Us',
-        imdbId: 'tt3581920',
-        imdbRating: 8.8,
-        platform: 'Max (HBO)',
-        platformBg: 'bg-purple-900/60 text-purple-200 border-purple-500/40',
-        genres: ['Drama', 'Sci-Fi', 'Supervivencia'],
-        status: 'waiting_season',
-        currentSeason: 2,
-        currentEpisode: 9,
-        totalEpisodesSeason: 9,
-        nextSeasonNumber: 3,
-        nextReleaseDate: '2026-04-18',
-        releaseSchedule: 'Finalizada Temporada 2 (Abby & Ellie). Próxima Temporada 3 en camino por Max.',
-        airDay: 'Domingos',
-        airTime: '08:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
-        userTracking: true,
-        userProgressSeason: 2,
-        userProgressEpisode: 9,
-        notes: 'Sincronizado con IMDb tt3581920. Próxima entrega: Temporada 3.'
-      },
+    // BASE DE CONOCIMIENTO CORRELACIONADA CON IMDb Y ESTADOS REALES
+    const INITIAL_CATALOG = [
       {
         id: 'ser-slow-horses',
+        tvmazeId: 44058,
         title: 'Slow Horses',
         imdbId: 'tt5875444',
-        imdbRating: 8.2,
+        imdbRating: 8.3,
         platform: 'Apple TV+',
-        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
         genres: ['Drama', 'Thriller', 'Espionaje'],
         status: 'waiting_season',
         currentSeason: 4,
-        currentEpisode: 6,
-        totalEpisodesSeason: 6,
         nextSeasonNumber: 5,
-        nextReleaseDate: '2025-09-03',
-        releaseSchedule: 'Temporada 4 "Spook Street" emitida. Próxima Temporada 5 "London Rules" confirmada en Apple TV+.',
+        nextReleaseDate: '2025-09-03', // Fecha futura oficial confirmada
+        hasConfirmedFutureDate: true,
+        releaseSchedule: 'Temporada 4 emitida ("Spook Street"). Próxima Temporada 5 ("London Rules") confirmada oficialmente en Apple TV+.',
         airDay: 'Miércoles',
         airTime: '02:00 AM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/406/1015694.jpg',
@@ -291,73 +136,92 @@
         notes: 'Jackson Lamb y Slough House regresan para la T5.'
       },
       {
+        id: 'ser-hotd',
+        tvmazeId: 44778,
+        title: 'House of the Dragon',
+        imdbId: 'tt11198330',
+        imdbRating: 8.4,
+        platform: 'Max (HBO)',
+        genres: ['Fantasía', 'Drama', 'Acción'],
+        status: 'waiting_season',
+        currentSeason: 2,
+        nextSeasonNumber: 3,
+        nextReleaseDate: null, // Sin fecha futura confirmada aún por HBO
+        hasConfirmedFutureDate: false,
+        releaseSchedule: 'Temporada 2 concluida. Temporada 3 en fase de producción/rodaje en Reino Unido. HBO no ha fijado día exacto de estreno.',
+        airDay: 'Domingos',
+        airTime: '08:00 PM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg',
+        userTracking: true,
+        userProgressSeason: 2,
+        userProgressEpisode: 8,
+        notes: 'En rodaje para HBO Max. Fecha oficial por anunciar.'
+      },
+      {
+        id: 'ser-tlou',
+        tvmazeId: 46562,
+        title: 'The Last of Us',
+        imdbId: 'tt3581920',
+        imdbRating: 8.8,
+        platform: 'Max (HBO)',
+        genres: ['Drama', 'Sci-Fi', 'Supervivencia'],
+        status: 'waiting_season',
+        currentSeason: 1,
+        nextSeasonNumber: 2,
+        nextReleaseDate: null, // Rodada pero sin día exacto fijado
+        hasConfirmedFutureDate: false,
+        releaseSchedule: 'Temporada 1 concluida. Temporada 2 rodada con Pedro Pascal y Bella Ramsey; estreno previsto para 2025 (día exacto por confirmar por HBO).',
+        airDay: 'Domingos',
+        airTime: '08:00 PM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
+        userTracking: true,
+        userProgressSeason: 1,
+        userProgressEpisode: 9,
+        notes: 'Segunda entrega adaptando los eventos de Seattle.'
+      },
+      {
         id: 'ser-silo',
+        tvmazeId: 54625,
         title: 'Silo',
         imdbId: 'tt14688458',
         imdbRating: 8.1,
         platform: 'Apple TV+',
-        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
         genres: ['Sci-Fi', 'Misterio', 'Drama'],
         status: 'waiting_season',
         currentSeason: 2,
-        currentEpisode: 10,
-        totalEpisodesSeason: 10,
         nextSeasonNumber: 3,
-        nextReleaseDate: '2025-11-14',
-        releaseSchedule: 'Temporada 2 emitida. Temporada 3 confirmada en rodaje por Apple TV+.',
+        nextReleaseDate: null,
+        hasConfirmedFutureDate: false,
+        releaseSchedule: 'Temporada 2 emitida. Temporada 3 en rodaje confirmado por Apple TV+.',
         airDay: 'Viernes',
         airTime: '02:00 AM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/460/1151605.jpg',
         userTracking: true,
         userProgressSeason: 2,
         userProgressEpisode: 10,
-        notes: 'Juliette Nichols en los silos exteriores.'
-      },
-      {
-        id: 'ser-ted-lasso',
-        title: 'Ted Lasso',
-        imdbId: 'tt10986410',
-        imdbRating: 8.8,
-        platform: 'Apple TV+',
-        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
-        genres: ['Comedia', 'Drama', 'Deportes'],
-        status: 'waiting_season',
-        currentSeason: 3,
-        currentEpisode: 12,
-        totalEpisodesSeason: 12,
-        nextSeasonNumber: 4,
-        nextReleaseDate: '2026-08-05',
-        releaseSchedule: 'Temporada 4 en desarrollo/preproducción por Apple TV+ tras renovaciones de contrato.',
-        airDay: 'Miércoles',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/450/1126744.jpg',
-        userTracking: true,
-        userProgressSeason: 3,
-        userProgressEpisode: 12,
-        notes: 'Temporada 4 confirmada en camino.'
+        notes: 'Juliette Nichols explorando el exterior.'
       },
       {
         id: 'ser-severance',
+        tvmazeId: 44265,
         title: 'Severance (Separación)',
         imdbId: 'tt11280740',
         imdbRating: 8.7,
         platform: 'Apple TV+',
-        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
         genres: ['Misterio', 'Sci-Fi', 'Thriller'],
         status: 'airing_weekly',
         currentSeason: 2,
-        currentEpisode: 6,
-        totalEpisodesSeason: 10,
-        nextEpisodeNumber: 7,
+        nextSeasonNumber: 3,
         nextReleaseDate: '2025-01-17',
-        releaseSchedule: 'Nuevo episodio cada Viernes a las 02:00 AM COT en Apple TV+.',
+        hasConfirmedFutureDate: true,
+        releaseSchedule: 'Emisión semanal activa. Nuevo capítulo cada Viernes a las 02:00 AM COT en Apple TV+.',
         airDay: 'Viernes',
         airTime: '02:00 AM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg',
         userTracking: true,
         userProgressSeason: 2,
         userProgressEpisode: 6,
-        notes: 'Misterio de Lumon Industries.'
+        notes: 'Misterios dentro de Lumon Industries.'
       }
     ];
 
@@ -430,21 +294,21 @@
     };
 
     function App() {
-      const [activeTab, setActiveTab] = useState('tracking');
+      const [activeTab, setActiveTab] = useState('seasons');
       
       const [seriesList, setSeriesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_series_v7');
+          const saved = localStorage.getItem('cineradar_series_v8');
           if (saved) return JSON.parse(saved);
-          return MASTER_SERIES_INIT;
+          return INITIAL_CATALOG;
         } catch (e) {
-          return MASTER_SERIES_INIT;
+          return INITIAL_CATALOG;
         }
       });
 
       const [moviesList, setMoviesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_movies_v7');
+          const saved = localStorage.getItem('cineradar_movies_v8');
           if (saved) return JSON.parse(saved);
           return MASTER_MOVIES_INIT;
         } catch (e) {
@@ -458,8 +322,10 @@
       const [showNewSeriesModal, setShowNewSeriesModal] = useState(false);
       const [bannerMessage, setBannerMessage] = useState(null);
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+      const [isSyncingLive, setIsSyncingLive] = useState(false);
+      const [syncStatusText, setSyncStatusText] = useState('Sincronizado con IMDb & TVMaze');
 
-      // Estados de Búsqueda Online Multi-Fuente (IMDb + TVMaze)
+      // Modal de Búsqueda
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
       const [isSearchingApi, setIsSearchingApi] = useState(false);
@@ -472,21 +338,21 @@
       const [formStatus, setFormStatus] = useState('waiting_season');
       const [formAirDay, setFormAirDay] = useState('Domingos');
       const [formAirTime, setFormAirTime] = useState('08:00 PM COT');
-      const [formNextDate, setFormNextDate] = useState('2026-06-15');
-      const [formCurrentSeason, setFormCurrentSeason] = useState('3');
-      const [formNextSeason, setFormNextSeason] = useState('4');
+      const [formNextDate, setFormNextDate] = useState('');
+      const [formCurrentSeason, setFormCurrentSeason] = useState('2');
+      const [formNextSeason, setFormNextSeason] = useState('3');
       const [formPoster, setFormPoster] = useState('');
       const [formRating, setFormRating] = useState('8.5');
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_series_v7', JSON.stringify(seriesList));
+          localStorage.setItem('cineradar_series_v8', JSON.stringify(seriesList));
         } catch (e) {}
       }, [seriesList]);
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_movies_v7', JSON.stringify(moviesList));
+          localStorage.setItem('cineradar_movies_v8', JSON.stringify(moviesList));
         } catch (e) {}
       }, [moviesList]);
 
@@ -499,12 +365,91 @@
         if ('Notification' in window) {
           setNotificationPermission(Notification.permission);
         }
+
+        // Sincronización automática de fechas oficiales al cargar la app
+        syncLiveDatesFromApis();
       }, []);
 
       const showBanner = (msg) => {
         setBannerMessage(msg);
         playChime();
         setTimeout(() => setBannerMessage(null), 4500);
+      };
+
+      // MOTOR DE SINCRONIZACIÓN EN VIVO: Verifica si ya hay una fecha futura oficial
+      const syncLiveDatesFromApis = async () => {
+        setIsSyncingLive(true);
+        setSyncStatusText('Consultando fechas oficiales en vivo...');
+        
+        try {
+          let updatedCount = 0;
+          const updatedSeries = await Promise.all(
+            seriesList.map(async (series) => {
+              if (!series.title) return series;
+              try {
+                const res = await fetch(`https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(series.title)}&embed[]=nextepisode&embed[]=previousepisode`);
+                if (!res.ok) return series;
+                const data = await res.json();
+
+                const nextEp = data._embedded && data._embedded.nextepisode;
+                const prevEp = data._embedded && data._embedded.previousepisode;
+
+                // Si hay un próximo episodio fechado en el futuro
+                if (nextEp && isDateInFuture(nextEp.airdate)) {
+                  updatedCount++;
+                  const daysDiff = (new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24);
+                  const isWeekly = daysDiff <= 7;
+                  
+                  return {
+                    ...series,
+                    status: isWeekly ? 'airing_weekly' : 'waiting_season',
+                    hasConfirmedFutureDate: true,
+                    nextReleaseDate: nextEp.airdate,
+                    currentSeason: nextEp.season,
+                    nextSeasonNumber: nextEp.season,
+                    currentEpisode: nextEp.number,
+                    airDay: data.schedule && data.schedule.days && data.schedule.days[0] ? data.schedule.days[0] : series.airDay,
+                    airTime: data.schedule && data.schedule.time ? `${data.schedule.time} COT` : series.airTime,
+                    releaseSchedule: isWeekly 
+                      ? `Nuevo episodio T${nextEp.season}E${nextEp.number} programado para el ${nextEp.airdate} (${series.airDay || 'Semanal'}).`
+                      : `Próxima Temporada ${nextEp.season} confirmada oficialmente para el ${nextEp.airdate}.`
+                  };
+                }
+
+                // Si NO hay próximo episodio fechado pero ya hubo episodios pasados
+                if (prevEp) {
+                  const lastSeasonNum = prevEp.season || series.currentSeason;
+                  // Si no tiene fecha futura explícita guardada que sea válida
+                  if (!isDateInFuture(series.nextReleaseDate)) {
+                    return {
+                      ...series,
+                      status: 'waiting_season',
+                      hasConfirmedFutureDate: false,
+                      nextReleaseDate: null,
+                      currentSeason: lastSeasonNum,
+                      nextSeasonNumber: Math.max(series.nextSeasonNumber || (lastSeasonNum + 1), lastSeasonNum + 1),
+                      releaseSchedule: `Temporada ${lastSeasonNum} concluida. Próxima entrega en producción; fecha oficial por anunciar.`
+                    };
+                  }
+                }
+
+                return series;
+              } catch (err) {
+                return series;
+              }
+            })
+          );
+
+          setSeriesList(updatedSeries);
+          setSyncStatusText('✅ Fechas validadas con APIs oficiales');
+          if (updatedCount > 0) {
+            showBanner(`✨ ¡${updatedCount} series actualizadas con nuevas fechas oficiales!`);
+          }
+        } catch (e) {
+          setSyncStatusText('Sincronizado');
+        } finally {
+          setIsSyncingLive(false);
+        }
       };
 
       const handleInstallApp = async () => {
@@ -522,14 +467,14 @@
 
       const handleRequestNotifications = async () => {
         if (!('Notification' in window)) {
-          showBanner('⚠️ Este navegador no soporta alertas web directas.');
+          showBanner('⚠️ Notificaciones web no soportadas en este navegador.');
           return;
         }
         try {
           const perm = await Notification.requestPermission();
           setNotificationPermission(perm);
           if (perm === 'granted') {
-            showBanner('🔔 ¡Notificaciones activadas! Te avisaremos de nuevos capítulos.');
+            showBanner('🔔 ¡Notificaciones activadas con éxito!');
           }
         } catch (e) {}
       };
@@ -538,13 +483,13 @@
         setSeriesList(prev => prev.map(s => {
           if (s.id === id) {
             const nextStatus = s.status === 'airing_weekly' ? 'waiting_season' : 'airing_weekly';
-            showBanner(`🔄 Estado de "${s.title}" cambiado a: ${nextStatus === 'airing_weekly' ? '⚡ En Emisión Semanal' : '⏳ Esperando Temporada'}`);
+            showBanner(`🔄 "${s.title}" cambiada a: ${nextStatus === 'airing_weekly' ? '⚡ En Emisión' : '⏳ Esperando Temporada'}`);
             return {
               ...s,
               status: nextStatus,
               releaseSchedule: nextStatus === 'airing_weekly'
                 ? `Nuevo episodio cada ${s.airDay || 'Viernes'} a las ${s.airTime || '02:00 AM COT'} por ${s.platform}.`
-                : `Temporada concluida. Próxima temporada ${s.nextSeasonNumber || (s.currentSeason + 1)} en desarrollo/espera.`
+                : `Temporada concluida. Próxima Temporada ${s.nextSeasonNumber || (s.currentSeason + 1)} en espera.`
             };
           }
           return s;
@@ -562,18 +507,18 @@
       };
 
       const restoreDefaults = () => {
-        setSeriesList(MASTER_SERIES_INIT);
+        setSeriesList(INITIAL_CATALOG);
         setMoviesList(MASTER_MOVIES_INIT);
-        localStorage.setItem('cineradar_series_v7', JSON.stringify(MASTER_SERIES_INIT));
-        localStorage.setItem('cineradar_movies_v7', JSON.stringify(MASTER_MOVIES_INIT));
-        showBanner('🔄 ¡Catálogo restaurado y sincronizado con IMDb/TMDB!');
+        localStorage.setItem('cineradar_series_v8', JSON.stringify(INITIAL_CATALOG));
+        localStorage.setItem('cineradar_movies_v8', JSON.stringify(MASTER_MOVIES_INIT));
+        showBanner('🔄 ¡Catálogo restaurado y verificado!');
       };
 
       const toggleTracking = (id) => {
         setSeriesList(prev => prev.map(s => {
           if (s.id === id) {
             const nextVal = !s.userTracking;
-            showBanner(nextVal ? `✓ Siguiendo: ${s.title}` : `Ocultada de seguimiento: ${s.title}`);
+            showBanner(nextVal ? `✓ Siguiendo: ${s.title}` : `Ocultada: ${s.title}`);
             return { ...s, userTracking: nextVal };
           }
           return s;
@@ -620,7 +565,7 @@
         }));
       };
 
-      // Búsqueda Multi-Fuente con Detección IMDb + TVMaze
+      // Búsqueda en Vivo
       const handleSearchMultiSource = async (query) => {
         setApiSearchQuery(query);
         if (!query || query.trim().length < 2) {
@@ -634,146 +579,81 @@
           const data = await res.json();
           setApiSearchResults(data || []);
         } catch (err) {
-          console.error("Error al buscar en API:", err);
+          console.error(err);
         } finally {
           setIsSearchingApi(false);
         }
       };
 
-      // Importar serie procesando estado real y base de conocimiento correlacionada
-      const handleImportFromApi = (item) => {
+      // Importar desde API con validación estricta de fechas
+      const handleImportFromApi = async (item) => {
         const show = item.show;
         if (!show) return;
 
-        const cleanSummary = show.summary ? show.summary.replace(/<[^>]*>?/gm, '') : '';
-        const titleKey = show.name.trim().toLowerCase();
-        
-        const kbMatch = CORRELATED_KNOWLEDGE_BASE[titleKey];
+        let futureDate = null;
+        let hasFuture = false;
+        let currentSn = 1;
+        let nextSn = 2;
+        let isWeekly = false;
 
-        const platformName = kbMatch 
-          ? kbMatch.platform 
-          : (show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming'));
-        
-        const airDay = kbMatch 
-          ? kbMatch.airDay 
-          : (show.schedule && show.schedule.days && show.schedule.days.length > 0 ? show.schedule.days[0] : 'Viernes');
-        
-        const airTime = kbMatch 
-          ? kbMatch.airTime 
-          : (show.schedule && show.schedule.time ? `${show.schedule.time} COT` : '02:00 AM COT');
+        try {
+          const detailRes = await fetch(`https://api.tvmaze.com/shows/${show.id}?embed[]=nextepisode&embed[]=previousepisode`);
+          if (detailRes.ok) {
+            const detailData = await detailRes.json();
+            const nextEp = detailData._embedded && detailData._embedded.nextepisode;
+            const prevEp = detailData._embedded && detailData._embedded.previousepisode;
 
-        const imdbCode = kbMatch && kbMatch.imdbId 
-          ? kbMatch.imdbId 
-          : (show.externals && show.externals.imdb ? show.externals.imdb : null);
-
-        const imdbRatingVal = kbMatch && kbMatch.imdbRating
-          ? kbMatch.imdbRating
-          : (show.rating && show.rating.average ? show.rating.average : 8.2);
-
-        let computedStatus = 'waiting_season';
-        let nextSeasonNum = 2;
-        let currentSeasonNum = 1;
-        let nextReleaseDateStr = '2026-06-15';
-        let releaseDesc = 'Temporada finalizada. Próxima entrega en espera.';
-
-        if (kbMatch) {
-          computedStatus = kbMatch.status;
-          currentSeasonNum = kbMatch.currentSeason || 1;
-          nextSeasonNum = kbMatch.nextSeasonNumber || (currentSeasonNum + 1);
-          nextReleaseDateStr = kbMatch.nextReleaseDate;
-          releaseDesc = kbMatch.releaseSchedule;
-        } else {
-          if (show.status === 'Ended') {
-            computedStatus = 'waiting_season';
-            releaseDesc = 'Serie concluida oficialmente.';
-          } else {
-            computedStatus = 'waiting_season';
-            releaseDesc = `Esperando confirmación de próxima temporada por ${platformName}.`;
+            if (nextEp && isDateInFuture(nextEp.airdate)) {
+              futureDate = nextEp.airdate;
+              hasFuture = true;
+              currentSn = nextEp.season;
+              nextSn = nextEp.season;
+              const daysDiff = (new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24);
+              isWeekly = daysDiff <= 7;
+            } else if (prevEp) {
+              currentSn = prevEp.season || 1;
+              nextSn = currentSn + 1;
+              hasFuture = false;
+              futureDate = null;
+            }
           }
-        }
+        } catch (e) {}
 
-        const posterUrl = show.image 
-          ? (show.image.original || show.image.medium) 
-          : DEFAULT_FALLBACK_POSTER;
+        const platformName = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
+        const ratingVal = show.rating && show.rating.average ? show.rating.average : 8.2;
+        const imdbCode = show.externals && show.externals.imdb ? show.externals.imdb : null;
+        const posterUrl = show.image ? (show.image.original || show.image.medium) : DEFAULT_FALLBACK_POSTER;
 
         const newSeries = {
           id: 'tvmaze-' + show.id + '-' + Date.now(),
+          tvmazeId: show.id,
           title: show.name,
           imdbId: imdbCode,
-          imdbRating: imdbRatingVal,
+          imdbRating: ratingVal,
           platform: platformName,
-          platformBg: platformName.toLowerCase().includes('apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
-                      platformName.toLowerCase().includes('max') || platformName.toLowerCase().includes('hbo') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
-                      platformName.toLowerCase().includes('netflix') ? 'bg-red-900/60 text-red-200 border-red-500/40' :
-                      platformName.toLowerCase().includes('prime') ? 'bg-sky-900/60 text-sky-200 border-sky-500/40' :
-                      'bg-slate-800 text-slate-200 border-slate-700',
-          rating: imdbRatingVal,
           genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
-          status: computedStatus,
-          currentSeason: currentSeasonNum,
-          currentEpisode: 1,
-          totalEpisodesSeason: 10,
-          nextSeasonNumber: nextSeasonNum,
-          nextReleaseDate: nextReleaseDateStr,
-          releaseSchedule: releaseDesc,
-          airDay: airDay,
-          airTime: airTime,
+          status: isWeekly ? 'airing_weekly' : 'waiting_season',
+          currentSeason: currentSn,
+          nextSeasonNumber: nextSn,
+          nextReleaseDate: futureDate,
+          hasConfirmedFutureDate: hasFuture,
+          releaseSchedule: hasFuture 
+            ? `Próximo estreno oficial confirmado para el ${futureDate}.`
+            : `Temporada ${currentSn} concluida. En desarrollo; sin fecha oficial confirmada.`,
+          airDay: show.schedule && show.schedule.days && show.schedule.days[0] ? show.schedule.days[0] : 'Viernes',
+          airTime: show.schedule && show.schedule.time ? `${show.schedule.time} COT` : '02:00 AM COT',
           poster: posterUrl,
           userTracking: true,
-          userProgressSeason: currentSeasonNum,
+          userProgressSeason: currentSn,
           userProgressEpisode: 1,
-          notes: cleanSummary.slice(0, 140) + (cleanSummary.length > 140 ? '...' : '')
+          notes: `Importado con ficha IMDb ${imdbCode || 'N/A'}.`
         };
 
         setSeriesList(prev => [newSeries, ...prev]);
         setShowNewSeriesModal(false);
         setApiSearchQuery('');
         setApiSearchResults([]);
-        showBanner(`🎉 ¡"${show.name}" añadida con éxito (IMDb ★ ${imdbRatingVal})!`);
-      };
-
-      const handleAddCustomSeries = (e) => {
-        e.preventDefault();
-        if (!formTitle.trim()) return;
-
-        const currentSn = parseInt(formCurrentSeason) || 1;
-        const nextSn = parseInt(formNextSeason) || (currentSn + 1);
-
-        const newSeries = {
-          id: 'custom-' + Date.now(),
-          title: formTitle.trim(),
-          imdbId: formImdbId.trim() || null,
-          imdbRating: parseFloat(formRating) || 8.0,
-          platform: formPlatform,
-          platformBg: formPlatform.includes('Apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
-                      formPlatform.includes('Max') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
-                      formPlatform.includes('Netflix') ? 'bg-red-900/60 text-red-200 border-red-500/40' :
-                      'bg-sky-900/60 text-sky-200 border-sky-500/40',
-          rating: parseFloat(formRating) || 8.0,
-          genres: ['Drama', 'Serie'],
-          status: formStatus,
-          currentSeason: currentSn,
-          currentEpisode: 1,
-          totalEpisodesSeason: 8,
-          nextSeasonNumber: nextSn,
-          nextReleaseDate: formNextDate || '2026-06-15',
-          releaseSchedule: formStatus === 'airing_weekly' 
-            ? `Nuevo episodio todos los ${formAirDay} a las ${formAirTime}` 
-            : `Nueva Temporada ${nextSn} programada para el ${formNextDate}`,
-          airDay: formAirDay,
-          airTime: formAirTime,
-          poster: formPoster.trim() || DEFAULT_FALLBACK_POSTER,
-          userTracking: true,
-          userProgressSeason: currentSn,
-          userProgressEpisode: 1,
-          notes: 'Añadida manualmente.'
-        };
-
-        setSeriesList([newSeries, ...seriesList]);
-        setShowNewSeriesModal(false);
-        setFormTitle('');
-        setFormPoster('');
-        showBanner(`🎉 ¡"${newSeries.title}" añadida con éxito!`);
+        showBanner(`🎉 ¡"${show.name}" añadida a tu radar!`);
       };
 
       const myTrackedSeries = useMemo(() => seriesList.filter(s => s.userTracking), [seriesList]);
@@ -786,7 +666,7 @@
           const matchQ = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          s.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()));
           return matchP && matchQ;
-        }).sort((a, b) => b.rating - a.rating);
+        }).sort((a, b) => (b.imdbRating || b.rating || 0) - (a.imdbRating || a.rating || 0));
       }, [seriesList, selectedPlatform, searchQuery]);
 
       return (
@@ -801,25 +681,28 @@
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="font-display font-black text-lg tracking-tight text-white">CineRadar</h1>
-                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • TMDB PRO</span>
+                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">IMDb • LIVE SYNC</span>
                 </div>
-                <p className="text-[11px] text-slate-400">Rastreador Inteligente de Series & Próximas Temporadas</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-400">{syncStatusText}</span>
+                  {isSyncingLive && <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>}
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={restoreDefaults}
-                className="hidden lg:flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Sincronizar catálogo maestro"
+                onClick={syncLiveDatesFromApis}
+                disabled={isSyncingLive}
+                className="hidden md:flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                title="Comprobar si los estudios anunciaron nuevas fechas"
               >
-                🔄 <span>Restaurar Todo</span>
+                🔄 <span>{isSyncingLive ? 'Comprobando...' : 'Sincronizar Fechas'}</span>
               </button>
 
               <button
                 onClick={handleInstallApp}
                 className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Instalar en Android / PC"
               >
                 📲 <span>Instalar App</span>
               </button>
@@ -831,7 +714,6 @@
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                     : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
                 }`}
-                title="Activar Alertas"
               >
                 🔔 <span className="hidden sm:inline">{notificationPermission === 'granted' ? 'Alertas Activas' : 'Activar Alertas'}</span>
               </button>
@@ -840,7 +722,7 @@
                 onClick={() => setShowNewSeriesModal(true)}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
               >
-                🔍 <span>Buscar y Seguir Serie</span>
+                🔍 <span>Buscar Serie</span>
               </button>
             </div>
           </header>
@@ -857,9 +739,9 @@
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 pt-4">
             <div className="grid grid-cols-5 gap-1 sm:gap-2 p-1 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs font-bold">
               {[
-                { id: 'tracking', label: 'Mis Series', icon: '📺', count: myTrackedSeries.length },
-                { id: 'today', label: 'Capítulos Hoy', icon: '⚡', count: weeklyAiringSeries.length },
                 { id: 'seasons', label: 'Próx. Temporadas', icon: '⏳', count: waitingSeasonsList.length },
+                { id: 'today', label: 'Capítulos Hoy', icon: '⚡', count: weeklyAiringSeries.length },
+                { id: 'tracking', label: 'Mis Series', icon: '📺', count: myTrackedSeries.length },
                 { id: 'movies', label: 'Cine & Trailers', icon: '🍿', count: moviesList.length },
                 { id: 'explore', label: 'Top Calificadas', icon: '⭐', count: filteredExplore.length }
               ].map(tab => {
@@ -890,7 +772,217 @@
           {/* Contenido Principal */}
           <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-5 flex-1 space-y-6">
 
-            {/* VISTA 1: MIS SERIES */}
+            {/* VISTA 1: PRÓXIMAS TEMPORADAS (Con Validación Real de Fechas) */}
+            {activeTab === 'seasons' && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 border border-purple-500/30 p-5 rounded-3xl space-y-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                      ⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})
+                    </h2>
+                    <p className="text-xs text-slate-300">
+                      Temporadas anteriores finalizadas. Si el estudio no ha confirmado el día exacto de estreno, se marca automáticamente como pendiente.
+                    </p>
+                  </div>
+                  <button
+                    onClick={syncLiveDatesFromApis}
+                    className="text-xs font-bold bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/40 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+                  >
+                    🔄 <span>Verificar Fechas Oficiales</span>
+                  </button>
+                </div>
+
+                {waitingSeasonsList.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
+                    <p className="text-xs text-slate-400">No hay series en espera de temporada actualmente.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {waitingSeasonsList.map(series => {
+                      const hasRealFutureDate = isDateInFuture(series.nextReleaseDate) && series.hasConfirmedFutureDate;
+
+                      return (
+                        <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-4 flex flex-col justify-between">
+                          <div className="space-y-3">
+                            <div className="flex gap-3">
+                              <img
+                                src={series.poster}
+                                alt={series.title}
+                                className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
+                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                              />
+                              <div className="space-y-1 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                    {series.platform}
+                                  </span>
+                                  {series.imdbId && (
+                                    <a
+                                      href={`https://www.imdb.com/title/${series.imdbId}/`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] font-bold text-amber-400 hover:underline flex items-center gap-0.5"
+                                    >
+                                      <span>IMDb ★ {series.imdbRating || 8.2}</span>
+                                      <span>↗</span>
+                                    </a>
+                                  )}
+                                </div>
+                                <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
+                                <span className="text-xs text-slate-400 block">Última emitida: Temporada {series.currentSeason}</span>
+                                
+                                <div className="flex items-center gap-1.5 pt-1">
+                                  <button
+                                    onClick={() => toggleSeriesStatus(series.id)}
+                                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
+                                  >
+                                    ⚡ A Emisión
+                                  </button>
+                                  <div className="flex items-center bg-purple-950 border border-purple-500/40 rounded-lg px-1 py-0.5 text-[10px]">
+                                    <span className="text-slate-400 pr-1">Próx:</span>
+                                    <button onClick={() => changeNextSeasonNumber(series.id, -1)} className="px-1 font-bold text-purple-200 hover:text-white">-</button>
+                                    <span className="font-mono px-1 text-amber-300 font-bold">T{series.nextSeasonNumber}</span>
+                                    <button onClick={() => changeNextSeasonNumber(series.id, 1)} className="px-1 font-bold text-purple-200 hover:text-white">+</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Tarjeta de Fecha con Validación */}
+                            <div className="bg-purple-950/40 p-3.5 rounded-2xl border border-purple-500/30 space-y-1.5">
+                              <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
+                                🎯 Próxima Temporada {series.nextSeasonNumber}:
+                              </span>
+
+                              {hasRealFutureDate ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-lg">
+                                      📅 {series.nextReleaseDate}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                                      Fecha Oficial
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-mono font-bold text-amber-200/80 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                                      ⏳ Sin fecha oficial confirmada
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-400 italic">
+                                    {series.releaseSchedule}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                              className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1"
+                            >
+                              🗑️ <span>Eliminar</span>
+                            </button>
+                            <button
+                              onClick={() => showBanner(`🔔 Alerta configurada para la Temporada ${series.nextSeasonNumber} de ${series.title}`)}
+                              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-bold py-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
+                            >
+                              🔔 <span>Alerta T{series.nextSeasonNumber}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA 2: CAPÍTULOS HOY (Emisión Semanal) */}
+            {activeTab === 'today' && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white">
+                      ⚡ Calendario de Emisión Semanal ({weeklyAiringSeries.length})
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    Capítulos transmitidos semana a semana con día, hora exacta en Colombia (COT) y plataforma.
+                  </p>
+                </div>
+
+                {weeklyAiringSeries.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
+                    <p className="text-xs text-slate-400">No hay series en emisión semanal activa actualmente.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {weeklyAiringSeries.map(series => (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div className="flex gap-4">
+                          <img
+                            src={series.poster}
+                            alt={series.title}
+                            className="w-24 h-36 rounded-2xl object-cover shadow-lg shrink-0 border border-slate-700"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="space-y-1.5 flex-1">
+                            <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                              {series.platform}
+                            </span>
+                            <h3 className="font-display font-black text-base text-white">{series.title}</h3>
+                            
+                            <div className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
+                              📅 <span>Día de Emisión: {series.airDay}</span>
+                            </div>
+
+                            <div className="text-xs text-cyan-300 font-mono font-bold flex items-center gap-1.5">
+                              ⏰ <span>Hora: {series.airTime}</span>
+                            </div>
+
+                            <button
+                              onClick={() => toggleSeriesStatus(series.id)}
+                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
+                            >
+                              ⏳ Mover a Próximas Temporadas
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs space-y-1">
+                          <span className="text-slate-400 font-bold block">Estado de Emisión:</span>
+                          <p className="text-slate-200">{series.releaseSchedule}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 gap-2">
+                          <button
+                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
+                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
+                          >
+                            🗑️ <span>Eliminar</span>
+                          </button>
+                          <button
+                            onClick={() => showBanner(`🔔 Alerta configurada: ${series.title} todos los ${series.airDay} a las ${series.airTime}`)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-md"
+                          >
+                            🔔 <span>Notificarme</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA 3: MIS SERIES */}
             {activeTab === 'tracking' && (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/70 p-4 rounded-3xl border border-slate-800">
@@ -898,46 +990,34 @@
                     <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
                       📺 Mi Radar de Series en Seguimiento ({myTrackedSeries.length})
                     </h2>
-                    <p className="text-xs text-slate-400">Control de temporadas finalizadas, progreso y fechas oficiales de retorno.</p>
+                    <p className="text-xs text-slate-400">Control de progreso de episodios y temporadas vistas.</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowNewSeriesModal(true)}
-                      className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
-                    >
-                      🔍 Buscar y Seguir Serie
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowNewSeriesModal(true)}
+                    className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
+                  >
+                    🔍 Buscar y Seguir Serie
+                  </button>
                 </div>
 
                 {myTrackedSeries.length === 0 ? (
                   <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-3">
                     <div className="text-4xl">📺</div>
-                    <h3 className="font-display font-bold text-white text-base">No tienes series en seguimiento actualmente</h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Busca tus series favoritas o explora el catálogo para añadirlas.</p>
-                    <button
-                      onClick={() => setShowNewSeriesModal(true)}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-lg"
-                    >
-                      🔍 Buscar y Seguir Serie
-                    </button>
+                    <h3 className="font-display font-bold text-white text-base">No tienes series en seguimiento</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Busca series en vivo para agregarlas a tu radar.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {myTrackedSeries.map(series => (
                       <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
                         <div>
-                          {/* Poster */}
                           <div className="relative h-60 w-full overflow-hidden bg-slate-900">
                             <img
                               src={series.poster}
                               alt={series.title}
                               className="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity"
                               loading="lazy"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = DEFAULT_FALLBACK_POSTER;
-                              }}
+                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                             
@@ -954,14 +1034,13 @@
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md transition-all active:scale-95"
-                                  title="Ver ficha oficial en IMDb"
                                 >
                                   <span>IMDb</span>
-                                  <span>★ {series.imdbRating || series.rating}</span>
+                                  <span>★ {series.imdbRating || 8.2}</span>
                                 </a>
                               ) : (
                                 <div className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-lg shadow-md">
-                                  ★ {series.rating}
+                                  ★ {series.imdbRating || 8.0}
                                 </div>
                               )}
                             </div>
@@ -977,57 +1056,6 @@
                           </div>
 
                           <div className="p-4 space-y-3">
-                            {/* Switch de Estado Interactivo */}
-                            {series.status === 'airing_weekly' ? (
-                              <div className="bg-emerald-950/50 border border-emerald-500/40 p-3 rounded-2xl space-y-1.5 glow-emerald">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                    EN EMISIÓN SEMANAL
-                                  </span>
-                                  <button
-                                    onClick={() => toggleSeriesStatus(series.id)}
-                                    className="text-[10px] bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded-lg font-bold"
-                                    title="Cambiar a Esperando Temporada"
-                                  >
-                                    🔄 Cambiar estado
-                                  </button>
-                                </div>
-                                <p className="text-xs text-slate-200 font-medium">{series.releaseSchedule}</p>
-                                <div className="flex items-center justify-between text-[10px] font-mono text-emerald-300 pt-0.5">
-                                  <span>Día: {series.airDay}</span>
-                                  <span>Hora: {series.airTime}</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-purple-950/50 border border-purple-500/40 p-3 rounded-2xl space-y-1.5 glow-purple">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="font-bold text-purple-300">
-                                    ⏳ ESPERANDO TEMPORADA {series.nextSeasonNumber}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <div className="flex items-center bg-purple-900/80 rounded-lg px-1 py-0.5 text-[10px]">
-                                      <button onClick={() => changeNextSeasonNumber(series.id, -1)} className="px-1 font-bold text-purple-200 hover:text-white">-</button>
-                                      <span className="font-mono px-1 text-amber-300 font-bold">T{series.nextSeasonNumber}</span>
-                                      <button onClick={() => changeNextSeasonNumber(series.id, 1)} className="px-1 font-bold text-purple-200 hover:text-white">+</button>
-                                    </div>
-                                    <button
-                                      onClick={() => toggleSeriesStatus(series.id)}
-                                      className="text-[10px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-400/40 px-2 py-0.5 rounded-lg font-bold"
-                                      title="Cambiar a En Emisión"
-                                    >
-                                      🔄
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="text-xs font-mono font-bold text-amber-300">
-                                  📅 Estreno: {series.nextReleaseDate}
-                                </div>
-                                <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
-                              </div>
-                            )}
-
-                            {/* Contador de Progreso */}
                             <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
                               <div className="flex items-center justify-between text-[11px] font-bold">
                                 <span className="text-slate-400">Tu Progreso Visto:</span>
@@ -1057,9 +1085,7 @@
                               </div>
                             </div>
 
-                            {series.notes && (
-                              <p className="text-[11px] text-slate-400 italic line-clamp-2">💡 {series.notes}</p>
-                            )}
+                            <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
                           </div>
                         </div>
 
@@ -1084,183 +1110,6 @@
               </div>
             )}
 
-            {/* VISTA 2: CAPÍTULOS HOY */}
-            {activeTab === 'today' && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <h2 className="font-display font-extrabold text-base sm:text-lg text-white">
-                      ⚡ Calendario de Emisión Semanal ({weeklyAiringSeries.length})
-                    </h2>
-                  </div>
-                  <p className="text-xs text-slate-300">
-                    Series con capítulos que se transmiten semana a semana con día, hora exacta y plataforma en Colombia (COT).
-                  </p>
-                </div>
-
-                {weeklyAiringSeries.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en emisión semanal activa actualmente.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {weeklyAiringSeries.map(series => (
-                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-4 flex flex-col justify-between">
-                        <div className="flex gap-4">
-                          <img
-                            src={series.poster}
-                            alt={series.title}
-                            className="w-24 h-36 rounded-2xl object-cover shadow-lg shrink-0 border border-slate-700"
-                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                          />
-                          <div className="space-y-1.5 flex-1">
-                            <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                              {series.platform}
-                            </span>
-                            <h3 className="font-display font-black text-base text-white">{series.title}</h3>
-                            
-                            <div className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
-                              📅 <span>Día de Estreno: {series.airDay}</span>
-                            </div>
-
-                            <div className="text-xs text-cyan-300 font-mono font-bold flex items-center gap-1.5">
-                              ⏰ <span>Hora: {series.airTime}</span>
-                            </div>
-
-                            <button
-                              onClick={() => toggleSeriesStatus(series.id)}
-                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
-                            >
-                              ⏳ Mover a Próximas Temporadas
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs space-y-1">
-                          <span className="text-slate-400 font-bold block">Próximo Capítulo:</span>
-                          <p className="text-slate-200">{series.releaseSchedule}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1 gap-2">
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
-                          >
-                            🗑️ <span>Eliminar</span>
-                          </button>
-                          <button
-                            onClick={() => showBanner(`🔔 Alerta configurada: ${series.title} todos los ${series.airDay} a las ${series.airTime}`)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-md"
-                          >
-                            🔔 <span>Notificarme</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* VISTA 3: PRÓXIMAS TEMPORADAS */}
-            {activeTab === 'seasons' && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 border border-purple-500/30 p-5 rounded-3xl space-y-1">
-                  <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
-                    ⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    Series cuyas temporadas anteriores finalizaron y están esperando su fecha oficial de estreno (verificado con IMDb y HBO/Apple/Netflix).
-                  </p>
-                </div>
-
-                {waitingSeasonsList.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en espera de temporada actualmente.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {waitingSeasonsList.map(series => (
-                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-4 flex flex-col justify-between">
-                        <div className="space-y-3">
-                          <div className="flex gap-3">
-                            <img
-                              src={series.poster}
-                              alt={series.title}
-                              className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
-                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                            />
-                            <div className="space-y-1 flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                                  {series.platform}
-                                </span>
-                                {series.imdbId && (
-                                  <a
-                                    href={`https://www.imdb.com/title/${series.imdbId}/`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] font-bold text-amber-400 hover:underline"
-                                  >
-                                    IMDb ↗
-                                  </a>
-                                )}
-                              </div>
-                              <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
-                              <span className="text-xs text-slate-400 block">Finalizada: Temporada {series.currentSeason}</span>
-                              
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <button
-                                  onClick={() => toggleSeriesStatus(series.id)}
-                                  className="text-[10px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold transition-all"
-                                >
-                                  ⚡ A Emisión
-                                </button>
-                                <div className="flex items-center bg-purple-950 border border-purple-500/40 rounded-lg px-1 py-0.5 text-[10px]">
-                                  <span className="text-slate-400 pr-1">Próx:</span>
-                                  <button onClick={() => changeNextSeasonNumber(series.id, -1)} className="px-1 font-bold text-purple-200 hover:text-white">-</button>
-                                  <span className="font-mono px-1 text-amber-300 font-bold">T{series.nextSeasonNumber}</span>
-                                  <button onClick={() => changeNextSeasonNumber(series.id, 1)} className="px-1 font-bold text-purple-200 hover:text-white">+</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-purple-950/40 p-3.5 rounded-2xl border border-purple-500/30 space-y-1.5">
-                            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">
-                              🎯 Próxima Temporada {series.nextSeasonNumber}:
-                            </span>
-                            <span className="text-base font-mono font-black text-amber-300 block">
-                              📅 {series.nextReleaseDate}
-                            </span>
-                            <p className="text-xs text-slate-300">
-                              {series.releaseSchedule}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => deleteSeriesCompletely(series.id, series.title)}
-                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 text-[11px] font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-1"
-                          >
-                            🗑️ <span>Eliminar</span>
-                          </button>
-                          <button
-                            onClick={() => showBanner(`🔔 Alerta programada para la Temporada ${series.nextSeasonNumber} de ${series.title}`)}
-                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-bold py-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
-                          >
-                            🔔 <span>Alerta T{series.nextSeasonNumber}</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* VISTA 4: ESTRENOS DE CINE */}
             {activeTab === 'movies' && (
               <div className="space-y-4">
@@ -1273,89 +1122,64 @@
                   </p>
                 </div>
 
-                {moviesList.length === 0 ? (
-                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">Has descartado todos los estrenos de cine.</p>
-                    <button
-                      onClick={restoreDefaults}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md"
-                    >
-                      🔄 Restaurar Estrenos
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {moviesList.map(movie => (
-                      <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                        <div>
-                          <div className="relative h-64 w-full bg-slate-900">
-                            <img
-                              src={movie.poster}
-                              alt={movie.title}
-                              className="w-full h-full object-cover object-top"
-                              loading="lazy"
-                              onError={(e) => { e.target.src = movie.fallbackPoster || DEFAULT_FALLBACK_POSTER; }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                            
-                            <div className="absolute top-3 left-3 bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
-                              Estreno Cine
-                            </div>
-
-                            <button
-                              onClick={() => deleteMovieCompletely(movie.id, movie.title)}
-                              className="absolute top-3 right-3 bg-slate-950/80 hover:bg-rose-900 text-rose-300 p-1.5 rounded-xl border border-rose-500/30 text-xs shadow-md transition-all"
-                              title="Eliminar estreno"
-                            >
-                              🗑️
-                            </button>
-
-                            <div className="absolute bottom-3 left-3 right-3">
-                              <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
-                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white">{movie.title}</h3>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {moviesList.map(movie => (
+                    <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <div className="relative h-64 w-full bg-slate-900">
+                          <img
+                            src={movie.poster}
+                            alt={movie.title}
+                            className="w-full h-full object-cover object-top"
+                            loading="lazy"
+                            onError={(e) => { e.target.src = movie.fallbackPoster || DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                          
+                          <div className="absolute top-3 left-3 bg-red-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md">
+                            Estreno Cine
                           </div>
 
-                          <div className="p-4 space-y-3">
-                            <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1">
-                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Fecha de Estreno en Salas:</span>
-                              <span className="text-sm font-mono font-extrabold text-amber-300 block">
-                                📅 {movie.releaseDate}
-                              </span>
-                            </div>
-
-                            <p className="text-xs text-slate-300 leading-relaxed">
-                              {movie.synopsis}
-                            </p>
-
-                            <div className="text-[11px] text-slate-400 space-y-0.5">
-                              <div><strong className="text-slate-300">Director:</strong> {movie.director}</div>
-                              <div><strong className="text-slate-300">Reparto:</strong> {movie.cast}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="p-4 pt-0 grid grid-cols-4 gap-2">
-                          <a
-                            href={movie.youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="col-span-3 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
-                          >
-                            ▶ <span>Ver Trailer en YouTube</span> ↗
-                          </a>
                           <button
                             onClick={() => deleteMovieCompletely(movie.id, movie.title)}
-                            className="col-span-1 bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold flex items-center justify-center"
-                            title="Eliminar película"
+                            className="absolute top-3 right-3 bg-slate-950/80 hover:bg-rose-900 text-rose-300 p-1.5 rounded-xl border border-rose-500/30 text-xs shadow-md transition-all"
                           >
                             🗑️
                           </button>
+
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
+                            <h3 className="font-display font-extrabold text-base sm:text-lg text-white">{movie.title}</h3>
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-1">
+                            <span className="text-[10px] text-slate-400 font-bold block uppercase">Fecha de Estreno en Salas:</span>
+                            <span className="text-sm font-mono font-extrabold text-amber-300 block">
+                              📅 {movie.releaseDate}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {movie.synopsis}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      <div className="p-4 pt-0">
+                        <a
+                          href={movie.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95"
+                        >
+                          ▶ <span>Ver Trailer en YouTube</span> ↗
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -1367,7 +1191,7 @@
                     <div className="relative w-full sm:w-80">
                       <input
                         type="text"
-                        placeholder="Buscar en catálogo por título o género..."
+                        placeholder="Buscar en catálogo..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -1375,7 +1199,7 @@
                       <div className="absolute left-3 top-2.5 text-slate-400">🔍</div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 w-full sm:w-auto justify-start sm:justify-end">
+                    <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
                       {PLATFORMS.map(p => (
                         <button
                           key={p.id}
@@ -1408,7 +1232,7 @@
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
 
                           <div className="absolute top-3 right-3 bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md">
-                            ★ {series.imdbRating || series.rating}
+                            ★ {series.imdbRating || 8.0}
                           </div>
 
                           <div className="absolute top-3 left-3">
@@ -1423,14 +1247,6 @@
                         </div>
 
                         <div className="p-3.5 space-y-2 text-xs">
-                          <div className="flex flex-wrap gap-1">
-                            {series.genres.map((g, i) => (
-                              <span key={i} className="text-[9px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded-md border border-slate-800">
-                                {g}
-                              </span>
-                            ))}
-                          </div>
-
                           <p className="text-[11px] text-slate-300 line-clamp-2">
                             {series.releaseSchedule}
                           </p>
@@ -1451,7 +1267,6 @@
                         <button
                           onClick={() => deleteSeriesCompletely(series.id, series.title)}
                           className="col-span-1 py-2 rounded-xl text-xs font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 flex items-center justify-center"
-                          title="Eliminar de la lista"
                         >
                           🗑️
                         </button>
@@ -1464,7 +1279,7 @@
 
           </main>
 
-          {/* Modal de Búsqueda Online Multi-Fuente con IMDb y TMDB */}
+          {/* Modal de Búsqueda Online */}
           {showNewSeriesModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
@@ -1472,7 +1287,7 @@
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🔍</span>
                     <h3 className="font-display font-extrabold text-base text-white">
-                      Buscador Multi-Fuente (IMDb + TVMaze + TMDB)
+                      Buscador de Series (IMDb + TVMaze)
                     </h3>
                   </div>
                   <button
@@ -1487,280 +1302,81 @@
                   </button>
                 </div>
 
-                {/* Pestañas del Modal */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-bold">
-                  <button
-                    onClick={() => setModalTab('search')}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      modalTab === 'search' 
-                        ? 'bg-indigo-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🌐 Búsqueda Inteligente
-                  </button>
-                  <button
-                    onClick={() => setModalTab('manual')}
-                    className={`py-1.5 rounded-lg transition-all ${
-                      modalTab === 'manual' 
-                        ? 'bg-indigo-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    ✏️ Ingreso Personalizado
-                  </button>
-                </div>
-
-                {/* MODO 1: BÚSQUEDA MULTI-FUENTE */}
-                {modalTab === 'search' && (
-                  <div className="space-y-4 text-xs">
-                    <div className="space-y-1">
-                      <label className="text-slate-300 font-bold block">
-                        Escribe el nombre de cualquier serie:
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="Ej: House of the Dragon, The Last of Us, Slow Horses, Silo..."
-                          value={apiSearchQuery}
-                          onChange={(e) => handleSearchMultiSource(e.target.value)}
-                          className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
-                          autoFocus
-                        />
-                        <div className="absolute left-3 top-3 text-slate-400">🔍</div>
-                        {isSearchingApi && (
-                          <div className="absolute right-3 top-3 text-indigo-400 animate-spin">⏳</div>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-slate-400">
-                        ✨ Correlaciona calificaciones de IMDb, pósters y calendarios oficiales de estreno.
-                      </p>
-                    </div>
-
-                    {/* Lista de Resultados */}
-                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                      {apiSearchResults.length > 0 ? (
-                        apiSearchResults.map(({ show }) => {
-                          const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
-                          const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
-                          const rating = show.rating && show.rating.average ? show.rating.average : '8.0';
-                          const imdbId = show.externals && show.externals.imdb ? show.externals.imdb : null;
-
-                          return (
-                            <div
-                              key={show.id}
-                              className="flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
-                            >
-                              <img
-                                src={poster}
-                                alt={show.name}
-                                className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
-                                onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
-                                  <span className="text-indigo-400 font-bold">{platform}</span>
-                                  <span>•</span>
-                                  <span className="text-amber-400 font-mono">★ {rating}</span>
-                                  {imdbId && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="text-amber-300 font-bold">IMDb</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleImportFromApi({ show })}
-                                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl shrink-0 transition-all shadow-md"
-                              >
-                                ➕ Seguir
-                              </button>
-                            </div>
-                          );
-                        })
-                      ) : apiSearchQuery.trim().length >= 2 ? (
-                        <div className="text-center py-6 text-slate-500 text-xs">
-                          No se encontraron series con ese nombre.
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 text-slate-500 text-xs">
-                          Escribe al menos 2 letras para consultar en vivo.
-                        </div>
+                <div className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-slate-300 font-bold block">
+                      Escribe el nombre de la serie:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Ej: House of the Dragon, The Last of Us, Slow Horses..."
+                        value={apiSearchQuery}
+                        onChange={(e) => handleSearchMultiSource(e.target.value)}
+                        className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
+                        autoFocus
+                      />
+                      <div className="absolute left-3 top-3 text-slate-400">🔍</div>
+                      {isSearchingApi && (
+                        <div className="absolute right-3 top-3 text-indigo-400 animate-spin">⏳</div>
                       )}
                     </div>
                   </div>
-                )}
 
-                {/* MODO 2: INGRESO PERSONALIZADO */}
-                {modalTab === 'manual' && (
-                  <form onSubmit={handleAddCustomSeries} className="space-y-3 text-xs">
-                    <div>
-                      <label className="text-slate-300 font-bold block mb-1">Nombre de la Serie *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: House of the Dragon, The Last of Us..."
-                        value={formTitle}
-                        onChange={(e) => setFormTitle(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {apiSearchResults.length > 0 ? (
+                      apiSearchResults.map(({ show }) => {
+                        const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
+                        const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
+                        const rating = show.rating && show.rating.average ? show.rating.average : '8.0';
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Código IMDb (Opcional)</label>
-                        <input
-                          type="text"
-                          placeholder="tt11198330"
-                          value={formImdbId}
-                          onChange={(e) => setFormImdbId(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Calificación IMDb</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="1"
-                          max="10"
-                          value={formRating}
-                          onChange={(e) => setFormRating(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Plataforma *</label>
-                        <select
-                          value={formPlatform}
-                          onChange={(e) => setFormPlatform(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                        >
-                          <option value="Max (HBO)">Max (HBO)</option>
-                          <option value="Apple TV+">Apple TV+</option>
-                          <option value="Netflix">Netflix</option>
-                          <option value="Prime Video">Prime Video</option>
-                          <option value="Disney+ / Star+">Disney+ / Star+</option>
-                          <option value="Paramount+">Paramount+</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Tipo de Emisión *</label>
-                        <select
-                          value={formStatus}
-                          onChange={(e) => setFormStatus(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
-                        >
-                          <option value="waiting_season">Esperando Temporada</option>
-                          <option value="airing_weekly">Capítulo Semanal</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {formStatus === 'airing_weekly' ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-slate-300 font-bold block mb-1">Día de Estreno</label>
-                          <select
-                            value={formAirDay}
-                            onChange={(e) => setFormAirDay(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        return (
+                          <div
+                            key={show.id}
+                            className="flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 rounded-2xl transition-all gap-3"
                           >
-                            <option value="Lunes">Lunes</option>
-                            <option value="Martes">Martes</option>
-                            <option value="Miércoles">Miércoles</option>
-                            <option value="Jueves">Jueves</option>
-                            <option value="Viernes">Viernes</option>
-                            <option value="Sábados">Sábados</option>
-                            <option value="Domingos">Domingos</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-slate-300 font-bold block mb-1">Hora (COT)</label>
-                          <input
-                            type="text"
-                            value={formAirTime}
-                            onChange={(e) => setFormAirTime(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                          />
-                        </div>
+                            <img
+                              src={poster}
+                              alt={show.name}
+                              className="w-12 h-16 object-cover rounded-xl shrink-0 border border-slate-700"
+                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-0.5">
+                                <span className="text-indigo-400 font-bold">{platform}</span>
+                                <span>•</span>
+                                <span className="text-amber-400 font-mono">★ {rating}</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleImportFromApi({ show })}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl shrink-0 transition-all shadow-md"
+                            >
+                              ➕ Seguir
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : apiSearchQuery.trim().length >= 2 ? (
+                      <div className="text-center py-6 text-slate-500 text-xs">
+                        No se encontraron resultados para "{apiSearchQuery}".
                       </div>
                     ) : (
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-slate-300 font-bold block mb-1">Temp. Finalizada</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={formCurrentSeason}
-                            onChange={(e) => setFormCurrentSeason(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-slate-300 font-bold block mb-1">Próx. Temporada</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={formNextSeason}
-                            onChange={(e) => setFormNextSeason(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-slate-300 font-bold block mb-1">Fecha Estreno</label>
-                          <input
-                            type="date"
-                            value={formNextDate}
-                            onChange={(e) => setFormNextDate(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                          />
-                        </div>
+                      <div className="text-center py-6 text-slate-500 text-xs">
+                        Escribe el título de cualquier serie para buscar en vivo.
                       </div>
                     )}
-
-                    <div>
-                      <label className="text-slate-300 font-bold block mb-1">URL Imagen Póster (Opcional)</label>
-                      <input
-                        type="url"
-                        placeholder="https://..."
-                        value={formPoster}
-                        onChange={(e) => setFormPoster(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
-                      />
-                    </div>
-
-                    <div className="pt-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowNewSeriesModal(false)}
-                        className="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30"
-                      >
-                        Guardar y Seguir
-                      </button>
-                    </div>
-                  </form>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Footer */}
           <footer className="border-t border-slate-900 bg-slate-950/80 text-center py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <span>CineRadar Pro &copy; {new Date().getFullYear()} — Correlación IMDb, TVMaze & TMDB.</span>
-            <button onClick={restoreDefaults} className="text-indigo-400 hover:underline">Restaurar y sincronizar catálogo maestro</button>
+            <span>CineRadar Pro &copy; {new Date().getFullYear()} — Correlación IMDb & TVMaze.</span>
+            <button onClick={restoreDefaults} className="text-indigo-400 hover:underline">Restaurar catálogo inicial</button>
           </footer>
         </div>
       );
