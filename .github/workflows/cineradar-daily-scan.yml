@@ -1,4 +1,4 @@
-name: Escaner Diario CineRadar Pro 7 AM
+name: CineRadar Alertas Diarias 7 AM
 
 on:
 schedule:
@@ -13,25 +13,25 @@ paths:
 
 jobs:
 enviar-reporte:
-name: Despachar Alerta 7 AM
+name: Despachar Alerta CineRadar
 runs-on: ubuntu-latest
 steps:
-- name: Enviar Reporte Diario a Gmail
+- name: Enviar Reporte de Series a Gmail
 run: |
-echo "Ejecutando envio de alerta CineRadar Pro..."
+echo "Iniciando despacho de alertas de series y estrenos..."
 curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
 
--F '_subject=🎬 CineRadar Pro - Alerta Diaria 7:00 AM COT' 
+-F '_subject=🎬 CineRadar Pro - Alerta de Series & Estrenos 7:00 AM COT' 
 
 -F '_captcha=false' 
 
 -F '_template=table' 
 
--F 'Capitulos_Semanales=Severance T2 (Apple TV+) - Anillos de Poder T2 (Prime Video)' 
+-F 'Emision_Semanal=Severance T2 (Viernes 2 AM Apple TV+) | Rings of Power T2 (Jueves 2 AM Prime Video)' 
 
--F 'Proximas_Temporadas=House of the Dragon T3 - The Last of Us T2 - Stranger Things T5' 
+-F 'Esperando_Temporada=House of the Dragon T3 (Max - 2027) | The Last of Us T2 (Max - 2027) | Stranger Things T5 (Netflix - 2027) | Fallout T2 (Prime - 2027)' 
 
--F 'Estrenos_Cine=Avengers Doomsday - The Batman Part II - Beyond the Spider-Verse' 
+-F 'Proximos_Estrenos_Cine=Avengers: Doomsday (Mayo 2027) | The Batman Part II (Oct 2027) | Spider-Man Beyond (Jun 2027)' 
 
--F 'Nota_Auditoria=Rastreador inteligente CineRadar Pro sincronizado con tu zona horaria.' || true
-echo "Proceso finalizado correctamente."
+-F 'Nota_Radar=Monitoreo diario automatizado por CineRadar Pro para Luis Gonzalez.' || true
+echo "Alerta despachada exitosamente."
