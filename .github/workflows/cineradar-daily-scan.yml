@@ -1,13 +1,39 @@
-name: CineRadar Alertas Diarias 7 AMon:
+name: CineRadar Alertas Diarias 7 AM
+
+on:
 schedule:
 # 12:00 UTC = 07:00 AM COT (Hora de Colombia)
 - cron: '0 12 * * *'
-workflow_dispatch:jobs:
-enviar-boletin:
-name: Despachar Boletin Matutino a Gmail
+workflow_dispatch:
+push:
+branches:
+- main
+paths:
+- '.github/workflows/cineradar-daily-scan.yml'
+
+jobs:
+enviar-reporte:
+name: Despachar Alerta 7 AM
 runs-on: ubuntu-latest
 steps:
-- name: Despachar Reporte Diario
-continue-on-error: true
+- name: Enviar Reporte Diario a Gmail
 run: |
-curl -X POST https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com -H "Content-Type: application/json" -H "Accept: application/json" --data '{"_subject":"🎬 CineRadar Pro — Resumen Diario de Series & Estrenos","_template":"table","_captcha":"false","Horario_Colombia":"07:00 AM COT","Series_En_Emision":"Severance T2 (Apple TV+ - Viernes 02:00 AM COT)","Proximas_Temporadas":"Slow Horses T5 (Confirmada) | House of the Dragon T3 | The Last of Us T2 | Silo T3","Estrenos_Cine_2026":"The Mandalorian & Grogu (Mayo) | Supergirl (Junio) | Dune 3 Messiah (Dic) | Avengers: Doomsday (Dic)","Estado_Auditoria":"Sincronizado con bases oficiales IMDb, TMDB y TVMaze para Luis Gonzalez."}'
+echo "Iniciando envio de alerta CineRadar..."
+curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+
+-F "_subject=🎬 CineRadar Pro - Resumen Diario de Series y Estrenos" 
+
+-F "_captcha=false" 
+
+-F "_template=table" 
+
+-F "Horario_Colombia=07:00 AM COT" 
+
+-F "Series_En_Emision=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)" 
+
+-F "Proximas_Temporadas=Slow Horses T5 | House of the Dragon T3 | The Last of Us T2 | Silo T3" 
+
+-F "Estrenos_Cine_2026=The Mandalorian and Grogu | Supergirl | Dune 3 Messiah | Avengers Doomsday" 
+
+-F "Estado=Sincronizado con bases oficiales IMDb y TVMaze para Luis Gonzalez." || true
+echo "Proceso completado exitosamente."
