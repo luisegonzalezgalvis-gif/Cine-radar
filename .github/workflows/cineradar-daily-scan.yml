@@ -2,14 +2,11 @@ name: CineRadar Alertas Diarias 7 AM
 
 on:
 schedule:
-# 12:00 UTC = 7:00 AM COT (Hora de Colombia)
-- cron: '0 12 * * *'
+- cron: "0 12 * * *"
 workflow_dispatch:
 push:
 branches:
 - main
-paths:
-- '.github/workflows/cineradar-daily-scan.yml'
 
 jobs:
 enviar-reporte:
@@ -18,20 +15,18 @@ runs-on: ubuntu-latest
 steps:
 - name: Enviar Reporte de Series a Gmail
 run: |
-echo "Iniciando despacho de alerta CineRadar..."
-curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+curl -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
 
--F '_subject=🎬 CineRadar Pro - Alerta Diaria 7:00 AM COT' 
+-F "_subject=CineRadar Pro - Alerta Diaria 7:00 AM COT" 
 
--F '_captcha=false' 
+-F "_captcha=false" 
 
--F '_template=table' 
+-F "_template=table" 
 
--F 'Emision_Semanal=Severance T2 (Apple TV+ - Viernes) | Slow Horses T5 (Apple TV+)' 
+-F "Emision_Semanal=Severance T2 (Apple TV+ - Viernes)" 
 
--F 'Esperando_Temporada=House of the Dragon T4 (Max) | The Last of Us T3 (Max) | Silo T3 (Apple TV+) | Stranger Things T5 (Final)' 
+-F "Esperando_Temporada=House of the Dragon T4 (Max) - The Last of Us T3 (Max) - Slow Horses T5 (Apple TV+) - Silo T3 (Apple TV+) - Stranger Things T5" 
 
--F 'Proximos_Estrenos_Cine=Avengers Doomsday | The Batman Part II | Spider-Man Beyond the Spider-Verse' 
+-F "Proximos_Estrenos_Cine=Avengers Doomsday - The Batman Part II - Spider-Man Beyond the Spider-Verse" 
 
--F 'Nota_Radar=Monitoreo diario sincronizado con IMDb, TMDB y TVMaze para Luis Gonzalez.' || true
-echo "Reporte despachado exitosamente."
+-F "Nota_Radar=Monitoreo diario sincronizado con IMDb, TMDB y TVMaze para Luis Gonzalez."
