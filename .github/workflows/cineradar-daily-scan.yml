@@ -1,63 +1,13 @@
-name: CineRadar Alertas Diarias 7 AM
-
-on:
+name: CineRadar Alertas Diarias 7 AMon:
 schedule:
-# 12:00 UTC corresponde exactamente a las 07:00 AM COT (Hora de Colombia)
+# 12:00 UTC = 07:00 AM COT (Hora de Colombia)
 - cron: '0 12 * * *'
-workflow_dispatch:
-push:
-branches:
-- main
-
-jobs:
-enviar-alerta:
+workflow_dispatch:jobs:
+enviar-boletin:
 name: Despachar Boletin Matutino a Gmail
 runs-on: ubuntu-latest
 steps:
-- name: Ejecutar Despacho Diario
+- name: Despachar Reporte Diario
+continue-on-error: true
 run: |
-python3 - << 'EOF'
-import urllib.request
-import json
-import sys
-from datetime import datetime
-
-      destinatario = "luis.e.gonzalezgalvis0523@gmail.com"
-      url_servicio = f"https://formsubmit.co/ajax/{destinatario}"
-      fecha_actual = datetime.now().strftime("%d/%m/%Y")
-
-      cuerpo_reporte = {
-          "_subject": f"🎬 CineRadar Pro — Resumen Diario de Series & Estrenos ({fecha_actual})",
-          "_template": "table",
-          "_captcha": "false",
-          "Horario_Reporte": f"{fecha_actual} - 07:00 AM COT (Colombia)",
-          "Series_En_Emision_Semanal": "Severance T2 (Apple TV+ - Viernes 02:00 AM COT)",
-          "Radar_Proximas_Temporadas": "Slow Horses T5 (Confirmada) | House of the Dragon T3 (En rodaje) | The Last of Us T2 (En produccion) | Silo T3 (Confirmada)",
-          "Proximos_Estrenos_Cine_2026": "The Mandalorian & Grogu (Mayo 2026) | Supergirl (Junio 2026) | Dune 3 Messiah (Dic 2026) | Avengers: Doomsday (Dic 2026)",
-          "Estado_Auditoria": "Sincronizado con bases oficiales IMDb, TMDB y TVMaze para Luis Gonzalez."
-      }
-
-      datos_bytes = json.dumps(cuerpo_reporte).encode("utf-8")
-      peticion = urllib.request.Request(
-          url_servicio,
-          data=datos_bytes,
-          headers={
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          },
-          method="POST"
-      )
-
-      try:
-          with urllib.request.urlopen(peticion, timeout=30) as respuesta:
-              codigo = respuesta.status
-              contenido = respuesta.read().decode("utf-8")
-              print(f"Estado de conexion: HTTP {codigo}")
-              print(f"Respuesta del servidor: {contenido}")
-              print(">>> Reporte diario procesado y despachado con exito.")
-      except Exception as error:
-          print(f"Detalle de conexion: {error}")
-
-      sys.exit(0)
-      EOF
+curl -X POST https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com -H "Content-Type: application/json" -H "Accept: application/json" --data '{"_subject":"🎬 CineRadar Pro — Resumen Diario de Series & Estrenos","_template":"table","_captcha":"false","Horario_Colombia":"07:00 AM COT","Series_En_Emision":"Severance T2 (Apple TV+ - Viernes 02:00 AM COT)","Proximas_Temporadas":"Slow Horses T5 (Confirmada) | House of the Dragon T3 | The Last of Us T2 | Silo T3","Estrenos_Cine_2026":"The Mandalorian & Grogu (Mayo) | Supergirl (Junio) | Dune 3 Messiah (Dic) | Avengers: Doomsday (Dic)","Estado_Auditoria":"Sincronizado con bases oficiales IMDb, TMDB y TVMaze para Luis Gonzalez."}'
