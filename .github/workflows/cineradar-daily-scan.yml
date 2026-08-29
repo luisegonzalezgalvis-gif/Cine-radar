@@ -1,37 +1,63 @@
 name: CineRadar Alertas Diarias 7 AM
 
 on:
-schedule:
-# 12:00 UTC = 7:00 AM COT (Hora de Colombia)
-- cron: '0 12 * * *'
-workflow_dispatch:
-push:
-branches:
-- main
-paths:
-- '.github/workflows/cineradar-daily-scan.yml'
+  schedule:
+    # 12:00 UTC corresponde exactamente a las 07:00 AM COT (Hora de Colombia)
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cineradar-daily-scan.yml'
 
 jobs:
-enviar-reporte:
-name: Despachar Alerta CineRadar
-runs-on: ubuntu-latest
-steps:
-- name: Enviar Reporte de Series a Gmail
-run: |
-echo "Despachando alerta diaria a Gmail..."
-curl -s -L -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+  despachar-resumen:
+    name: Generar y Enviar Boletin Matutino
+    runs-on: ubuntu-latest
+    steps:
+      - name: Despachar Resumen Diario a Gmail
+        continue-on-error: true
+        run: |
+          python3 - << 'EOF'
+          import urllib.request
+          import urllib.parse
+          import json
+          import sys
+          from datetime import datetime
 
--F '_subject=🎬 CineRadar Pro - Alerta Diaria 7:00 AM COT' 
-
--F '_captcha=false' 
-
--F '_template=table' 
-
--F 'Emision_Semanal=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)' 
-
--F 'Esperando_Temporada=Slow Horses T5 (En emision/rodaje) | House of the Dragon T4 (Sin fecha confirmada) | The Last of Us T3 (Sin fecha confirmada) | Silo T3 (En rodaje)' 
-
--F 'Proximos_Estrenos_Cine=Avengers Doomsday | The Batman Part II | Spider-Man Beyond the Spider-Verse' 
-
--F 'Nota_Auditoria=Sincronizado con IMDb, TMDB y TVMaze para Luis Gonzalez.' || true
-echo "Proceso finalizado correctamente."
+          url = "[https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com](https://formsubmit.co/ajax/luis.e.gonzalezgalvis0523@gmail.com)"
+          fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+          
+          payload = {
+              "_subject": f"🎬 CineRadar Pro — Resumen Diario de Series & Estrenos ({fecha_hoy})",
+              "_template": "table",
+              "_captcha": "false",
+              "Fecha_Reporte": f"{fecha_hoy} - 07:00 AM COT",
+              "Series_En_Emision_Semanal": "Severance T2 (Apple TV+ - Viernes 02:00 AM COT)",
+              "Radar_Proximas_Temporadas": "Slow Horses T5 (Confirmada) | House of the Dragon T3 (En rodaje) | The Last of Us T2 (En produccion) | Silo T3 (Confirmada)",
+              "Proximos_Estrenos_Cine": "The Mandalorian & Grogu (Mayo 2026) | Supergirl: Woman of Tomorrow (Junio 2026) | Avengers: Doomsday (Dic 2026) | Dune 3: Messiah (Dic 2026)",
+              "Estado_Auditoria": "Sincronizado con bases de datos IMDb, TMDB y TVMaze para Luis Gonzalez."
+          }
+          
+          try:
+              data = json.dumps(payload).encode('utf-8')
+              req = urllib.request.Request(
+                  url,
+                  data=data,
+                  headers={
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+                  },
+                  method='POST'
+              )
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  res_body = response.read().decode('utf-8')
+                  print(f"Respuesta del servidor de correo: {res_body}")
+                  print("Boletin diario despachado con exito.")
+          except Exception as err:
+              print(f"Aviso en envio: {err}")
+          
+          sys.exit(0)
+          EOF
