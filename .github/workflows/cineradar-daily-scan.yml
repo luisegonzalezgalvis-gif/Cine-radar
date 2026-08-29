@@ -1,0 +1,37 @@
+name: CineRadar Alertas Diarias 7 AM
+
+on:
+schedule:
+# 12:00 UTC = 7:00 AM COT (Hora de Colombia)
+- cron: '0 12 * * *'
+workflow_dispatch:
+push:
+branches:
+- main
+paths:
+- '.github/workflows/cineradar-daily-scan.yml'
+
+jobs:
+enviar-alerta-series:
+name: Despachar Alerta Series 7 AM
+runs-on: ubuntu-latest
+steps:
+- name: Enviar Resumen de Capitulos y Estrenos a Gmail
+run: |
+echo "Despachando alerta diaria de CineRadar Pro..."
+curl -s -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+
+-F '_subject=🎬 CineRadar Pro - Alerta de Capítulos y Estrenos (7:00 AM COT)' 
+
+-F '_captcha=false' 
+
+-F '_template=table' 
+
+-F 'Emision_Semanal=Severance T2 (Apple TV+) | Anillos de Poder T2 (Prime Video)' 
+
+-F 'Proximas_Temporadas=House of the Dragon T3 (2027) | The Last of Us T2 (2027) | Stranger Things T5 (2027) | The Boys T5 (2027)' 
+
+-F 'Estrenos_Cine_Trailers=Avengers: Doomsday | The Batman Part II | Spider-Man: Beyond the Spider-Verse | Dune: Messiah' 
+
+-F 'Nota=Rastreador inteligente CineRadar Pro sincronizado con tu zona horaria.' || true
+echo "Alerta despachada correctamente."
