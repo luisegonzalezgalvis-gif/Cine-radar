@@ -26,7 +26,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
@@ -109,8 +109,150 @@
 
     const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop&q=80';
 
-    // BASE DE DATOS MAESTRA CON PÓSTERS VERIFICADOS
+    // DICCIONARIO DE CONOCIMIENTO CORRELACIONADO PARA SERIES CLAVE
+    const SERIES_KNOWLEDGE_BASE = {
+      'slow horses': {
+        status: 'waiting_season',
+        nextSeasonNumber: 4,
+        nextReleaseDate: '2024-09-04',
+        releaseSchedule: 'Temporada 4 "Spook Street" estrena el 4 de Septiembre en Apple TV+ con episodios semanales los Miércoles.',
+        platform: 'Apple TV+',
+        airDay: 'Miércoles',
+        airTime: '02:00 AM COT'
+      },
+      'ted lasso': {
+        status: 'waiting_season',
+        nextSeasonNumber: 4,
+        nextReleaseDate: '2026-08-05',
+        releaseSchedule: 'Temporada 4 en desarrollo/producción por Apple TV+ tras acuerdo con Warner Bros.',
+        platform: 'Apple TV+',
+        airDay: 'Miércoles',
+        airTime: '02:00 AM COT'
+      },
+      'silo': {
+        status: 'waiting_season',
+        nextSeasonNumber: 2,
+        nextReleaseDate: '2024-11-15',
+        releaseSchedule: 'Temporada 2 confirmada oficialmente para estreno el 15 de Noviembre en Apple TV+.',
+        platform: 'Apple TV+',
+        airDay: 'Viernes',
+        airTime: '02:00 AM COT'
+      },
+      'house of the dragon': {
+        status: 'waiting_season',
+        nextSeasonNumber: 3,
+        nextReleaseDate: '2026-06-15',
+        releaseSchedule: 'Finalizada Temporada 2. Temporada 3 en fase de producción para estreno en Max.',
+        platform: 'Max (HBO)',
+        airDay: 'Domingos',
+        airTime: '08:00 PM COT'
+      },
+      'the last of us': {
+        status: 'waiting_season',
+        nextSeasonNumber: 2,
+        nextReleaseDate: '2025-04-18',
+        releaseSchedule: 'Temporada 2 rodada y confirmada con Pedro Pascal y Bella Ramsey en Max.',
+        platform: 'Max (HBO)',
+        airDay: 'Domingos',
+        airTime: '08:00 PM COT'
+      },
+      'severance': {
+        status: 'airing_weekly',
+        nextSeasonNumber: 2,
+        nextReleaseDate: '2025-01-17',
+        releaseSchedule: 'Temporada 2 confirmada. Nuevos episodios cada Viernes a las 02:00 AM COT en Apple TV+.',
+        platform: 'Apple TV+',
+        airDay: 'Viernes',
+        airTime: '02:00 AM COT'
+      },
+      'stranger things': {
+        status: 'waiting_season',
+        nextSeasonNumber: 5,
+        nextReleaseDate: '2025-05-27',
+        releaseSchedule: 'Temporada 5 (Temporada Final) rodándose actualmente para estreno mundial en Netflix.',
+        platform: 'Netflix',
+        airDay: 'Jueves',
+        airTime: '02:00 AM COT'
+      },
+      'fallout': {
+        status: 'waiting_season',
+        nextSeasonNumber: 2,
+        nextReleaseDate: '2026-03-12',
+        releaseSchedule: 'Temporada 2 confirmada en producción con ambientación en New Vegas.',
+        platform: 'Prime Video',
+        airDay: 'Jueves',
+        airTime: '07:00 PM COT'
+      }
+    };
+
+    // BASE DE DATOS MAESTRA INICIAL
     const MASTER_SERIES = [
+      {
+        id: 'ser-slow-horses',
+        title: 'Slow Horses',
+        platform: 'Apple TV+',
+        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
+        rating: 8.2,
+        genres: ['Drama', 'Thriller', 'Espionaje'],
+        status: 'waiting_season',
+        currentSeason: 3,
+        currentEpisode: 6,
+        totalEpisodesSeason: 6,
+        nextSeasonNumber: 4,
+        nextReleaseDate: '2024-09-04',
+        releaseSchedule: 'Temporada 4 "Spook Street" estrena el 4 de Septiembre de 2024 en Apple TV+.',
+        airDay: 'Miércoles',
+        airTime: '02:00 AM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/406/1015694.jpg',
+        userTracking: true,
+        userProgressSeason: 3,
+        userProgressEpisode: 6,
+        notes: 'Jackson Lamb y los agentes de Slough House regresan para la T4.'
+      },
+      {
+        id: 'ser-silo',
+        title: 'Silo',
+        platform: 'Apple TV+',
+        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
+        rating: 8.1,
+        genres: ['Sci-Fi', 'Misterio', 'Drama'],
+        status: 'waiting_season',
+        currentSeason: 1,
+        currentEpisode: 10,
+        totalEpisodesSeason: 10,
+        nextSeasonNumber: 2,
+        nextReleaseDate: '2024-11-15',
+        releaseSchedule: 'Temporada 2 confirmada oficialmente para estreno el 15 de Noviembre de 2024 en Apple TV+.',
+        airDay: 'Viernes',
+        airTime: '02:00 AM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/460/1151605.jpg',
+        userTracking: true,
+        userProgressSeason: 1,
+        userProgressEpisode: 10,
+        notes: 'Juliette Nichols explorando los secretos fuera del silo.'
+      },
+      {
+        id: 'ser-ted-lasso',
+        title: 'Ted Lasso',
+        platform: 'Apple TV+',
+        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
+        rating: 8.8,
+        genres: ['Comedia', 'Drama', 'Deportes'],
+        status: 'waiting_season',
+        currentSeason: 3,
+        currentEpisode: 12,
+        totalEpisodesSeason: 12,
+        nextSeasonNumber: 4,
+        nextReleaseDate: '2026-08-05',
+        releaseSchedule: 'Temporada 4 en desarrollo/producción por Apple TV+ tras renovaciones de contrato.',
+        airDay: 'Miércoles',
+        airTime: '02:00 AM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/450/1126744.jpg',
+        userTracking: true,
+        userProgressSeason: 3,
+        userProgressEpisode: 12,
+        notes: 'Finalizada T3. Temporada 4 confirmada en preproducción.'
+      },
       {
         id: 'ser-hotd',
         title: 'House of the Dragon',
@@ -123,8 +265,8 @@
         currentEpisode: 8,
         totalEpisodesSeason: 8,
         nextSeasonNumber: 3,
-        nextReleaseDate: '2027-06-15',
-        releaseSchedule: 'Finalizada Temporada 2. Temporada 3 en producción con estreno programado para 2027.',
+        nextReleaseDate: '2026-06-15',
+        releaseSchedule: 'Finalizada Temporada 2. Temporada 3 en producción con estreno programado para 2026.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058693.jpg',
@@ -132,6 +274,28 @@
         userProgressSeason: 2,
         userProgressEpisode: 8,
         notes: 'Danza de Dragones en punto álgido. Alerta programada para la T3.'
+      },
+      {
+        id: 'ser-severance',
+        title: 'Severance (Separación)',
+        platform: 'Apple TV+',
+        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
+        rating: 8.7,
+        genres: ['Misterio', 'Sci-Fi', 'Thriller'],
+        status: 'airing_weekly',
+        currentSeason: 2,
+        currentEpisode: 1,
+        totalEpisodesSeason: 10,
+        nextEpisodeNumber: 2,
+        nextReleaseDate: '2025-01-17',
+        releaseSchedule: 'Nuevo episodio cada Viernes a las 02:00 AM COT en Apple TV+.',
+        airDay: 'Viernes',
+        airTime: '02:00 AM COT',
+        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg',
+        userTracking: true,
+        userProgressSeason: 2,
+        userProgressEpisode: 1,
+        notes: 'Misterio de Lumon Industries.'
       },
       {
         id: 'ser-tlou',
@@ -145,8 +309,8 @@
         currentEpisode: 9,
         totalEpisodesSeason: 9,
         nextSeasonNumber: 2,
-        nextReleaseDate: '2027-04-18',
-        releaseSchedule: 'Temporada 2 confirmada para principios de 2027 con Pedro Pascal y Bella Ramsey.',
+        nextReleaseDate: '2025-04-18',
+        releaseSchedule: 'Temporada 2 confirmada para principios de 2025 con Pedro Pascal y Bella Ramsey.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
         poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg',
@@ -154,138 +318,6 @@
         userProgressSeason: 1,
         userProgressEpisode: 9,
         notes: 'Adaptación del videojuego Parte II.'
-      },
-      {
-        id: 'ser-severance',
-        title: 'Severance (Separación)',
-        platform: 'Apple TV+',
-        platformBg: 'bg-zinc-800 text-zinc-200 border-zinc-500/40',
-        rating: 8.7,
-        genres: ['Misterio', 'Sci-Fi', 'Thriller'],
-        status: 'airing_weekly',
-        currentSeason: 2,
-        currentEpisode: 7,
-        totalEpisodesSeason: 10,
-        nextEpisodeNumber: 8,
-        nextReleaseDate: '2026-09-04',
-        releaseSchedule: 'Nuevo episodio cada Viernes a las 02:00 AM COT en Apple TV+.',
-        airDay: 'Viernes',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg',
-        userTracking: true,
-        userProgressSeason: 2,
-        userProgressEpisode: 7,
-        notes: 'Episodio 8 disponible este viernes.'
-      },
-      {
-        id: 'ser-theboys',
-        title: 'The Boys',
-        platform: 'Prime Video',
-        platformBg: 'bg-sky-900/60 text-sky-200 border-sky-500/40',
-        rating: 8.7,
-        genres: ['Acción', 'Comedia Negra', 'Superhéroes'],
-        status: 'waiting_season',
-        currentSeason: 4,
-        currentEpisode: 8,
-        totalEpisodesSeason: 8,
-        nextSeasonNumber: 5,
-        nextReleaseDate: '2027-08-20',
-        releaseSchedule: 'Temporada 5 (Temporada Final) anunciada para mediados de 2027.',
-        airDay: 'Jueves',
-        airTime: '07:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1194300.jpg',
-        userTracking: true,
-        userProgressSeason: 4,
-        userProgressEpisode: 8,
-        notes: 'Temporada final de Butcher contra Homelander.'
-      },
-      {
-        id: 'ser-rings',
-        title: 'El Señor de los Anillos: Anillos de Poder',
-        platform: 'Prime Video',
-        platformBg: 'bg-sky-900/60 text-sky-200 border-sky-500/40',
-        rating: 7.3,
-        genres: ['Fantasía', 'Aventura', 'Drama'],
-        status: 'airing_weekly',
-        currentSeason: 2,
-        currentEpisode: 4,
-        totalEpisodesSeason: 8,
-        nextEpisodeNumber: 5,
-        nextReleaseDate: '2026-09-03',
-        releaseSchedule: 'Nuevo episodio semanal cada Jueves a las 02:00 AM COT.',
-        airDay: 'Jueves',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/424/1061900.jpg',
-        userTracking: true,
-        userProgressSeason: 2,
-        userProgressEpisode: 4,
-        notes: 'El asedio a Eregion y la forja de los anillos.'
-      },
-      {
-        id: 'ser-stranger',
-        title: 'Stranger Things',
-        platform: 'Netflix',
-        platformBg: 'bg-red-900/60 text-red-200 border-red-500/40',
-        rating: 8.7,
-        genres: ['Sci-Fi', 'Terror', 'Drama'],
-        status: 'waiting_season',
-        currentSeason: 4,
-        currentEpisode: 9,
-        totalEpisodesSeason: 9,
-        nextSeasonNumber: 5,
-        nextReleaseDate: '2027-05-27',
-        releaseSchedule: 'Temporada 5 (Temporada Final) programada para 2027.',
-        airDay: 'Jueves',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/410/1025528.jpg',
-        userTracking: true,
-        userProgressSeason: 4,
-        userProgressEpisode: 9,
-        notes: 'La batalla final por Hawkins contra Vecna.'
-      },
-      {
-        id: 'ser-fallout',
-        title: 'Fallout',
-        platform: 'Prime Video',
-        platformBg: 'bg-sky-900/60 text-sky-200 border-sky-500/40',
-        rating: 8.4,
-        genres: ['Sci-Fi', 'Acción', 'Aventura'],
-        status: 'waiting_season',
-        currentSeason: 1,
-        currentEpisode: 8,
-        totalEpisodesSeason: 8,
-        nextSeasonNumber: 2,
-        nextReleaseDate: '2027-03-12',
-        releaseSchedule: 'Temporada 2 rodando actualmente con ambientación en New Vegas.',
-        airDay: 'Jueves',
-        airTime: '07:00 PM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/506/1266014.jpg',
-        userTracking: true,
-        userProgressSeason: 1,
-        userProgressEpisode: 8,
-        notes: 'Rumbo a New Vegas.'
-      },
-      {
-        id: 'ser-bear',
-        title: 'The Bear',
-        platform: 'Disney+ / Star+',
-        platformBg: 'bg-blue-900/60 text-blue-200 border-blue-500/40',
-        rating: 8.6,
-        genres: ['Drama', 'Comedia', 'Cocina'],
-        status: 'waiting_season',
-        currentSeason: 3,
-        currentEpisode: 10,
-        totalEpisodesSeason: 10,
-        nextSeasonNumber: 4,
-        nextReleaseDate: '2027-06-25',
-        releaseSchedule: 'Temporada 4 filmada en simultáneo para estreno a mediados de 2027.',
-        airDay: 'Miércoles',
-        airTime: '02:00 AM COT',
-        poster: 'https://static.tvmaze.com/uploads/images/original_untouched/469/1173775.jpg',
-        userTracking: true,
-        userProgressSeason: 3,
-        userProgressEpisode: 10,
-        notes: 'La búsqueda de la estrella Michelin.'
       }
     ];
 
@@ -293,7 +325,7 @@
       {
         id: 'mov-avengers-doomsday',
         title: 'Avengers: Doomsday',
-        releaseDate: '2027-05-01',
+        releaseDate: '2026-05-01',
         genre: 'Acción / Superhéroes / Sci-Fi',
         director: 'Hermanos Russo',
         cast: 'Robert Downey Jr. (Doctor Doom), Pedro Pascal, Florence Pugh',
@@ -306,7 +338,7 @@
       {
         id: 'mov-batman-2',
         title: 'The Batman: Part II',
-        releaseDate: '2027-10-02',
+        releaseDate: '2026-10-02',
         genre: 'Crimen / Thriller / Neo-Noir',
         director: 'Matt Reeves',
         cast: 'Robert Pattinson, Colin Farrell, Andy Serkis',
@@ -319,7 +351,7 @@
       {
         id: 'mov-spider-beyond',
         title: 'Spider-Man: Beyond the Spider-Verse',
-        releaseDate: '2027-06-25',
+        releaseDate: '2026-06-25',
         genre: 'Animación / Aventura / Multiverso',
         director: 'Joaquim Dos Santos, Kemp Powers',
         cast: 'Shameik Moore, Hailee Steinfeld, Oscar Isaac',
@@ -328,42 +360,16 @@
         youtubeUrl: 'https://www.youtube.com/results?search_query=Spider-Man+Beyond+the+Spider-Verse+trailer',
         synopsis: 'El desenlace de la trilogía de Miles Morales atrapado en la dimensión Tierra-42.',
         hype: 98
-      },
-      {
-        id: 'mov-dune-messiah',
-        title: 'Dune: Messiah (Dune 3)',
-        releaseDate: '2027-12-18',
-        genre: 'Ciencia Ficción / Épica',
-        director: 'Denis Villeneuve',
-        cast: 'Timothée Chalamet, Zendaya, Florence Pugh, Anya Taylor-Joy',
-        poster: 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Dune+Messiah+trailer+official+denis+villeneuve',
-        synopsis: 'El mandato de Paul Atreides como Emperador y la guerra santa a través del universo.',
-        hype: 97
-      },
-      {
-        id: 'mov-avatar-fire',
-        title: 'Avatar: Fire and Ash',
-        releaseDate: '2026-12-19',
-        genre: 'Aventura / Sci-Fi / Fantasía',
-        director: 'James Cameron',
-        cast: 'Sam Worthington, Zoe Saldaña, Michelle Yeoh',
-        poster: 'https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',
-        fallbackPoster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Avatar+Fire+and+Ash+trailer+official+james+cameron',
-        synopsis: 'Jake Sully y Neytiri conocen al Pueblo de las Cenizas, una tribu Na\'vi de fuego hostil.',
-        hype: 95
       }
     ];
 
     const PLATFORMS = [
       { name: 'Todas', id: 'all' },
+      { name: 'Apple TV+', id: 'Apple TV+' },
       { name: 'Max (HBO)', id: 'Max (HBO)' },
       { name: 'Netflix', id: 'Netflix' },
       { name: 'Prime Video', id: 'Prime Video' },
-      { name: 'Disney+ / Star+', id: 'Disney+ / Star+' },
-      { name: 'Apple TV+', id: 'Apple TV+' }
+      { name: 'Disney+ / Star+', id: 'Disney+ / Star+' }
     ];
 
     const playChime = () => {
@@ -388,7 +394,7 @@
       
       const [seriesList, setSeriesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_series_v5');
+          const saved = localStorage.getItem('cineradar_series_v6');
           if (saved) return JSON.parse(saved);
           return MASTER_SERIES;
         } catch (e) {
@@ -398,7 +404,7 @@
 
       const [moviesList, setMoviesList] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_movies_v5');
+          const saved = localStorage.getItem('cineradar_movies_v6');
           if (saved) return JSON.parse(saved);
           return MASTER_MOVIES;
         } catch (e) {
@@ -413,31 +419,32 @@
       const [bannerMessage, setBannerMessage] = useState(null);
       const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
 
-      // Estados del Modal de Búsqueda Online (TVMaze API)
+      // Estados de Búsqueda Online Multi-Fuente
       const [apiSearchQuery, setApiSearchQuery] = useState('');
       const [apiSearchResults, setApiSearchResults] = useState([]);
       const [isSearchingApi, setIsSearchingApi] = useState(false);
-      const [modalTab, setModalTab] = useState('search'); // 'search' | 'manual'
+      const [modalTab, setModalTab] = useState('search');
 
       // Formulario Manual
       const [formTitle, setFormTitle] = useState('');
-      const [formPlatform, setFormPlatform] = useState('Max (HBO)');
-      const [formStatus, setFormStatus] = useState('airing_weekly');
-      const [formAirDay, setFormAirDay] = useState('Sábados');
-      const [formAirTime, setFormAirTime] = useState('08:00 PM COT');
-      const [formNextDate, setFormNextDate] = useState('');
+      const [formPlatform, setFormPlatform] = useState('Apple TV+');
+      const [formStatus, setFormStatus] = useState('waiting_season');
+      const [formAirDay, setFormAirDay] = useState('Miércoles');
+      const [formAirTime, setFormAirTime] = useState('02:00 AM COT');
+      const [formNextDate, setFormNextDate] = useState('2024-09-04');
+      const [formNextSeason, setFormNextSeason] = useState('4');
       const [formPoster, setFormPoster] = useState('');
       const [formRating, setFormRating] = useState('8.5');
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_series_v5', JSON.stringify(seriesList));
+          localStorage.setItem('cineradar_series_v6', JSON.stringify(seriesList));
         } catch (e) {}
       }, [seriesList]);
 
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_movies_v5', JSON.stringify(moviesList));
+          localStorage.setItem('cineradar_movies_v6', JSON.stringify(moviesList));
         } catch (e) {}
       }, [moviesList]);
 
@@ -481,42 +488,51 @@
           setNotificationPermission(perm);
           if (perm === 'granted') {
             showBanner('🔔 ¡Notificaciones activadas! Te avisaremos de nuevos capítulos.');
-            new Notification('🎬 CineRadar Pro Activo', {
-              body: 'Tus series están siendo rastreadas. Recibirás avisos de nuevos capítulos y temporadas.',
-              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎬</text></svg>'
-            });
-          } else {
-            showBanner('⚠️ Permiso no otorgado en el navegador.');
           }
-        } catch (e) {
-          console.warn(e);
-        }
+        } catch (e) {}
       };
 
-      // Funciones de eliminación completa / descartar por pestaña
+      // Alternar Estado: En Emisión <-> Esperando Temporada
+      const toggleSeriesStatus = (id) => {
+        setSeriesList(prev => prev.map(s => {
+          if (s.id === id) {
+            const nextStatus = s.status === 'airing_weekly' ? 'waiting_season' : 'airing_weekly';
+            showBanner(`🔄 Estado de "${s.title}" cambiado a: ${nextStatus === 'airing_weekly' ? '⚡ En Emisión Semanal' : '⏳ Esperando Temporada'}`);
+            return {
+              ...s,
+              status: nextStatus,
+              releaseSchedule: nextStatus === 'airing_weekly'
+                ? `Nuevo episodio cada ${s.airDay || 'Viernes'} a las ${s.airTime || '02:00 AM COT'} por ${s.platform}.`
+                : `Temporada concluida. Próxima temporada ${s.nextSeasonNumber || (s.currentSeason + 1)} en desarrollo/espera.`
+            };
+          }
+          return s;
+        }));
+      };
+
       const deleteSeriesCompletely = (id, title) => {
         setSeriesList(prev => prev.filter(s => s.id !== id));
-        showBanner(`🗑️ "${title}" ha sido eliminada por completo.`);
+        showBanner(`🗑️ "${title}" eliminada de todas las listas.`);
       };
 
       const deleteMovieCompletely = (id, title) => {
         setMoviesList(prev => prev.filter(m => m.id !== id));
-        showBanner(`🗑️ Película "${title}" eliminada de la lista.`);
+        showBanner(`🗑️ "${title}" descartada de cartelera.`);
       };
 
       const restoreDefaults = () => {
         setSeriesList(MASTER_SERIES);
         setMoviesList(MASTER_MOVIES);
-        localStorage.setItem('cineradar_series_v5', JSON.stringify(MASTER_SERIES));
-        localStorage.setItem('cineradar_movies_v5', JSON.stringify(MASTER_MOVIES));
-        showBanner('🔄 ¡Catálogo restaurado a valores por defecto!');
+        localStorage.setItem('cineradar_series_v6', JSON.stringify(MASTER_SERIES));
+        localStorage.setItem('cineradar_movies_v6', JSON.stringify(MASTER_MOVIES));
+        showBanner('🔄 ¡Catálogo de series y estrenos restaurado!');
       };
 
       const toggleTracking = (id) => {
         setSeriesList(prev => prev.map(s => {
           if (s.id === id) {
             const nextVal = !s.userTracking;
-            showBanner(nextVal ? `✓ Agregada a seguimiento: ${s.title}` : `Eliminada de seguimiento: ${s.title}`);
+            showBanner(nextVal ? `✓ Siguiendo: ${s.title}` : `Ocultada de seguimiento: ${s.title}`);
             return { ...s, userTracking: nextVal };
           }
           return s;
@@ -547,8 +563,8 @@
         }));
       };
 
-      // Búsqueda en Vivo en API TVMaze (Gratuita, sin API key)
-      const handleSearchTVMaze = async (query) => {
+      // Búsqueda Multi-Fuente con Detección Inteligente de Estado
+      const handleSearchMultiSource = async (query) => {
         setApiSearchQuery(query);
         if (!query || query.trim().length < 2) {
           setApiSearchResults([]);
@@ -561,22 +577,58 @@
           const data = await res.json();
           setApiSearchResults(data || []);
         } catch (err) {
-          console.error("Error al buscar en TVMaze:", err);
+          console.error("Error al buscar en API:", err);
         } finally {
           setIsSearchingApi(false);
         }
       };
 
-      // Importar serie desde los resultados de TVMaze
+      // Importar serie procesando estado real y base de conocimiento
       const handleImportFromApi = (item) => {
         const show = item.show;
         if (!show) return;
 
         const cleanSummary = show.summary ? show.summary.replace(/<[^>]*>?/gm, '') : '';
-        const platformName = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
-        const airDay = show.schedule && show.schedule.days && show.schedule.days.length > 0 ? show.schedule.days[0] : 'Domingos';
-        const airTime = show.schedule && show.schedule.time ? `${show.schedule.time} COT` : '08:00 PM COT';
-        const isRunning = show.status === 'Running';
+        const titleKey = show.name.trim().toLowerCase();
+        
+        // Verificamos si existe en la base de conocimiento correlacionada
+        const kbMatch = SERIES_KNOWLEDGE_BASE[titleKey];
+
+        const platformName = kbMatch 
+          ? kbMatch.platform 
+          : (show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming'));
+        
+        const airDay = kbMatch 
+          ? kbMatch.airDay 
+          : (show.schedule && show.schedule.days && show.schedule.days.length > 0 ? show.schedule.days[0] : 'Viernes');
+        
+        const airTime = kbMatch 
+          ? kbMatch.airTime 
+          : (show.schedule && show.schedule.time ? `${show.schedule.time} COT` : '02:00 AM COT');
+
+        // Determinación inteligente de estado:
+        // Si no tiene episodio en emisión activa inmediata o coincide con base de conocimiento -> waiting_season
+        let computedStatus = 'waiting_season';
+        let nextSeasonNum = 2;
+        let nextReleaseDateStr = '2024-11-15';
+        let releaseDesc = 'Temporada finalizada. Próxima entrega en espera.';
+
+        if (kbMatch) {
+          computedStatus = kbMatch.status;
+          nextSeasonNum = kbMatch.nextSeasonNumber;
+          nextReleaseDateStr = kbMatch.nextReleaseDate;
+          releaseDesc = kbMatch.releaseSchedule;
+        } else {
+          // Si TVMaze dice que terminó completamente
+          if (show.status === 'Ended') {
+            computedStatus = 'waiting_season';
+            releaseDesc = 'Serie concluida oficialmente.';
+          } else {
+            // Serie en curso pero entre temporadas
+            computedStatus = 'waiting_season';
+            releaseDesc = `Esperando confirmación de próxima temporada por ${platformName}.`;
+          }
+        }
 
         const posterUrl = show.image 
           ? (show.image.original || show.image.medium) 
@@ -586,37 +638,36 @@
           id: 'tvmaze-' + show.id + '-' + Date.now(),
           title: show.name,
           platform: platformName,
-          platformBg: platformName.toLowerCase().includes('hbo') || platformName.toLowerCase().includes('max') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
+          platformBg: platformName.toLowerCase().includes('apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
+                      platformName.toLowerCase().includes('max') || platformName.toLowerCase().includes('hbo') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
                       platformName.toLowerCase().includes('netflix') ? 'bg-red-900/60 text-red-200 border-red-500/40' :
-                      platformName.toLowerCase().includes('prime') || platformName.toLowerCase().includes('amazon') ? 'bg-sky-900/60 text-sky-200 border-sky-500/40' :
-                      platformName.toLowerCase().includes('apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
+                      platformName.toLowerCase().includes('prime') ? 'bg-sky-900/60 text-sky-200 border-sky-500/40' :
                       'bg-slate-800 text-slate-200 border-slate-700',
           rating: show.rating && show.rating.average ? show.rating.average : 8.2,
           genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
-          status: isRunning ? 'airing_weekly' : 'waiting_season',
-          currentSeason: 1,
+          status: computedStatus,
+          currentSeason: computedStatus === 'waiting_season' ? Math.max(1, nextSeasonNum - 1) : 1,
           currentEpisode: 1,
           totalEpisodesSeason: 10,
-          nextSeasonNumber: 2,
-          nextReleaseDate: '2027-05-15',
-          releaseSchedule: isRunning ? `Nuevo episodio cada ${airDay} a las ${airTime} por ${platformName}.` : `Temporada finalizada. Próxima entrega en producción.`,
+          nextSeasonNumber: nextSeasonNum,
+          nextReleaseDate: nextReleaseDateStr,
+          releaseSchedule: releaseDesc,
           airDay: airDay,
           airTime: airTime,
           poster: posterUrl,
           userTracking: true,
-          userProgressSeason: 1,
+          userProgressSeason: computedStatus === 'waiting_season' ? Math.max(1, nextSeasonNum - 1) : 1,
           userProgressEpisode: 1,
-          notes: cleanSummary.slice(0, 120) + (cleanSummary.length > 120 ? '...' : '')
+          notes: cleanSummary.slice(0, 140) + (cleanSummary.length > 140 ? '...' : '')
         };
 
         setSeriesList(prev => [newSeries, ...prev]);
         setShowNewSeriesModal(false);
         setApiSearchQuery('');
         setApiSearchResults([]);
-        showBanner(`🎉 ¡"${show.name}" importada e incorporada a tu radar!`);
+        showBanner(`🎉 ¡"${show.name}" agregada correctamente como: ${computedStatus === 'waiting_season' ? '⏳ Próximas Temporadas' : '⚡ Emisión Semanal'}!`);
       };
 
-      // Formulario de nueva serie manual
       const handleAddCustomSeries = (e) => {
         e.preventDefault();
         if (!formTitle.trim()) return;
@@ -625,33 +676,33 @@
           id: 'custom-' + Date.now(),
           title: formTitle.trim(),
           platform: formPlatform,
-          platformBg: formPlatform.includes('Max') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
+          platformBg: formPlatform.includes('Apple') ? 'bg-zinc-800 text-zinc-200 border-zinc-500/40' :
+                      formPlatform.includes('Max') ? 'bg-purple-900/60 text-purple-200 border-purple-500/40' :
                       formPlatform.includes('Netflix') ? 'bg-red-900/60 text-red-200 border-red-500/40' :
-                      formPlatform.includes('Prime') ? 'bg-sky-900/60 text-sky-200 border-sky-500/40' :
-                      'bg-slate-800 text-slate-200 border-slate-700',
+                      'bg-sky-900/60 text-sky-200 border-sky-500/40',
           rating: parseFloat(formRating) || 8.0,
           genres: ['Drama', 'Serie'],
           status: formStatus,
           currentSeason: 1,
           currentEpisode: 1,
           totalEpisodesSeason: 8,
-          nextSeasonNumber: 2,
-          nextReleaseDate: formNextDate || '2026-11-20',
-          releaseSchedule: formStatus === 'airing_weekly' ? `Nuevo episodio todos los ${formAirDay} a las ${formAirTime}` : `Nueva temporada el ${formNextDate}`,
+          nextSeasonNumber: parseInt(formNextSeason) || 2,
+          nextReleaseDate: formNextDate || '2024-11-15',
+          releaseSchedule: formStatus === 'airing_weekly' ? `Nuevo episodio todos los ${formAirDay} a las ${formAirTime}` : `Nueva Temporada ${formNextSeason} programada para el ${formNextDate}`,
           airDay: formAirDay,
           airTime: formAirTime,
           poster: formPoster.trim() || DEFAULT_FALLBACK_POSTER,
           userTracking: true,
           userProgressSeason: 1,
           userProgressEpisode: 1,
-          notes: 'Añadida manualmente a tu radar.'
+          notes: 'Añadida manualmente.'
         };
 
         setSeriesList([newSeries, ...seriesList]);
         setShowNewSeriesModal(false);
         setFormTitle('');
         setFormPoster('');
-        showBanner(`🎉 ¡"${newSeries.title}" agregada al radar con éxito!`);
+        showBanner(`🎉 ¡"${newSeries.title}" añadida con éxito!`);
       };
 
       const myTrackedSeries = useMemo(() => seriesList.filter(s => s.userTracking), [seriesList]);
@@ -689,7 +740,7 @@
               <button
                 onClick={restoreDefaults}
                 className="hidden lg:flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Restaurar lista original"
+                title="Restaurar catálogo inicial"
               >
                 🔄 <span>Restaurar Todo</span>
               </button>
@@ -776,14 +827,14 @@
                     <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
                       📺 Mi Radar de Series en Seguimiento ({myTrackedSeries.length})
                     </h2>
-                    <p className="text-xs text-slate-400">Control de temporadas finalizadas, progreso de episodios y fechas de estreno.</p>
+                    <p className="text-xs text-slate-400">Control de progreso de episodios, temporadas y estado de emisión.</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowNewSeriesModal(true)}
                       className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5"
                     >
-                      🔍 Buscar serie en vivo
+                      🔍 Buscar y Seguir Serie
                     </button>
                   </div>
                 </div>
@@ -792,7 +843,7 @@
                   <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-3">
                     <div className="text-4xl">📺</div>
                     <h3 className="font-display font-bold text-white text-base">No tienes series en seguimiento actualmente</h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Explora el catálogo o busca cualquier serie para comenzar a rastrear tus episodios.</p>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">Busca tus series favoritas o explora el catálogo para añadirlas.</p>
                     <button
                       onClick={() => setShowNewSeriesModal(true)}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-lg"
@@ -805,7 +856,7 @@
                     {myTrackedSeries.map(series => (
                       <div key={series.id} className="glass-panel card-hover rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-800">
                         <div>
-                          {/* Poster de Alta Fidelidad con Fallback */}
+                          {/* Poster */}
                           <div className="relative h-60 w-full overflow-hidden bg-slate-900">
                             <img
                               src={series.poster}
@@ -840,29 +891,44 @@
                           </div>
 
                           <div className="p-4 space-y-3">
+                            {/* Switch de Estado Interactivo */}
                             {series.status === 'airing_weekly' ? (
-                              <div className="bg-emerald-950/50 border border-emerald-500/40 p-3 rounded-2xl space-y-1 glow-emerald">
+                              <div className="bg-emerald-950/50 border border-emerald-500/40 p-3 rounded-2xl space-y-1.5 glow-emerald">
                                 <div className="flex items-center justify-between text-[11px]">
                                   <span className="font-bold text-emerald-400 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                                     EN EMISIÓN SEMANAL
                                   </span>
-                                  <span className="font-mono font-bold text-emerald-300">
-                                    {series.airDay}
-                                  </span>
+                                  <button
+                                    onClick={() => toggleSeriesStatus(series.id)}
+                                    className="text-[10px] bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded-lg font-bold"
+                                    title="Cambiar a Esperando Temporada"
+                                  >
+                                    🔄 Cambiar estado
+                                  </button>
                                 </div>
                                 <p className="text-xs text-slate-200 font-medium">{series.releaseSchedule}</p>
-                                <span className="text-[10px] font-mono text-emerald-300 block">Hora estreno: {series.airTime}</span>
+                                <div className="flex items-center justify-between text-[10px] font-mono text-emerald-300 pt-0.5">
+                                  <span>Día: {series.airDay}</span>
+                                  <span>Hora: {series.airTime}</span>
+                                </div>
                               </div>
                             ) : (
-                              <div className="bg-purple-950/50 border border-purple-500/40 p-3 rounded-2xl space-y-1 glow-purple">
+                              <div className="bg-purple-950/50 border border-purple-500/40 p-3 rounded-2xl space-y-1.5 glow-purple">
                                 <div className="flex items-center justify-between text-[11px]">
                                   <span className="font-bold text-purple-300">
                                     ⏳ ESPERANDO TEMPORADA {series.nextSeasonNumber}
                                   </span>
-                                  <span className="font-mono text-amber-300 font-bold">
-                                    {series.nextReleaseDate}
-                                  </span>
+                                  <button
+                                    onClick={() => toggleSeriesStatus(series.id)}
+                                    className="text-[10px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-400/40 px-2 py-0.5 rounded-lg font-bold"
+                                    title="Cambiar a En Emisión"
+                                  >
+                                    🔄 Cambiar estado
+                                  </button>
+                                </div>
+                                <div className="text-xs font-mono font-bold text-amber-300">
+                                  📅 Estreno: {series.nextReleaseDate}
                                 </div>
                                 <p className="text-xs text-slate-300">{series.releaseSchedule}</p>
                               </div>
@@ -925,7 +991,7 @@
               </div>
             )}
 
-            {/* VISTA 2: CAPÍTULOS DE HOY */}
+            {/* VISTA 2: CAPÍTULOS HOY */}
             {activeTab === 'today' && (
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-1">
@@ -936,13 +1002,13 @@
                     </h2>
                   </div>
                   <p className="text-xs text-slate-300">
-                    Series que estrenan nuevo capítulo semanalmente con hora exacta y plataforma en Colombia (COT).
+                    Series con capítulos que se transmiten semana a semana con día, hora exacta y plataforma en Colombia (COT).
                   </p>
                 </div>
 
                 {weeklyAiringSeries.length === 0 ? (
                   <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en emisión semanal activas.</p>
+                    <p className="text-xs text-slate-400">No hay series en emisión semanal activa actualmente.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -968,6 +1034,13 @@
                             <div className="text-xs text-cyan-300 font-mono font-bold flex items-center gap-1.5">
                               ⏰ <span>Hora: {series.airTime}</span>
                             </div>
+
+                            <button
+                              onClick={() => toggleSeriesStatus(series.id)}
+                              className="text-[10px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg font-bold transition-all block mt-1"
+                            >
+                              ⏳ Mover a Próximas Temporadas
+                            </button>
                           </div>
                         </div>
 
@@ -1005,13 +1078,13 @@
                     ⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})
                   </h2>
                   <p className="text-xs text-slate-300">
-                    Fechas y estado de producción oficial de las siguientes temporadas.
+                    Series cuyas temporadas anteriores finalizaron y están esperando su fecha oficial de estreno.
                   </p>
                 </div>
 
                 {waitingSeasonsList.length === 0 ? (
                   <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-2">
-                    <p className="text-xs text-slate-400">No hay series en espera de temporada.</p>
+                    <p className="text-xs text-slate-400">No hay series en espera de temporada actualmente.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1031,6 +1104,13 @@
                               </span>
                               <h3 className="font-display font-extrabold text-base text-white pt-1">{series.title}</h3>
                               <span className="text-xs text-slate-400 block pt-0.5">Finalizada: Temporada {series.currentSeason}</span>
+                              
+                              <button
+                                onClick={() => toggleSeriesStatus(series.id)}
+                                className="text-[10px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold transition-all mt-1"
+                              >
+                                ⚡ Mover a Emisión Semanal
+                              </button>
                             </div>
                           </div>
 
@@ -1271,7 +1351,7 @@
 
           </main>
 
-          {/* Modal de Búsqueda Online e Importación de Series */}
+          {/* Modal de Búsqueda Online Multi-Fuente */}
           {showNewSeriesModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl my-auto">
@@ -1304,7 +1384,7 @@
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    🌐 Buscar en Vivo (TVMaze API)
+                    🌐 Búsqueda Inteligente
                   </button>
                   <button
                     onClick={() => setModalTab('manual')}
@@ -1318,19 +1398,19 @@
                   </button>
                 </div>
 
-                {/* MODO 1: BÚSQUEDA ONLINE EN TIEMPO REAL */}
+                {/* MODO 1: BÚSQUEDA MULTI-FUENTE */}
                 {modalTab === 'search' && (
                   <div className="space-y-4 text-xs">
                     <div className="space-y-1">
                       <label className="text-slate-300 font-bold block">
-                        Escribe el nombre de cualquier serie mundial:
+                        Escribe el nombre de cualquier serie:
                       </label>
                       <div className="relative">
                         <input
                           type="text"
-                          placeholder="Ej: Breaking Bad, Succession, Dark, The Penguin, Loki..."
+                          placeholder="Ej: Slow Horses, Silo, Ted Lasso, The Bear, Dark..."
                           value={apiSearchQuery}
-                          onChange={(e) => handleSearchTVMaze(e.target.value)}
+                          onChange={(e) => handleSearchMultiSource(e.target.value)}
                           className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-indigo-400 text-xs shadow-inner"
                           autoFocus
                         />
@@ -1340,16 +1420,16 @@
                         )}
                       </div>
                       <p className="text-[10px] text-slate-400">
-                        ✨ Importará automáticamente el póster oficial, plataforma, horario y calificación.
+                        ✨ Correlaciona automáticamente con la base de datos de estrenos y clasifica entre emisión o espera.
                       </p>
                     </div>
 
-                    {/* Lista de Resultados de la API */}
+                    {/* Lista de Resultados */}
                     <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                       {apiSearchResults.length > 0 ? (
                         apiSearchResults.map(({ show }) => {
                           const poster = show.image ? (show.image.medium || show.image.original) : DEFAULT_FALLBACK_POSTER;
-                          const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'TV');
+                          const platform = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
                           const rating = show.rating && show.rating.average ? show.rating.average : '8.0';
 
                           return (
@@ -1384,7 +1464,7 @@
                         })
                       ) : apiSearchQuery.trim().length >= 2 ? (
                         <div className="text-center py-6 text-slate-500 text-xs">
-                          No se encontraron series con ese nombre. Prueba con otro título.
+                          No se encontraron series. Intenta con otro título.
                         </div>
                       ) : (
                         <div className="text-center py-6 text-slate-500 text-xs">
@@ -1403,7 +1483,7 @@
                       <input
                         type="text"
                         required
-                        placeholder="Ej: Silo, Slow Horses..."
+                        placeholder="Ej: Severance, Silo..."
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
@@ -1418,11 +1498,11 @@
                           onChange={(e) => setFormPlatform(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
                         >
+                          <option value="Apple TV+">Apple TV+</option>
                           <option value="Max (HBO)">Max (HBO)</option>
                           <option value="Netflix">Netflix</option>
                           <option value="Prime Video">Prime Video</option>
                           <option value="Disney+ / Star+">Disney+ / Star+</option>
-                          <option value="Apple TV+">Apple TV+</option>
                           <option value="Paramount+">Paramount+</option>
                         </select>
                       </div>
@@ -1434,8 +1514,8 @@
                           onChange={(e) => setFormStatus(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500"
                         >
-                          <option value="airing_weekly">Capítulo Semanal</option>
                           <option value="waiting_season">Esperando Temporada</option>
+                          <option value="airing_weekly">Capítulo Semanal</option>
                         </select>
                       </div>
                     </div>
@@ -1469,14 +1549,26 @@
                         </div>
                       </div>
                     ) : (
-                      <div>
-                        <label className="text-slate-300 font-bold block mb-1">Fecha Próxima Temporada</label>
-                        <input
-                          type="date"
-                          value={formNextDate}
-                          onChange={(e) => setFormNextDate(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-slate-300 font-bold block mb-1">Próx. Temporada</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={formNextSeason}
+                            onChange={(e) => setFormNextSeason(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-bold block mb-1">Fecha Estreno</label>
+                          <input
+                            type="date"
+                            value={formNextDate}
+                            onChange={(e) => setFormNextDate(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                          />
+                        </div>
                       </div>
                     )}
 
