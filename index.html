@@ -105,7 +105,6 @@
         authPromise.then(async () => {
           window.CineRadarCloud.isReady = true;
 
-          // Guardado en Firestore bajo la ruta del usuario específico
           window.CineRadarCloud.saveUserData = async (data, profileId) => {
             if (!auth.currentUser || !profileId) return;
             try {
@@ -119,6 +118,7 @@
                 emailConfig: JSON.stringify(data.emailConfig || {}),
                 profileName: data.profileName || 'Mi Perfil',
                 profileAvatar: data.profileAvatar || '🍿',
+                profilePin: data.profilePin || '',
                 updatedAt: new Date().toISOString(),
                 updatedBy: profileId
               }, { merge: true });
@@ -127,7 +127,6 @@
             }
           };
 
-          // Escucha en tiempo real de cambios en la nube
           window.CineRadarCloud.subscribeUserData = (profileId, callback) => {
             if (!auth.currentUser || !profileId) return () => {};
             try {
@@ -144,6 +143,7 @@
                     emailConfig: cloudData.emailConfig ? JSON.parse(cloudData.emailConfig) : null,
                     profileName: cloudData.profileName,
                     profileAvatar: cloudData.profileAvatar,
+                    profilePin: cloudData.profilePin,
                     updatedAt: cloudData.updatedAt
                   });
                 }
@@ -191,8 +191,34 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80';
+    const AVAILABLE_AVATARS = ['👑', '🍿', '🎬', '🦇', '🐉', '🚀', '⚡', '🕵️', '🧟', '⚔️', '🦁', '🌟'];
 
-    const AVAILABLE_AVATARS = ['🍿', '🎬', '🦇', '🐉', '🚀', '👑', '⚡', '🕵️', '🧟', '⚔️'];
+    // Catálogo oficial de plataformas soportadas
+    const SUPPORTED_PLATFORMS = [
+      { id: 'Netflix', name: 'Netflix', icon: '🔴', color: 'bg-red-950/80 text-red-300 border-red-500/40 hover:border-red-400' },
+      { id: 'Apple TV+', name: 'Apple TV+', icon: '🍏', color: 'bg-slate-900 text-slate-200 border-slate-600/50 hover:border-slate-400' },
+      { id: 'Max (HBO)', name: 'HBO / Max', icon: '🟣', color: 'bg-purple-950/80 text-purple-300 border-purple-500/40 hover:border-purple-400' },
+      { id: 'Prime Video', name: 'Prime Video', icon: '📦', color: 'bg-sky-950/80 text-sky-300 border-sky-500/40 hover:border-sky-400' },
+      { id: 'Disney+', name: 'Disney+', icon: '✨', color: 'bg-blue-950/80 text-blue-300 border-blue-500/40 hover:border-blue-400' },
+      { id: 'Paramount+', name: 'Paramount+', icon: '⭐', color: 'bg-blue-900/80 text-blue-200 border-blue-400/40 hover:border-blue-300' },
+      { id: 'Jellyfin', name: 'Jellyfin', icon: '🍇', color: 'bg-violet-950/80 text-violet-300 border-violet-500/40 hover:border-violet-400' },
+      { id: 'IPTV', name: 'IPTV', icon: '📡', color: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 hover:border-emerald-400' }
+    ];
+
+    // Función para obtener estilo e ícono de cualquier plataforma
+    const getPlatformInfo = (platformName) => {
+      if (!platformName) return { name: 'Streaming', icon: '📺', color: 'bg-slate-900 text-slate-300 border-slate-700' };
+      const lower = platformName.toLowerCase();
+      if (lower.includes('netflix')) return SUPPORTED_PLATFORMS[0];
+      if (lower.includes('apple')) return SUPPORTED_PLATFORMS[1];
+      if (lower.includes('max') || lower.includes('hbo')) return SUPPORTED_PLATFORMS[2];
+      if (lower.includes('prime') || lower.includes('amazon')) return SUPPORTED_PLATFORMS[3];
+      if (lower.includes('disney') || lower.includes('star+')) return SUPPORTED_PLATFORMS[4];
+      if (lower.includes('paramount')) return SUPPORTED_PLATFORMS[5];
+      if (lower.includes('jellyfin')) return SUPPORTED_PLATFORMS[6];
+      if (lower.includes('iptv')) return SUPPORTED_PLATFORMS[7];
+      return { name: platformName, icon: '📺', color: 'bg-slate-900 text-cyan-300 border-cyan-500/30' };
+    };
 
     const isDateInFuture = (dateStr) => {
       if (!dateStr) return false;
@@ -217,7 +243,7 @@
       {
         id: 'pend-2',
         title: 'Shōgun',
-        platform: 'Disney+ / Star+',
+        platform: 'Disney+',
         priority: 'high',
         genres: ['Drama', 'Historia'],
         imdbRating: 8.7,
@@ -227,7 +253,7 @@
       {
         id: 'pend-3',
         title: 'The Bear',
-        platform: 'Disney+ / Star+',
+        platform: 'Disney+',
         priority: 'medium',
         genres: ['Comedia', 'Drama'],
         imdbRating: 8.6,
@@ -273,7 +299,7 @@
         nextSeasonNumber: 3,
         nextReleaseDate: null,
         hasConfirmedFutureDate: false,
-        releaseSchedule: 'Temporada 2 concluida. Temporada 3 en producción. HBO no ha fijado día exacto de estreno.',
+        releaseSchedule: 'Temporada 2 concluida. Temporada 3 en producción.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
         poster: 'https://image.tmdb.org/t/p/w500/7QMsOTMUswlwxJP0rTTZfmz2tX2.jpg',
@@ -296,7 +322,7 @@
         nextSeasonNumber: 2,
         nextReleaseDate: null,
         hasConfirmedFutureDate: false,
-        releaseSchedule: 'Temporada 1 concluida. Temporada 2 rodada con Pedro Pascal; fecha de estreno por confirmar.',
+        releaseSchedule: 'Temporada 1 concluida. Temporada 2 rodada con Pedro Pascal.',
         airDay: 'Domingos',
         airTime: '08:00 PM COT',
         poster: 'https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2V7JMrne.jpg',
@@ -319,7 +345,7 @@
         nextSeasonNumber: 3,
         nextReleaseDate: '2025-01-17',
         hasConfirmedFutureDate: true,
-        releaseSchedule: 'Emisión semanal activa. Nuevo capítulo cada Viernes a las 02:00 AM COT en Apple TV+.',
+        releaseSchedule: 'Emisión semanal activa. Nuevo capítulo cada Viernes.',
         airDay: 'Viernes',
         airTime: '02:00 AM COT',
         poster: 'https://image.tmdb.org/t/p/w500/p457nCwmGzG7qIvdn2jL6bC1W5k.jpg',
@@ -333,16 +359,16 @@
 
     const TOP_25_HISTORIC = [
       { id: 'top-1', rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg', summary: 'Un profesor de química con cáncer se asocia con un exalumno para fabricar metanfetamina.' },
-      { id: 'top-2', rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://image.tmdb.org/t/p/w500/94t8uWbJzD6Ua4kR44d9fK7f6q5.jpg', summary: 'La historia de la Easy Company del 506º Regimiento Paracaidista durante la Segunda Guerra Mundial.' },
-      { id: 'top-3', rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://image.tmdb.org/t/p/w500/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg', summary: 'Dramatización de la catástrofe nuclear de Chernóbil en 1986 y el heroico esfuerzo de contención.' },
-      { id: 'top-4', rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://image.tmdb.org/t/p/w500/4lbclFySvugI51fwsbhB09NneMy.jpg', summary: 'El narcotráfico en Baltimore visto por policías, traficantes, sindicatos y políticos.' },
-      { id: 'top-5', rank: 5, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://image.tmdb.org/t/p/w500/6nTvdT3Z5W5k8Pq7sB7wZ2Y8L8G.jpg', summary: 'El capo mafioso de Nueva Jersey, Tony Soprano, asiste a terapia mientras lidera su organización criminal.' }
+      { id: 'top-2', rank: 2, title: 'Band of Brothers', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://image.tmdb.org/t/p/w500/94t8uWbJzD6Ua4kR44d9fK7f6q5.jpg', summary: 'La historia de la Easy Company durante la Segunda Guerra Mundial.' },
+      { id: 'top-3', rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://image.tmdb.org/t/p/w500/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg', summary: 'Dramatización de la catástrofe nuclear de Chernóbil en 1986.' },
+      { id: 'top-4', rank: 4, title: 'The Wire', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://image.tmdb.org/t/p/w500/4lbclFySvugI51fwsbhB09NneMy.jpg', summary: 'El narcotráfico en Baltimore visto por policías y traficantes.' },
+      { id: 'top-5', rank: 5, title: 'The Sopranos', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://image.tmdb.org/t/p/w500/6nTvdT3Z5W5k8Pq7sB7wZ2Y8L8G.jpg', summary: 'El capo mafioso Tony Soprano asiste a terapia mientras lidera su organización criminal.' }
     ];
 
     const TOP_10_YEAR = [
-      { id: 'yr-1', rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+ / Star+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://image.tmdb.org/t/p/w500/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg', summary: 'En el Japón de 1600, Lord Toranaga forja una alianza con un náufrago inglés para dominar el shogunato.' },
-      { id: 'yr-2', rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://image.tmdb.org/t/p/w500/upmOBiH3Xg1R5Z7JqRzK4b2Q9V.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb lucha por tomar el control del inframundo criminal de la ciudad.' },
-      { id: 'yr-3', rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://image.tmdb.org/t/p/w500/83TaSg4vKz3PqU7t6aQ9xJ3w0F.jpg', summary: 'Una habitante de un refugio nuclear sale a la superficie en un Los Ángeles postapocalíptico y despiadado.' }
+      { id: 'yr-1', rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://image.tmdb.org/t/p/w500/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg', summary: 'En el Japón de 1600, Lord Toranaga forja una alianza con un náufrago inglés.' },
+      { id: 'yr-2', rank: 2, title: 'The Penguin', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://image.tmdb.org/t/p/w500/upmOBiH3Xg1R5Z7JqRzK4b2Q9V.jpg', summary: 'Tras la inundación de Gotham, Oz Cobb lucha por tomar el control del inframundo.' },
+      { id: 'yr-3', rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://image.tmdb.org/t/p/w500/83TaSg4vKz3PqU7t6aQ9xJ3w0F.jpg', summary: 'Una habitante de un refugio nuclear sale a la superficie en un Los Ángeles postapocalíptico.' }
     ];
 
     const MASTER_MOVIES_EXPANDED = [
@@ -372,15 +398,6 @@
       }
     ];
 
-    const PLATFORMS = [
-      { name: 'Todas', id: 'all' },
-      { name: 'Apple TV+', id: 'Apple TV+' },
-      { name: 'Max (HBO)', id: 'Max (HBO)' },
-      { name: 'Netflix', id: 'Netflix' },
-      { name: 'Prime Video', id: 'Prime Video' },
-      { name: 'Disney+ / Star+', id: 'Disney+ / Star+' }
-    ];
-
     const playChime = () => {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -399,67 +416,79 @@
     };
 
     function App() {
-      // Estado de perfil activo: null = MOSTRAR PANTALLA INICIAL DE PERFILES ("¿Quién está viendo?")
+      // Perfiles registrados en la app
+      const [profilesList, setProfilesList] = useState(() => {
+        try {
+          const saved = localStorage.getItem('cineradar_profiles_v16');
+          if (saved) return JSON.parse(saved);
+          return [
+            { id: 'luis', name: 'Luis (Principal)', avatar: '👑', pin: '1234', isAdmin: true },
+            { id: 'hermano', name: 'Hermano', avatar: '🍿', pin: '', isAdmin: false },
+            { id: 'amigo', name: 'Amigo', avatar: '🚀', pin: '', isAdmin: false }
+          ];
+        } catch (e) {
+          return [{ id: 'luis', name: 'Luis (Principal)', avatar: '👑', pin: '1234', isAdmin: true }];
+        }
+      });
+
+      // Sesión de perfil activa
       const [activeProfile, setActiveProfile] = useState(() => {
         try {
-          const saved = localStorage.getItem('cineradar_current_session_profile');
+          const saved = localStorage.getItem('cineradar_current_session_profile_v16');
           return saved ? JSON.parse(saved) : null;
         } catch (e) {
           return null;
         }
       });
 
-      // Lista de perfiles configurados en este dispositivo
-      const [profilesList, setProfilesList] = useState(() => {
-        try {
-          const saved = localStorage.getItem('cineradar_registered_profiles_v15');
-          if (saved) return JSON.parse(saved);
-          return [
-            { id: 'perfil-luis', name: 'Luis (Principal)', avatar: '👑', pin: '1234' },
-            { id: 'perfil-hermano', name: 'Hermano', avatar: '🍿', pin: '5678' },
-            { id: 'perfil-amigo', name: 'Amigo', avatar: '🚀', pin: '0000' }
-          ];
-        } catch (e) {
-          return [{ id: 'perfil-luis', name: 'Luis', avatar: '👑', pin: '1234' }];
-        }
-      });
+      // Modales de Autenticación y Administración
+      const [pinModalTarget, setPinModalTarget] = useState(null);
+      const [pinEntered, setPinEntered] = useState('');
+      const [pinError, setPinError] = useState(false);
+      const [showManageProfilesModal, setShowManageProfilesModal] = useState(false);
+      const [editingProfileData, setEditingProfileData] = useState(null);
 
-      // Estados de UI
+      // Modal individual de "Mi Clave / Perfil"
+      const [showMyProfileModal, setShowMyProfileModal] = useState(false);
+      const [myProfileName, setMyProfileName] = useState('');
+      const [myProfileAvatar, setMyProfileAvatar] = useState('🍿');
+      const [myPinOld, setMyPinOld] = useState('');
+      const [myPinNew, setMyPinNew] = useState('');
+      const [myPinConfirm, setMyPinConfirm] = useState('');
+      const [myPinError, setMyPinError] = useState('');
+
+      // Modal para Cambiar Plataforma
+      const [platformModalItem, setPlatformModalItem] = useState(null);
+      const [customPlatformInput, setCustomPlatformInput] = useState('');
+
+      // UI states
       const [activeTab, setActiveTab] = useState('tracking');
       const [topRankingType, setTopRankingType] = useState('historic');
       const [pendingPriorityFilter, setPendingPriorityFilter] = useState('all');
       const [selectedPlatform, setSelectedPlatform] = useState('all');
       const [searchQuery, setSearchQuery] = useState('');
-      const [movieSearchQuery, setMovieSearchQuery] = useState('');
       const [bannerMessage, setBannerMessage] = useState(null);
       const [syncStatusText, setSyncStatusText] = useState('Nube lista');
-      const [isSyncingLive, setIsSyncingLive] = useState(false);
 
-      // Modales
+      // Modales de funcionalidades
       const [showNewSeriesModal, setShowNewSeriesModal] = useState(false);
       const [showEmailModal, setShowEmailModal] = useState(false);
       const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
-      const [showCloudInfoModal, setShowCloudInfoModal] = useState(false);
 
-      // Estados para agregar serie
-      const [addDestination, setAddDestination] = useState('tracking');
-      const [addPriority, setAddPriority] = useState('high');
-      const [apiSearchQuery, setApiSearchQuery] = useState('');
-      const [apiSearchResults, setApiSearchResults] = useState([]);
-      const [isSearchingApi, setIsSearchingApi] = useState(false);
-
-      // Estado para cambio de póster
-      const [editingItemForPoster, setEditingItemForPoster] = useState(null);
-      const [posterSearchQuery, setPosterSearchQuery] = useState('');
-      const [posterSearchResults, setPosterSearchResults] = useState([]);
-      const [customPosterUrlInput, setCustomPosterUrlInput] = useState('');
-
-      // Formulario de nuevo perfil
+      // Formulario de creación
       const [newProfileName, setNewProfileName] = useState('');
       const [newProfileAvatar, setNewProfileAvatar] = useState('🍿');
-      const [newProfileCode, setNewProfileCode] = useState('');
+      const [newProfilePin, setNewProfilePin] = useState('');
+      const [newProfileId, setNewProfileId] = useState('');
 
-      // Datos de la biblioteca específica del perfil activo
+      // Add series modal states
+      const [addDestination, setAddDestination] = useState('tracking');
+      const [addPriority, setAddPriority] = useState('high');
+      const [addChosenPlatform, setAddChosenPlatform] = useState('Netflix');
+      const [apiSearchQuery, setApiSearchQuery] = useState('');
+      const [apiSearchResults, setApiSearchResults] = useState([]);
+
+      // Datos de biblioteca por perfil
       const [seriesList, setSeriesList] = useState(INITIAL_TRACKED_CATALOG);
       const [pendingList, setPendingList] = useState(INITIAL_PENDING_CATALOG);
       const [historicList, setHistoricList] = useState(TOP_25_HISTORIC);
@@ -478,7 +507,7 @@
       // Guardar perfiles en localStorage
       useEffect(() => {
         try {
-          localStorage.setItem('cineradar_registered_profiles_v15', JSON.stringify(profilesList));
+          localStorage.setItem('cineradar_profiles_v16', JSON.stringify(profilesList));
         } catch (e) {}
       }, [profilesList]);
 
@@ -488,7 +517,7 @@
         setTimeout(() => setBannerMessage(null), 4000);
       };
 
-      // Cargar datos locales cuando se activa un perfil
+      // Cargar datos locales de un perfil
       const loadProfileData = (profile) => {
         if (!profile) return;
         try {
@@ -507,7 +536,7 @@
         } catch (e) {}
       };
 
-      // Suscribir el perfil activo a Firestore en la nube
+      // Suscribirse a Firestore cuando cambia el perfil activo
       useEffect(() => {
         if (!activeProfile) return;
 
@@ -524,6 +553,11 @@
               if (cloudData.series) setSeriesList(cloudData.series);
               if (cloudData.pending) setPendingList(cloudData.pending);
               if (cloudData.emailConfig) setEmailConfig(cloudData.emailConfig);
+              
+              if (cloudData.profilePin !== undefined && cloudData.profilePin !== activeProfile.pin) {
+                setProfilesList(prev => prev.map(p => p.id === activeProfile.id ? { ...p, pin: cloudData.profilePin } : p));
+              }
+
               setSyncStatusText(`☁️ Sincronizado (${activeProfile.name})`);
               setTimeout(() => { isRemoteUpdateRef.current = false; }, 400);
             }
@@ -535,7 +569,7 @@
         };
       }, [activeProfile?.id]);
 
-      // Guardar cambios tanto localmente como en la nube
+      // Guardar cambios en LocalStorage y Firestore
       useEffect(() => {
         if (!activeProfile) return;
 
@@ -554,13 +588,14 @@
               movies: moviesList,
               emailConfig: emailConfig,
               profileName: activeProfile.name,
-              profileAvatar: activeProfile.avatar
+              profileAvatar: activeProfile.avatar,
+              profilePin: activeProfile.pin || ''
             }, activeProfile.id);
           }
         } catch (e) {}
       }, [seriesList, pendingList, emailConfig, activeProfile]);
 
-      // Búsqueda de nuevos trailers al iniciar
+      // Búsqueda de trailers de cine al iniciar
       const fetchFreshMovieTrailers = async () => {
         try {
           const queries = ['Star Wars', 'Marvel', 'Denis Villeneuve', 'Christopher Nolan', 'Avatar'];
@@ -601,17 +636,42 @@
         fetchFreshMovieTrailers();
       }, []);
 
-      // Manejador para seleccionar perfil desde la pantalla inicial
-      const handleSelectProfile = (profile) => {
+      // Intentar ingresar a un perfil
+      const handleProfileClick = (profile) => {
+        if (profile.pin && profile.pin.trim().length > 0) {
+          setPinModalTarget(profile);
+          setPinEntered('');
+          setPinError(false);
+        } else {
+          loginProfile(profile);
+        }
+      };
+
+      const handleValidatePin = (e) => {
+        e.preventDefault();
+        if (!pinModalTarget) return;
+
+        if (pinEntered.trim() === pinModalTarget.pin.trim()) {
+          const target = pinModalTarget;
+          setPinModalTarget(null);
+          setPinEntered('');
+          setPinError(false);
+          loginProfile(target);
+        } else {
+          setPinError(true);
+          playChime();
+        }
+      };
+
+      const loginProfile = (profile) => {
         setActiveProfile(profile);
-        localStorage.setItem('cineradar_current_session_profile', JSON.stringify(profile));
+        localStorage.setItem('cineradar_current_session_profile_v16', JSON.stringify(profile));
         showBanner(`👋 ¡Bienvenido, ${profile.name}!`);
       };
 
-      // Manejador para salir del perfil y volver a "¿Quién está viendo?"
       const handleExitProfile = () => {
         setActiveProfile(null);
-        localStorage.removeItem('cineradar_current_session_profile');
+        localStorage.removeItem('cineradar_current_session_profile_v16');
       };
 
       // Crear nuevo perfil
@@ -619,27 +679,137 @@
         e.preventDefault();
         if (!newProfileName.trim()) return;
 
-        // Si el usuario especifica un código (ej. "luis2026"), se usa ese ID para que en el celular ponga el mismo
-        const cleanId = newProfileCode.trim() 
-          ? 'sync-' + newProfileCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '')
-          : 'perfil-' + Date.now().toString(36);
+        const cleanId = newProfileId.trim()
+          ? newProfileId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '')
+          : 'usr-' + Date.now().toString(36);
 
         const newProfile = {
           id: cleanId,
           name: newProfileName.trim(),
           avatar: newProfileAvatar || '🍿',
-          pin: newProfileCode.trim() || 'General'
+          pin: newProfilePin.trim(),
+          isAdmin: false
         };
 
-        setProfilesList(prev => {
-          const filtered = prev.filter(p => p.id !== cleanId);
-          return [...filtered, newProfile];
-        });
-
+        setProfilesList(prev => [...prev.filter(p => p.id !== cleanId), newProfile]);
         setNewProfileName('');
-        setNewProfileCode('');
+        setNewProfilePin('');
+        setNewProfileId('');
         setShowCreateProfileModal(false);
-        handleSelectProfile(newProfile);
+        showBanner(`✨ Perfil "${newProfile.name}" creado`);
+      };
+
+      // Abrir modal de personalización del usuario actual
+      const openMyProfileModal = () => {
+        setMyProfileName(activeProfile.name);
+        setMyProfileAvatar(activeProfile.avatar || '🍿');
+        setMyPinOld('');
+        setMyPinNew('');
+        setMyPinConfirm('');
+        setMyPinError('');
+        setShowMyProfileModal(true);
+      };
+
+      // Guardar cambios personales del usuario actual
+      const handleSaveMyProfile = (e) => {
+        e.preventDefault();
+        setMyPinError('');
+
+        const currentPin = activeProfile.pin || '';
+        if (currentPin.trim().length > 0) {
+          if (myPinOld.trim() !== currentPin.trim()) {
+            setMyPinError('❌ Tu PIN actual no es correcto.');
+            playChime();
+            return;
+          }
+        }
+
+        if (myPinNew.trim().length > 0) {
+          if (myPinNew.trim() !== myPinConfirm.trim()) {
+            setMyPinError('❌ La confirmación del nuevo PIN no coincide.');
+            playChime();
+            return;
+          }
+        }
+
+        const finalPin = myPinNew.trim().length > 0 ? myPinNew.trim() : (myPinOld.trim().length > 0 && myPinNew === '' ? '' : currentPin);
+
+        const updated = {
+          ...activeProfile,
+          name: myProfileName.trim() || activeProfile.name,
+          avatar: myProfileAvatar,
+          pin: finalPin
+        };
+
+        setActiveProfile(updated);
+        localStorage.setItem('cineradar_current_session_profile_v16', JSON.stringify(updated));
+        setProfilesList(prev => prev.map(p => p.id === activeProfile.id ? updated : p));
+
+        setShowMyProfileModal(false);
+        setMyPinOld('');
+        setMyPinNew('');
+        setMyPinConfirm('');
+        showBanner(finalPin ? '🔒 PIN actualizado correctamente' : '🔓 PIN removido con éxito');
+      };
+
+      // Guardar perfil editado por Luis en su panel maestro
+      const handleSaveEditedProfile = (e) => {
+        e.preventDefault();
+        if (!editingProfileData) return;
+
+        setProfilesList(prev => prev.map(p => {
+          if (p.id === editingProfileData.id) {
+            return {
+              ...p,
+              name: editingProfileData.name.trim(),
+              avatar: editingProfileData.avatar,
+              pin: editingProfileData.pin.trim()
+            };
+          }
+          return p;
+        }));
+
+        if (activeProfile && activeProfile.id === editingProfileData.id) {
+          const updatedActive = {
+            ...activeProfile,
+            name: editingProfileData.name.trim(),
+            avatar: editingProfileData.avatar,
+            pin: editingProfileData.pin.trim()
+          };
+          setActiveProfile(updatedActive);
+          localStorage.setItem('cineradar_current_session_profile_v16', JSON.stringify(updatedActive));
+        }
+
+        setEditingProfileData(null);
+        showBanner(`💾 Perfil actualizado correctamente`);
+      };
+
+      const handleDeleteProfile = (profileId, profileName) => {
+        if (confirm(`¿Estás seguro de que deseas eliminar el perfil de "${profileName}"?`)) {
+          setProfilesList(prev => prev.filter(p => p.id !== profileId));
+          showBanner(`🗑️ Perfil "${profileName}" eliminado`);
+        }
+      };
+
+      // Cambiar Plataforma de una serie o pendiente
+      const openPlatformSelector = (item, isPending = false) => {
+        setPlatformModalItem({ ...item, isPending });
+        setCustomPlatformInput('');
+      };
+
+      const handleAssignPlatform = (selectedName) => {
+        if (!platformModalItem || !selectedName) return;
+        const targetId = platformModalItem.id;
+        const targetTitle = platformModalItem.title;
+
+        if (platformModalItem.isPending) {
+          setPendingList(prev => prev.map(p => p.id === targetId ? { ...p, platform: selectedName } : p));
+        } else {
+          setSeriesList(prev => prev.map(s => s.id === targetId ? { ...s, platform: selectedName } : s));
+        }
+
+        setPlatformModalItem(null);
+        showBanner(`📺 "${targetTitle}" asignada a ${selectedName}`);
       };
 
       const handleSendTestEmail = () => {
@@ -661,7 +831,14 @@
         const show = item.show;
         if (!show) return;
 
-        const platformName = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : 'Streaming');
+        // Detección automática o plataforma elegida por el usuario
+        const detectedNet = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : '');
+        let matchedPlatform = addChosenPlatform;
+        if (!matchedPlatform) {
+          const found = SUPPORTED_PLATFORMS.find(p => detectedNet.toLowerCase().includes(p.name.toLowerCase()));
+          matchedPlatform = found ? found.name : (detectedNet || 'Netflix');
+        }
+
         const ratingVal = show.rating && show.rating.average ? show.rating.average : 8.2;
         const posterUrl = show.image ? (show.image.original || show.image.medium) : DEFAULT_FALLBACK_POSTER;
 
@@ -669,15 +846,15 @@
           const newPending = {
             id: 'pend-' + Date.now(),
             title: show.name,
-            platform: platformName,
+            platform: matchedPlatform,
             priority: addPriority,
             genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
             imdbRating: ratingVal,
             poster: posterUrl,
-            notes: 'Guardada en pendientes.'
+            notes: `Guardada en pendientes (${matchedPlatform}).`
           };
           setPendingList(prev => [newPending, ...prev]);
-          showBanner(`📋 "${show.name}" añadida a Pendientes (${addPriority.toUpperCase()})`);
+          showBanner(`📋 "${show.name}" en Pendientes (${matchedPlatform} • ${addPriority.toUpperCase()})`);
         } else {
           const newSeries = {
             id: 'tvmaze-' + show.id + '-' + Date.now(),
@@ -685,24 +862,24 @@
             title: show.name,
             imdbId: show.externals?.imdb || null,
             imdbRating: ratingVal,
-            platform: platformName,
+            platform: matchedPlatform,
             genres: show.genres && show.genres.length > 0 ? show.genres : ['Drama'],
             status: 'waiting_season',
             currentSeason: 1,
             nextSeasonNumber: 2,
             nextReleaseDate: null,
             hasConfirmedFutureDate: false,
-            releaseSchedule: 'Agregada a tu radar de seguimiento.',
+            releaseSchedule: `Disponible en ${matchedPlatform}.`,
             airDay: show.schedule?.days?.[0] || 'Viernes',
             airTime: show.schedule?.time ? `${show.schedule.time} COT` : '02:00 AM COT',
             poster: posterUrl,
             userTracking: true,
             userProgressSeason: 1,
             userProgressEpisode: 1,
-            notes: `Ficha IMDb ${show.externals?.imdb || 'N/A'}.`
+            notes: `Ficha IMDb ${show.externals?.imdb || 'N/A'} • ${matchedPlatform}.`
           };
           setSeriesList(prev => [newSeries, ...prev]);
-          showBanner(`📺 "${show.name}" agregada a Mis Series`);
+          showBanner(`📺 "${show.name}" agregada a Mis Series en ${matchedPlatform}`);
         }
 
         setShowNewSeriesModal(false);
@@ -715,14 +892,14 @@
         const newSeries = {
           id: 'ser-' + Date.now(),
           title: item.title,
-          platform: item.platform || 'Streaming',
+          platform: item.platform || 'Netflix',
           genres: item.genres || ['Drama'],
           status: 'waiting_season',
           currentSeason: 1,
           nextSeasonNumber: 2,
           nextReleaseDate: null,
           hasConfirmedFutureDate: false,
-          releaseSchedule: 'Añadida desde tu lista de Pendientes.',
+          releaseSchedule: `Iniciada desde tu lista de Pendientes (${item.platform || 'Streaming'}).`,
           airDay: 'Viernes',
           airTime: '02:00 AM COT',
           poster: item.poster,
@@ -741,15 +918,12 @@
           setApiSearchResults([]);
           return;
         }
-        setIsSearchingApi(true);
         try {
           const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query.trim())}`);
           const data = await res.json();
           setApiSearchResults(data || []);
         } catch (err) {
           setApiSearchResults([]);
-        } finally {
-          setIsSearchingApi(false);
         }
       };
 
@@ -792,15 +966,9 @@
         }));
       };
 
-      const myTrackedSeries = useMemo(() => {
-        return seriesList.filter(s => s.userTracking);
-      }, [seriesList]);
-
+      const myTrackedSeries = useMemo(() => seriesList.filter(s => s.userTracking), [seriesList]);
       const filteredPendingList = useMemo(() => {
-        return pendingList.filter(p => {
-          if (pendingPriorityFilter === 'all') return true;
-          return p.priority === pendingPriorityFilter;
-        });
+        return pendingList.filter(p => pendingPriorityFilter === 'all' || p.priority === pendingPriorityFilter);
       }, [pendingList, pendingPriorityFilter]);
 
       const weeklyAiringSeries = useMemo(() => seriesList.filter(s => s.status === 'airing_weekly'), [seriesList]);
@@ -815,52 +983,63 @@
         });
       }, [currentRankingSource, selectedPlatform, searchQuery]);
 
-      // ==========================================
-      // 1. PANTALLA PREVIA: ¿QUIÉN ESTÁ VIENDO?
-      // ==========================================
+      // ========================================================
+      // 1. PANTALLA DE PERFILES («¿QUIÉN ESTÁ VIENDO?»)
+      // ========================================================
       if (!activeProfile) {
         return (
-          <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col items-center justify-center p-6 select-none font-sans">
-            <div className="max-w-xl w-full space-y-8 text-center">
-              
-              <div className="space-y-2">
+          <div className="min-h-screen bg-[#060a13] text-white flex flex-col items-center justify-center p-6 select-none font-sans relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="max-w-2xl w-full space-y-9 text-center relative z-10">
+              <div className="space-y-3">
                 <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-3xl mx-auto shadow-2xl shadow-indigo-500/30">
                   🎬
                 </div>
                 <h1 className="font-display font-black text-3xl sm:text-4xl tracking-tight text-white">
                   CineRadar Pro
                 </h1>
-                <p className="text-slate-400 text-sm">
-                  ¿Quién está viendo hoy? Selecciona tu perfil o ingresa tu código de sincronización.
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  ¿Quién está viendo hoy? Selecciona tu perfil para ingresar a tu espacio sincronizado.
                 </p>
               </div>
 
-              {/* Tarjetas de Perfiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
-                {profilesList.map(p => (
-                  <div
-                    key={p.id}
-                    onClick={() => handleSelectProfile(p)}
-                    className="group cursor-pointer bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/60 rounded-3xl p-5 flex flex-col items-center space-y-3 transition-all duration-200 hover:scale-105 shadow-lg"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-3xl shadow-inner border border-white/10 group-hover:border-indigo-400 transition-colors">
-                      {p.avatar || '🍿'}
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="font-display font-bold text-sm text-white block group-hover:text-indigo-300">
-                        {p.name}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-500 block truncate max-w-[120px]">
-                        ID: {p.id.replace('sync-', '').replace('perfil-', '')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              {/* Cuadrícula de perfiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 max-w-xl mx-auto">
+                {profilesList.map(p => {
+                  const hasPin = p.pin && p.pin.trim().length > 0;
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleProfileClick(p)}
+                      className="group cursor-pointer bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/60 rounded-3xl p-5 flex flex-col items-center space-y-3 transition-all duration-200 hover:scale-105 shadow-xl relative"
+                    >
+                      {hasPin && (
+                        <span className="absolute top-3 right-3 text-xs bg-slate-950/80 border border-slate-700 px-1.5 py-0.5 rounded-md text-amber-300 font-mono" title="Protegido con PIN">
+                          🔒
+                        </span>
+                      )}
 
-                {/* Botón Añadir Perfil */}
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-3xl shadow-inner border border-white/10 group-hover:border-indigo-400 transition-colors">
+                        {p.avatar || '🍿'}
+                      </div>
+                      
+                      <div className="space-y-0.5 text-center">
+                        <span className="font-display font-bold text-sm text-white block group-hover:text-indigo-300">
+                          {p.name}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500 block truncate max-w-[100px]">
+                          ID: {p.id}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Tarjeta para crear perfil */}
                 <div
                   onClick={() => setShowCreateProfileModal(true)}
-                  className="cursor-pointer border-2 border-dashed border-slate-800 hover:border-amber-400/60 bg-slate-950/40 hover:bg-slate-900/60 rounded-3xl p-5 flex flex-col items-center justify-center space-y-2 transition-all hover:scale-105 text-slate-400 hover:text-amber-300"
+                  className="cursor-pointer border-2 border-dashed border-slate-800 hover:border-amber-400/60 bg-slate-950/40 hover:bg-slate-900/60 rounded-3xl p-5 flex flex-col items-center justify-center space-y-2 transition-all hover:scale-105 text-slate-400 hover:text-amber-300 shadow-lg"
                 >
                   <div className="w-16 h-16 rounded-2xl border border-slate-700 flex items-center justify-center text-2xl font-bold">
                     ➕
@@ -868,43 +1047,77 @@
                   <span className="font-bold text-xs">Crear Perfil</span>
                 </div>
               </div>
-
-              {/* Explicación rápida de cómo sincronizar PC y Celular */}
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-xs text-slate-400 text-left space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-cyan-300 flex items-center gap-1.5">
-                    <span>☁️</span> ¿Cómo sincronizar entre tu PC y tu Celular?
-                  </span>
-                  <button
-                    onClick={() => setShowCloudInfoModal(true)}
-                    className="text-amber-400 hover:underline text-[11px] font-bold"
-                  >
-                    Ver detalles ↗
-                  </button>
-                </div>
-                <p className="text-[11px] leading-relaxed">
-                  Para que tu celular y tu PC compartan la misma lista de series, crea o vincula tu perfil con el <b>mismo Código/PIN</b> en ambos dispositivos. Todo lo que marques en uno se reflejará automáticamente en el otro.
-                </p>
-              </div>
-
             </div>
 
-            {/* Modal Crear Perfil */}
+            {/* Modal de Entrada por PIN */}
+            {pinModalTarget && (
+              <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full space-y-4 shadow-2xl text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl mx-auto shadow-inner">
+                    {pinModalTarget.avatar || '🔒'}
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-bold text-white text-base">Perfil Protegido</h3>
+                    <p className="text-xs text-slate-400">Ingresa el PIN de <b>{pinModalTarget.name}</b></p>
+                  </div>
+
+                  <form onSubmit={handleValidatePin} className="space-y-3">
+                    <input
+                      type="password"
+                      maxLength="8"
+                      autoFocus
+                      required
+                      placeholder="PIN o Contraseña"
+                      value={pinEntered}
+                      onChange={(e) => { setPinEntered(e.target.value); setPinError(false); }}
+                      className={`w-full bg-slate-950 border text-center text-lg tracking-widest font-mono rounded-xl py-2 px-3 text-white focus:outline-none ${
+                        pinError ? 'border-rose-500 ring-2 ring-rose-500/30' : 'border-slate-700 focus:border-indigo-400'
+                      }`}
+                    />
+                    
+                    {pinError && (
+                      <span className="text-[11px] text-rose-400 font-bold block animate-bounce">
+                        ❌ PIN incorrecto. Intenta nuevamente.
+                      </span>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => { setPinModalTarget(null); setPinEntered(''); setPinError(false); }}
+                        className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs shadow-md"
+                      >
+                        Entrar
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Crear Nuevo Perfil */}
             {showCreateProfileModal && (
               <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 className="font-bold text-white text-base">Crear Nuevo Perfil</h3>
+                    <h3 className="font-bold text-white text-base">Nuevo Perfil</h3>
                     <button onClick={() => setShowCreateProfileModal(false)} className="text-slate-400 hover:text-white font-bold text-xs p-1">✕</button>
                   </div>
 
                   <form onSubmit={handleCreateProfile} className="space-y-3.5 text-xs">
                     <div>
-                      <label className="text-slate-300 font-bold block mb-1">Nombre (tuyo, hermano o amigo):</label>
+                      <label className="text-slate-300 font-bold block mb-1">Nombre:</label>
                       <input
                         type="text"
                         required
-                        placeholder="Ej: Carlos, Sofía, Andrés..."
+                        placeholder="Ej: Sofía, Carlos, Papá..."
                         value={newProfileName}
                         onChange={(e) => setNewProfileName(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400 text-xs"
@@ -912,7 +1125,7 @@
                     </div>
 
                     <div>
-                      <label className="text-slate-300 font-bold block mb-1">Elige un Avatar:</label>
+                      <label className="text-slate-300 font-bold block mb-1">Avatar:</label>
                       <div className="flex gap-2 overflow-x-auto py-1">
                         {AVAILABLE_AVATARS.map(av => (
                           <button
@@ -920,7 +1133,7 @@
                             key={av}
                             onClick={() => setNewProfileAvatar(av)}
                             className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center border transition-all ${
-                              newProfileAvatar === av ? 'bg-indigo-600 border-indigo-300 scale-110' : 'bg-slate-950 border-slate-800'
+                              newProfileAvatar === av ? 'bg-indigo-600 border-indigo-300 scale-110 shadow-lg' : 'bg-slate-950 border-slate-800'
                             }`}
                           >
                             {av}
@@ -930,96 +1143,79 @@
                     </div>
 
                     <div>
-                      <label className="text-slate-300 font-bold block mb-1">Código o PIN para sincronizar (Opcional):</label>
+                      <label className="text-slate-300 font-bold block mb-1">PIN / Contraseña de acceso (Opcional):</label>
                       <input
-                        type="text"
-                        placeholder="Ej: familia2026 (úsalo igual en PC y celular)"
-                        value={newProfileCode}
-                        onChange={(e) => setNewProfileCode(e.target.value)}
+                        type="password"
+                        placeholder="Dejar vacío si no requiere contraseña"
+                        value={newProfilePin}
+                        onChange={(e) => setNewProfilePin(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400 text-xs"
                       />
-                      <span className="text-[10px] text-slate-500 block pt-1">
-                        Si pones el mismo código en tu teléfono, se cargarán las mismas series.
-                      </span>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">ID de Sincronización en la Nube (Opcional):</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: sofia2026 (úsalo igual en celular y PC)"
+                        value={newProfileId}
+                        onChange={(e) => setNewProfileId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-400 text-xs"
+                      />
                     </div>
 
                     <button
                       type="submit"
                       className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md mt-2"
                     >
-                      Guardar & Empezar
+                      Guardar Perfil
                     </button>
                   </form>
                 </div>
               </div>
             )}
-
-            {/* Modal Explicativo de la Nube */}
-            {showCloudInfoModal && (
-              <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-xs">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h3 className="font-bold text-white text-base flex items-center gap-2">
-                      <span>☁️</span> Arquitectura de Sincronización
-                    </h3>
-                    <button onClick={() => setShowCloudInfoModal(false)} className="text-slate-400 hover:text-white font-bold text-xs p-1">✕</button>
-                  </div>
-
-                  <div className="space-y-2.5 text-slate-300 leading-relaxed">
-                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
-                      <span className="font-bold text-white block">¿En dónde se guarda?</span>
-                      <p className="text-[11px] text-slate-400">
-                        En la base de datos distribuida <b>Google Cloud Firestore</b> en la colección segura:
-                        <br />
-                        <code className="text-indigo-300 font-mono text-[10px]">/artifacts/cineradar-pro/users/&#123;tu-codigo-perfil&#125;/library/current</code>
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
-                      <span className="font-bold text-white block">¿Cómo funciona la sincronización?</span>
-                      <p className="text-[11px] text-slate-400">
-                        Cada vez que marcas un capítulo o añades una serie, se guarda automáticamente en la nube. Mediante un listener en vivo (<code className="text-cyan-300 font-mono text-[10px]">onSnapshot</code>), cualquier otro dispositivo que tenga abierto ese mismo perfil se actualiza en tiempo real sin recargar la página.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setShowCloudInfoModal(false)}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl"
-                  >
-                    Entendido
-                  </button>
-                </div>
-              </div>
-            )}
-
           </div>
         );
       }
 
-      // ==========================================
+      // ========================================================
       // 2. APLICACIÓN PRINCIPAL (UNA VEZ LOGUEADO)
-      // ==========================================
+      // ========================================================
+      const isUserAdmin = activeProfile?.isAdmin === true || activeProfile?.id === 'luis';
+
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-24 sm:pb-10">
           
           {/* Header Superior */}
           <header className="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 sm:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-600/30">
+              <div 
+                onClick={openMyProfileModal}
+                className="cursor-pointer w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-600/30 hover:scale-105 transition-transform"
+                title="Toca para editar tu perfil y PIN"
+              >
                 {activeProfile.avatar || '🎬'}
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="font-display font-black text-lg tracking-tight text-white">CineRadar Pro</h1>
-                  <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">
-                    ☁️ Sincronizado
-                  </span>
+                  {isUserAdmin && (
+                    <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                      Admin
+                    </span>
+                  )}
+                  {activeProfile.pin && (
+                    <span className="text-[10px] text-amber-400" title="Perfil protegido con PIN">🔒</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                  <button
+                    onClick={openMyProfileModal}
+                    className="text-xs font-bold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 underline underline-offset-2 decoration-cyan-500/40"
+                    title="Configurar mi clave o perfil"
+                  >
                     👤 {activeProfile.name}
-                  </span>
+                  </button>
                   <span className="text-[10px] text-slate-500">•</span>
                   <button
                     onClick={handleExitProfile}
@@ -1034,6 +1230,26 @@
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Botón personal: CAMBIAR CLAVE / MI PERFIL */}
+              <button
+                onClick={openMyProfileModal}
+                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                title="Cambiar mi PIN o contraseña"
+              >
+                🔑 <span className="hidden sm:inline">Mi Clave / PIN</span>
+              </button>
+
+              {/* Botón Administrador exclusivo de Luis */}
+              {isUserAdmin && (
+                <button
+                  onClick={() => setShowManageProfilesModal(true)}
+                  className="flex items-center gap-1.5 bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 border border-indigo-500/50 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                  title="Gestionar todos los perfiles y contraseñas"
+                >
+                  ⚙️ <span className="hidden md:inline">Administrar Todos</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setShowEmailModal(true)}
                 className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
@@ -1106,7 +1322,7 @@
                       📺 Series de {activeProfile.name} ({myTrackedSeries.length})
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Sincronizado en la nube. Cambios guardados para tu código: <b>{activeProfile.id}</b>.
+                      Toca sobre la plataforma de cualquier serie para cambiarla (Netflix, Apple TV, HBO, Prime, Jellyfin, etc.).
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -1135,6 +1351,7 @@
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {myTrackedSeries.map(series => {
                       const isAiring = series.status === 'airing_weekly';
+                      const platInfo = getPlatformInfo(series.platform);
 
                       return (
                         <div 
@@ -1155,7 +1372,7 @@
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                               
-                              <div className="absolute top-3 left-3 flex flex-col gap-1">
+                              <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
                                 {isAiring ? (
                                   <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 flex items-center gap-1.5 shadow-lg backdrop-blur">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -1166,15 +1383,26 @@
                                     <span>⏳ EN ESPERA T{series.nextSeasonNumber || (series.currentSeason + 1)}</span>
                                   </span>
                                 )}
+
+                                {/* Badge Interactivo de Plataforma */}
+                                <button
+                                  onClick={() => openPlatformSelector(series, false)}
+                                  className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border backdrop-blur shadow-md flex items-center gap-1 transition-all ${platInfo.color}`}
+                                  title="Toca para cambiar la plataforma de emisión"
+                                >
+                                  <span>{platInfo.icon}</span>
+                                  <span>{series.platform || 'Elegir Plataforma'}</span>
+                                  <span className="text-[8px] opacity-70">▾</span>
+                                </button>
                               </div>
 
                               <div className="absolute bottom-3 left-3 right-3">
-                                <span className="text-[10px] font-mono text-indigo-300 font-bold block truncate">
-                                  📺 {series.platform}
-                                </span>
                                 <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
                                   {series.title}
                                 </h3>
+                                <span className="text-[10px] text-slate-400 truncate block">
+                                  {series.genres?.join(' • ') || 'Serie'}
+                                </span>
                               </div>
                             </div>
 
@@ -1210,18 +1438,25 @@
                             </div>
                           </div>
 
-                          <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                          <div className="p-4 pt-0 grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => openPlatformSelector(series, false)}
+                              className="py-2 rounded-xl text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 flex items-center justify-center gap-1"
+                              title="Cambiar la plataforma donde la estás viendo"
+                            >
+                              📺 Plataforma
+                            </button>
                             <button
                               onClick={() => toggleSeriesStatus(series.id)}
-                              className="py-2 rounded-xl text-[11px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+                              className="py-2 rounded-xl text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
                             >
                               🔄 Estado
                             </button>
                             <button
                               onClick={() => setSeriesList(prev => prev.filter(s => s.id !== series.id))}
-                              className="py-2 rounded-xl text-[11px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50"
+                              className="py-2 rounded-xl text-[10px] font-bold bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50"
                             >
-                              🗑️ Eliminar
+                              🗑️ Borrar
                             </button>
                           </div>
                         </div>
@@ -1242,7 +1477,7 @@
                         📋 Pendientes por Ver ({pendingList.length})
                       </h2>
                       <p className="text-xs text-slate-300">
-                        Series que planeas empezar más adelante. Organizadas por prioridad.
+                        Series que planeas ver más adelante. Puedes cambiar la plataforma asignada en cualquier momento.
                       </p>
                     </div>
 
@@ -1254,7 +1489,6 @@
                     </button>
                   </div>
 
-                  {/* Filtro de Prioridad */}
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-800 text-xs">
                     <span className="text-slate-400 font-bold">Filtrar:</span>
                     {[
@@ -1279,59 +1513,80 @@
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredPendingList.map(item => (
-                    <div key={item.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                      <div>
-                        <div className="relative h-56 w-full bg-slate-900 overflow-hidden">
-                          <img
-                            src={item.poster}
-                            alt={item.title}
-                            className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
-                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                  {filteredPendingList.map(item => {
+                    const platInfo = getPlatformInfo(item.platform);
 
-                          <div className="absolute top-3 left-3">
-                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl border backdrop-blur ${
-                              item.priority === 'high' ? 'priority-high' : item.priority === 'medium' ? 'priority-medium' : 'priority-low'
-                            }`}>
-                              {item.priority === 'high' ? '🔴 Alta' : item.priority === 'medium' ? '🟡 Media' : '🟢 Baja'}
-                            </span>
+                    return (
+                      <div key={item.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                        <div>
+                          <div className="relative h-56 w-full bg-slate-900 overflow-hidden">
+                            <img
+                              src={item.poster}
+                              alt={item.title}
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                              onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+
+                            <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                              <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl border backdrop-blur ${
+                                item.priority === 'high' ? 'priority-high' : item.priority === 'medium' ? 'priority-medium' : 'priority-low'
+                              }`}>
+                                {item.priority === 'high' ? '🔴 Alta' : item.priority === 'medium' ? '🟡 Media' : '🟢 Baja'}
+                              </span>
+
+                              {/* Badge Interactivo de Plataforma */}
+                              <button
+                                onClick={() => openPlatformSelector(item, true)}
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border backdrop-blur shadow-md flex items-center gap-1 transition-all ${platInfo.color}`}
+                                title="Toca para cambiar la plataforma"
+                              >
+                                <span>{platInfo.icon}</span>
+                                <span>{item.platform || 'Elegir'}</span>
+                                <span className="text-[8px] opacity-70">▾</span>
+                              </button>
+                            </div>
+
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <h3 className="font-display font-extrabold text-base text-white">
+                                {item.title}
+                              </h3>
+                              <span className="text-[10px] text-slate-400 block truncate">
+                                {item.genres?.join(' • ') || 'Serie'}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="absolute bottom-3 left-3 right-3">
-                            <span className="text-[10px] font-mono text-cyan-300 font-bold block">
-                              📺 {item.platform}
-                            </span>
-                            <h3 className="font-display font-extrabold text-base text-white">
-                              {item.title}
-                            </h3>
+                          <div className="p-4">
+                            <p className="text-xs text-slate-300 italic bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                              💬 "{item.notes || 'Guardada para ver pronto.'}"
+                            </p>
                           </div>
                         </div>
 
-                        <div className="p-4">
-                          <p className="text-xs text-slate-300 italic bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                            💬 "{item.notes || 'Guardada para ver pronto.'}"
-                          </p>
+                        <div className="p-4 pt-0 grid grid-cols-3 gap-1.5">
+                          <button
+                            onClick={() => openPlatformSelector(item, true)}
+                            className="bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 font-bold py-2 rounded-xl text-[10px]"
+                          >
+                            📺 Plataforma
+                          </button>
+                          <button
+                            onClick={() => promotePendingToTracking(item)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-[10px]"
+                          >
+                            ▶ Seguir
+                          </button>
+                          <button
+                            onClick={() => setPendingList(prev => prev.filter(p => p.id !== item.id))}
+                            className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold py-2 rounded-xl text-[10px]"
+                          >
+                            🗑️ Quitar
+                          </button>
                         </div>
                       </div>
-
-                      <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => promotePendingToTracking(item)}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs"
-                        >
-                          ▶ A Mis Series
-                        </button>
-                        <button
-                          onClick={() => setPendingList(prev => prev.filter(p => p.id !== item.id))}
-                          className="bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold py-2 rounded-xl text-xs"
-                        >
-                          🗑️ Quitar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1347,31 +1602,40 @@
                     </h2>
                   </div>
                   <p className="text-xs text-slate-300">
-                    Series con transmisión semana a semana con día y hora.
+                    Series con transmisión regular semana a semana con día, hora y plataforma.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {weeklyAiringSeries.map(series => (
-                    <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-3">
-                      <div className="flex gap-4">
-                        <img
-                          src={series.poster}
-                          alt={series.title}
-                          className="w-20 h-28 rounded-2xl object-cover shadow-lg border border-slate-700"
-                          onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                        />
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                            {series.platform}
-                          </span>
-                          <h3 className="font-display font-black text-base text-white">{series.title}</h3>
-                          <div className="text-xs text-emerald-400 font-bold">📅 {series.airDay}</div>
-                          <div className="text-xs text-cyan-300 font-mono font-bold">⏰ {series.airTime}</div>
+                  {weeklyAiringSeries.map(series => {
+                    const platInfo = getPlatformInfo(series.platform);
+                    return (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-3">
+                        <div className="flex gap-4">
+                          <img
+                            src={series.poster}
+                            alt={series.title}
+                            className="w-20 h-28 rounded-2xl object-cover shadow-lg border border-slate-700"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => openPlatformSelector(series, false)}
+                              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${platInfo.color}`}
+                              title="Toca para cambiar la plataforma"
+                            >
+                              <span>{platInfo.icon}</span>
+                              <span>{series.platform}</span>
+                              <span className="text-[8px] opacity-70">▾</span>
+                            </button>
+                            <h3 className="font-display font-black text-base text-white">{series.title}</h3>
+                            <div className="text-xs text-emerald-400 font-bold">📅 {series.airDay}</div>
+                            <div className="text-xs text-cyan-300 font-mono font-bold">⏰ {series.airTime}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1384,33 +1648,42 @@
                     ⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})
                   </h2>
                   <p className="text-xs text-slate-300">
-                    Temporadas anteriores finalizadas a la espera de la siguiente entrega.
+                    Temporadas concluidas en espera de la siguiente fecha de estreno.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {waitingSeasonsList.map(series => (
-                    <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-3">
-                      <div className="flex gap-3">
-                        <img
-                          src={series.poster}
-                          alt={series.title}
-                          className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700"
-                          onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
-                        />
-                        <div className="space-y-1 flex-1">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                            {series.platform}
-                          </span>
-                          <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
-                          <span className="text-xs text-slate-400 block">Última: T{series.currentSeason}</span>
-                          <span className="text-xs font-mono font-bold text-amber-300 block">
-                            Esperando T{series.nextSeasonNumber || (series.currentSeason + 1)}
-                          </span>
+                  {waitingSeasonsList.map(series => {
+                    const platInfo = getPlatformInfo(series.platform);
+                    return (
+                      <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-purple-500/20 space-y-3">
+                        <div className="flex gap-3">
+                          <img
+                            src={series.poster}
+                            alt={series.title}
+                            className="w-20 h-28 rounded-2xl object-cover shadow-md border border-slate-700"
+                            onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }}
+                          />
+                          <div className="space-y-1 flex-1">
+                            <button
+                              onClick={() => openPlatformSelector(series, false)}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${platInfo.color}`}
+                              title="Toca para cambiar la plataforma"
+                            >
+                              <span>{platInfo.icon}</span>
+                              <span>{series.platform}</span>
+                              <span className="text-[8px] opacity-70">▾</span>
+                            </button>
+                            <h3 className="font-display font-extrabold text-base text-white">{series.title}</h3>
+                            <span className="text-xs text-slate-400 block">Última: T{series.currentSeason}</span>
+                            <span className="text-xs font-mono font-bold text-amber-300 block">
+                              Esperando T{series.nextSeasonNumber || (series.currentSeason + 1)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1421,7 +1694,7 @@
                 <div className="bg-slate-900/70 p-5 rounded-3xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h2 className="font-display font-black text-lg text-white">⭐ Rankings Oficiales IMDb</h2>
-                    <p className="text-xs text-slate-400">Las series mejor valoradas de la historia y del año.</p>
+                    <p className="text-xs text-slate-400">Las series con mayor calificación de la historia y del año.</p>
                   </div>
                   <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
                     <button
@@ -1444,21 +1717,31 @@
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredRankings.map(item => (
-                    <div key={item.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                      <div className="relative h-60 w-full bg-slate-900">
-                        <img src={item.poster} alt={item.title} className="w-full h-full object-cover object-top" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                        <div className="absolute top-3 left-3 bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl">
-                          #{item.rank}
-                        </div>
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <h3 className="font-display font-bold text-base text-white">{item.title}</h3>
-                          <span className="text-xs text-amber-400 font-bold">★ {item.imdbRating}</span>
+                  {filteredRankings.map(item => {
+                    const platInfo = getPlatformInfo(item.platform);
+                    return (
+                      <div key={item.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                        <div className="relative h-60 w-full bg-slate-900">
+                          <img src={item.poster} alt={item.title} className="w-full h-full object-cover object-top" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                          
+                          <div className="absolute top-3 left-3 flex gap-1">
+                            <span className="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl">
+                              #{item.rank}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-xl border backdrop-blur ${platInfo.color}`}>
+                              {platInfo.icon} {item.platform}
+                            </span>
+                          </div>
+
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <h3 className="font-display font-bold text-base text-white">{item.title}</h3>
+                            <span className="text-xs text-amber-400 font-bold">★ {item.imdbRating}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1471,7 +1754,7 @@
                     <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
                       🍿 Cartelera y Trailers de Cine ({moviesList.length})
                     </h2>
-                    <p className="text-xs text-slate-300">Búsqueda automática en cada inicio para que siempre descubras nuevos estrenos.</p>
+                    <p className="text-xs text-slate-300">Búsqueda automática de novedades en cada inicio.</p>
                   </div>
                   <button
                     onClick={fetchFreshMovieTrailers}
@@ -1516,6 +1799,360 @@
             )}
 
           </main>
+
+          {/* ======================================================== */}
+          {/* MODAL PARA CAMBIAR PLATAFORMA (NETFLIX, APPLE, HBO, ETC) */}
+          {/* ======================================================== */}
+          {platformModalItem && (
+            <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">📺</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">
+                        Elegir Plataforma
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        ¿Dónde estás viendo <b className="text-white">{platformModalItem.title}</b>?
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setPlatformModalItem(null)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {SUPPORTED_PLATFORMS.map(plat => {
+                      const isCurrent = platformModalItem.platform === plat.name;
+                      return (
+                        <button
+                          key={plat.id}
+                          onClick={() => handleAssignPlatform(plat.name)}
+                          className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs font-bold transition-all ${
+                            isCurrent
+                              ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg scale-105'
+                              : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-200 hover:border-slate-700'
+                          }`}
+                        >
+                          <span className="text-base">{plat.icon}</span>
+                          <div className="text-left">
+                            <span className="block">{plat.name}</span>
+                            {isCurrent && <span className="text-[9px] text-indigo-200 block">Actual</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Opción Personalizada */}
+                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-400 block">O escribe otra plataforma:</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Ej: Starz, Cuevana, Plex..."
+                        value={customPlatformInput}
+                        onChange={(e) => setCustomPlatformInput(e.target.value)}
+                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-indigo-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customPlatformInput.trim()) {
+                            handleAssignPlatform(customPlatformInput.trim());
+                          }
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs"
+                      >
+                        Asignar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex justify-end">
+                  <button
+                    onClick={() => setPlatformModalItem(null)}
+                    className="text-xs text-slate-400 hover:text-white font-bold px-3 py-1.5"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL PERSONAL: MI CLAVE / PERFIL (CUALQUIER USUARIO)   */}
+          {/* ======================================================== */}
+          {showMyProfileModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-sm w-full space-y-4 shadow-2xl my-auto">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{activeProfile.avatar || '🔑'}</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">Mi Clave y Perfil</h3>
+                      <p className="text-[11px] text-slate-400">Personaliza tu PIN o contraseña de acceso.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowMyProfileModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
+                </div>
+
+                <form onSubmit={handleSaveMyProfile} className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="text-slate-300 font-bold block mb-1">Nombre:</label>
+                    <input
+                      type="text"
+                      required
+                      value={myProfileName}
+                      onChange={(e) => setMyProfileName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 font-bold block mb-1">Avatar:</label>
+                    <div className="flex gap-1.5 overflow-x-auto py-1">
+                      {AVAILABLE_AVATARS.map(av => (
+                        <button
+                          type="button"
+                          key={av}
+                          onClick={() => setMyProfileAvatar(av)}
+                          className={`w-8 h-8 rounded-xl text-base flex items-center justify-center border transition-all ${
+                            myProfileAvatar === av ? 'bg-cyan-600 border-cyan-300 scale-105' : 'bg-slate-950 border-slate-800'
+                          }`}
+                        >
+                          {av}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {activeProfile.pin && activeProfile.pin.trim().length > 0 && (
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-1">
+                      <label className="text-amber-300 font-bold block text-[11px]">PIN Actual de Confirmación:</label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Ingresa tu PIN actual"
+                        value={myPinOld}
+                        onChange={(e) => setMyPinOld(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">Nuevo PIN o Contraseña:</label>
+                      <input
+                        type="password"
+                        placeholder="Dejar vacío si deseas quitar la clave"
+                        value={myPinNew}
+                        onChange={(e) => setMyPinNew(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-400"
+                      />
+                    </div>
+
+                    {myPinNew.trim().length > 0 && (
+                      <div>
+                        <label className="text-slate-300 font-bold block mb-1">Confirmar Nuevo PIN:</label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Repite el nuevo PIN"
+                          value={myPinConfirm}
+                          onChange={(e) => setMyPinConfirm(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-indigo-400"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {myPinError && (
+                    <div className="text-[11px] text-rose-400 font-bold bg-rose-950/30 p-2 rounded-xl border border-rose-800/40">
+                      {myPinError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMyProfileModal(false)}
+                      className="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-md"
+                    >
+                      Guardar Clave
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL DE ADMINISTRACIÓN DE PERFILES (EXCLUSIVO LUIS)    */}
+          {/* ======================================================== */}
+          {showManageProfilesModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-5 shadow-2xl my-auto">
+                
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚙️</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">Panel de Administración General</h3>
+                      <p className="text-[11px] text-slate-400">Control maestro de perfiles, PINs y accesos para Luis.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowManageProfilesModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
+                </div>
+
+                {editingProfileData ? (
+                  <form onSubmit={handleSaveEditedProfile} className="bg-slate-950 p-4 rounded-2xl border border-indigo-500/40 space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-indigo-300">Editando perfil: {editingProfileData.name}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setEditingProfileData(null)}
+                        className="text-[10px] text-slate-400 hover:text-white underline"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">Nombre visible:</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingProfileData.name}
+                        onChange={(e) => setEditingProfileData({ ...editingProfileData, name: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">Avatar:</label>
+                      <div className="flex gap-1.5 overflow-x-auto py-1">
+                        {AVAILABLE_AVATARS.map(av => (
+                          <button
+                            type="button"
+                            key={av}
+                            onClick={() => setEditingProfileData({ ...editingProfileData, avatar: av })}
+                            className={`w-8 h-8 rounded-lg text-base flex items-center justify-center border transition-all ${
+                              editingProfileData.avatar === av ? 'bg-indigo-600 border-indigo-300' : 'bg-slate-900 border-slate-800'
+                            }`}
+                          >
+                            {av}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">PIN / Contraseña de acceso:</label>
+                      <input
+                        type="text"
+                        placeholder="Sin contraseña (dejar vacío)"
+                        value={editingProfileData.pin || ''}
+                        onChange={(e) => setEditingProfileData({ ...editingProfileData, pin: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono"
+                      />
+                      <span className="text-[10px] text-slate-500 block pt-0.5">
+                        Si colocas un número o clave, se le solicitará al entrar al perfil.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingProfileData(null)}
+                        className="py-2 bg-slate-800 text-slate-300 rounded-xl font-bold"
+                      >
+                        Descartar
+                      </button>
+                      <button
+                        type="submit"
+                        className="py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-md"
+                      >
+                        Guardar Cambios
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                    {profilesList.map(p => {
+                      const isMainLuis = p.id === 'luis';
+                      return (
+                        <div key={p.id} className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-xl">
+                              {p.avatar || '🍿'}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-white">{p.name}</span>
+                                {isMainLuis && (
+                                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/40">
+                                    Principal
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-mono block">
+                                ID: {p.id} • {p.pin ? `🔒 PIN: ${p.pin}` : '🔓 Sin PIN'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => setEditingProfileData(p)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-[11px]"
+                            >
+                              ✏️ Editar
+                            </button>
+
+                            {!isMainLuis && (
+                              <button
+                                onClick={() => handleDeleteProfile(p.id, p.name)}
+                                className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold text-[11px]"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
+                  <button
+                    onClick={() => { setShowManageProfilesModal(false); setShowCreateProfileModal(true); }}
+                    className="text-xs bg-indigo-900/40 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl font-bold"
+                  >
+                    ➕ Añadir Otro Perfil
+                  </button>
+                  <button
+                    onClick={() => setShowManageProfilesModal(false)}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-4 py-1.5 rounded-xl font-bold"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           {/* Modal Alertas Correo */}
           {showEmailModal && (
@@ -1584,7 +2221,7 @@
                   <button onClick={() => setShowNewSeriesModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
                 </div>
 
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300 font-bold">Destino:</span>
                     <div className="flex bg-slate-900 p-1 rounded-xl">
@@ -1600,6 +2237,28 @@
                       >
                         📋 Pendientes
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Selector rápido de plataforma antes de importar */}
+                  <div>
+                    <span className="text-slate-400 font-bold block mb-1">Plataforma por defecto al añadir:</span>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {SUPPORTED_PLATFORMS.map(plat => (
+                        <button
+                          key={plat.id}
+                          type="button"
+                          onClick={() => setAddChosenPlatform(plat.name)}
+                          className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all flex items-center justify-center gap-1 ${
+                            addChosenPlatform === plat.name
+                              ? 'bg-indigo-600 border-indigo-300 text-white shadow'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          <span>{plat.icon}</span>
+                          <span className="truncate">{plat.name}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -1635,13 +2294,16 @@
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {apiSearchResults.map(({ show }) => {
                     const poster = show.image?.medium || show.image?.original || DEFAULT_FALLBACK_POSTER;
+                    const autoNetwork = show.webChannel?.name || show.network?.name || 'Streaming';
                     return (
                       <div key={show.id} className="flex items-center justify-between p-3 bg-slate-950/80 border border-slate-800 rounded-2xl gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <img src={poster} alt={show.name} className="w-12 h-16 object-cover rounded-xl shrink-0" />
                           <div>
                             <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
-                            <span className="text-[10px] text-slate-400">{show.premiered?.slice(0, 4) || 'Estreno'} • {show.genres?.join(', ') || 'Serie'}</span>
+                            <span className="text-[10px] text-slate-400">
+                              {show.premiered?.slice(0, 4) || 'Estreno'} • Detectada: <b className="text-cyan-300">{autoNetwork}</b>
+                            </span>
                           </div>
                         </div>
                         <button 
