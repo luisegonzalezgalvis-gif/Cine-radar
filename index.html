@@ -2336,3 +2336,116 @@
   </script>
 </body>
 </html>
+
+const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
+
+// Lista base de series a monitorear (o puedes consultar los endpoints de TVMaze directamente)
+const SHOWS_TO_TRACK = [
+  { name: 'Slow Horses', tvmazeId: 44058, platform: 'Apple TV+' },
+  { name: 'House of the Dragon', tvmazeId: 44778, platform: 'Max (HBO)' },
+  { name: 'The Last of Us', tvmazeId: 46562, platform: 'Max (HBO)' },
+  { name: 'Severance', tvmazeId: 44265, platform: 'Apple TV+' },
+  { name: 'The Bear', tvmazeId: 54100, platform: 'Disney+' }
+];
+
+async function main() {
+  const { EMAIL_USER, EMAIL_PASS, RECIPIENT_EMAIL } = process.env;
+
+  if (!EMAIL_USER || !EMAIL_PASS || !RECIPIENT_EMAIL) {
+    console.error('Faltan secretos de configuración: NOTIFICATION_EMAIL, NOTIFICATION_APP_PASSWORD o USER_EMAIL');
+    process.exit(1);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const airingToday = [];
+  const upcomingThisWeek = [];
+
+  for (const item of SHOWS_TO_TRACK) {
+    try {
+      const res = await fetch(`https://api.tvmaze.com/shows/${item.tvmazeId}?embed[]=nextepisode`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const nextEp = data._embedded?.nextepisode;
+
+      if (nextEp && nextEp.airdate) {
+        if (nextEp.airdate === today) {
+          airingToday.push({
+            title: item.name,
+            platform: item.platform,
+            episode: `T${nextEp.season}E${nextEp.number}`,
+            name: nextEp.name
+          });
+        } else {
+          const diffDays = Math.ceil((new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24));
+          if (diffDays > 0 && diffDays <= 7) {
+            upcomingThisWeek.push({
+              title: item.name,
+              platform: item.platform,
+              date: nextEp.airdate,
+              episode: `T${nextEp.season}E${nextEp.number}`
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`Error consultando ${item.name}:`, e.message);
+    }
+  }
+
+  // Si hay capítulos hoy o resumen para la semana, se envía el correo
+  if (airingToday.length === 0 && upcomingThisWeek.length === 0) {
+    console.log('No hay emisiones nuevas para reportar hoy.');
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS // Contraseña de aplicación de 16 caracteres de Google
+    }
+  });
+
+  let htmlBody = `
+    <div style="font-family: sans-serif; background: #030712; color: #f3f4f6; padding: 24px; border-radius: 16px;">
+      <h2 style="color: #6366f1; margin-top: 0;">🎬 CineRadar Pro — Alerta de Capítulos</h2>
+  `;
+
+  if (airingToday.length > 0) {
+    htmlBody += `
+      <h3 style="color: #34d399;">⚡ ¡Estrenan Hoy!</h3>
+      <ul>
+        ${airingToday.map(s => `<li><b>${s.title}</b> (${s.episode}) en <b>${s.platform}</b>: "${s.name}"</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  if (upcomingThisWeek.length > 0) {
+    htmlBody += `
+      <h3 style="color: #fbbf24;">📅 Próximos esta semana</h3>
+      <ul>
+        ${upcomingThisWeek.map(s => `<li><b>${s.title}</b> (${s.episode}) en <b>${s.platform}</b> — Estreno: ${s.date}</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  htmlBody += `
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">Sincronizado automáticamente por CineRadar Pro.</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"CineRadar Pro" <${EMAIL_USER}>`,
+    to: RECIPIENT_EMAIL,
+    subject: `🎬 CineRadar: ${airingToday.length > 0 ? '¡Nuevo capítulo hoy!' : 'Novedades de la semana'}`,
+    html: htmlBody
+  });
+
+  console.log('Correo enviado con éxito a:', RECIPIENT_EMAIL);
+}
+
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
