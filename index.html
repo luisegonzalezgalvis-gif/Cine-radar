@@ -550,32 +550,157 @@
       { id: 'yr-10', tvmazeId: 45501, rank: 10, title: 'Industry', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/526/1316209.jpg', summary: 'Jóvenes y ambiciosos analistas financieros compiten ferozmente entre el dinero, el sexo y las drogas en Londres.' }
     ];
 
+    // Catálogo actualizado de estrenos en cartelera actual y próximos 6 meses
     const MASTER_MOVIES_EXPANDED = [
       {
-        id: 'mov-2026-mandalorian',
-        title: 'The Mandalorian & Grogu',
-        year: 2026,
-        month: 5,
-        monthName: 'Mayo',
-        releaseDate: '2026-05-22',
-        genre: 'Sci-Fi / Aventura / Star Wars',
-        poster: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Mandalorian+and+Grogu+movie+official+trailer',
-        synopsis: 'Din Djarin y el joven Grogu dan el salto a la gran pantalla en una misión crucial para la Nueva República galáctica.'
+        id: 'mov-superman-2025',
+        title: 'Superman',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-07-11',
+        genre: 'Acción / DC / Superhéroes',
+        tag: 'Estreno de Verano',
+        poster: 'https://images.unsplash.com/photo-1635863138275-d9b33299680b?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Superman+James+Gunn+2025+official+trailer',
+        synopsis: 'David Corenswet debuta como Clark Kent bajo la dirección de James Gunn en el esperado reinicio del Universo DC, reconciliando su origen kryptoniano con su bondad humana.'
       },
       {
-        id: 'mov-2026-dune-3',
-        title: 'Dune: Part Three (Messiah)',
-        year: 2026,
-        month: 12,
-        monthName: 'Diciembre',
-        releaseDate: '2026-12-18',
-        genre: 'Sci-Fi / Épica / Drama',
+        id: 'mov-fantastic-four-2025',
+        title: 'The Fantastic Four: First Steps',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-07-25',
+        genre: 'Sci-Fi / Marvel / Aventura',
+        tag: 'Blockbuster Marvel',
+        poster: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Fantastic+Four+First+Steps+official+trailer',
+        synopsis: 'Pedro Pascal lidera a la Primera Familia en una deslumbrante Nueva York retrofuturista de los años 60, defendiendo a la Tierra del colosal devorador de mundos Galactus.'
+      },
+      {
+        id: 'mov-mission-impossible-8',
+        title: 'Mission: Impossible – The Final Reckoning',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-05-23',
+        genre: 'Acción / Espionaje / Thriller',
+        tag: 'Próximo Estreno',
+        poster: 'https://image.tmdb.org/t/p/w500/uIpJPDNFoeX0TVml9smPrs9KUVx.jpg',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Mission+Impossible+The+Final+Reckoning+official+trailer',
+        synopsis: 'Tom Cruise regresa como Ethan Hunt en el clímax de la franquicia, rastreando la clave para derrotar a la IA omnisciente antes de que el mundo caiga en el caos global.'
+      },
+      {
+        id: 'mov-thunderbolts-2025',
+        title: 'Thunderbolts*',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-05-02',
+        genre: 'Acción / Antihéroes / Marvel',
+        tag: 'Próximo Estreno',
+        poster: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Thunderbolts+marvel+official+trailer',
+        synopsis: 'Yelena Belova, Bucky Barnes y un peculiar equipo de marginados del gobierno son enviados a una peligrosa misión encubierta de la que nadie espera que salgan con vida.'
+      },
+      {
+        id: 'mov-jurassic-world-rebirth',
+        title: 'Jurassic World Rebirth',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-07-02',
+        genre: 'Sci-Fi / Aventura / Dinosaurios',
+        tag: 'Estreno de Verano',
+        poster: 'https://images.unsplash.com/photo-1570481662006-a3a1374699e8?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Jurassic+World+Rebirth+official+trailer',
+        synopsis: 'Scarlett Johansson y Jonathan Bailey se internan en la selva ecuatorial más peligrosa para asegurar muestras de ADN de los tres dinosaurios más colosales del planeta.'
+      },
+      {
+        id: 'mov-ballerina-john-wick',
+        title: 'From the World of John Wick: Ballerina',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-06-06',
+        genre: 'Acción / Artes Marciales / Thriller',
+        tag: 'Universo John Wick',
+        poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Ballerina+John+Wick+Ana+de+Armas+official+trailer',
+        synopsis: 'Ana de Armas interpreta a Eve Macarro, una implacable asesina de la Ruska Roma entrenada en el arte mortal de la danza, con la participación especial de Keanu Reeves.'
+      },
+      {
+        id: 'mov-httyd-live-action',
+        title: 'How to Train Your Dragon (Cómo entrenar a tu dragón)',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-06-13',
+        genre: 'Fantasía / Aventura / Familiar',
+        tag: 'Live-Action Épico',
+        poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=How+to+Train+Your+Dragon+live+action+official+trailer',
+        synopsis: 'La adaptación en acción real de la amada historia donde Hipo desafía la milenaria tradición de su tribu al entablar amistad con Desdentao, el dragón Furia Nocturna.'
+      },
+      {
+        id: 'mov-f1-brad-pitt',
+        title: 'F1: La Película',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-06-27',
+        genre: 'Deporte / Velocidad / Drama',
+        tag: 'Alta Velocidad',
+        poster: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=F1+movie+Brad+Pitt+official+trailer',
+        synopsis: 'Brad Pitt protagoniza como un veterano expiloto de carreras que regresa de su retiro para competir en la Fórmula 1 y entrenar a un joven talento del equipo APXGP.'
+      },
+      {
+        id: 'mov-28-years-later',
+        title: '28 Years Later',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-06-20',
+        genre: 'Terror / Postapocalíptico / Sci-Fi',
+        tag: 'Regreso de Culto',
         poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=Dune+Part+3+Messiah+official+trailer',
-        synopsis: 'Paul Atreides gobierna como Emperador de Arrakis mientras la Guerra Santa se extiende por toda la galaxia.'
+        youtubeUrl: 'https://www.youtube.com/results?search_query=28+Years+Later+movie+official+trailer',
+        synopsis: 'Danny Boyle y Cillian Murphy regresan casi tres décadas después del brote original del virus de la rabia para explorar un mundo radicalmente transformado por la infección.'
+      },
+      {
+        id: 'mov-minecraft-movie',
+        title: 'A Minecraft Movie',
+        status: 'in_theaters',
+        year: 2025,
+        releaseDate: '2025-04-04',
+        genre: 'Aventura / Fantasía / Comedia',
+        tag: 'En Cartelera de Cine',
+        poster: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=A+Minecraft+Movie+official+trailer',
+        synopsis: 'Jack Black es Steve y Jason Momoa lidera un grupo de cuatro inadaptados transportados mágicamente a través de un portal al Overworld cúbico de Minecraft.'
+      },
+      {
+        id: 'mov-sinners-2025',
+        title: 'Sinners (Pecadores)',
+        status: 'in_theaters',
+        year: 2025,
+        releaseDate: '2025-03-07',
+        genre: 'Terror / Thriller / Sobrenatural',
+        tag: 'En Cartelera de Cine',
+        poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=Sinners+Ryan+Coogler+official+trailer',
+        synopsis: 'Ryan Coogler y Michael B. Jordan presentan una historia gótica sobrenatural en el sur de los EE. UU. de los años 30, donde dos gemelos enfrentan una fuerza demoníaca oculta.'
+      },
+      {
+        id: 'mov-conjuring-last-rites',
+        title: 'The Conjuring: Last Rites',
+        status: 'upcoming',
+        year: 2025,
+        releaseDate: '2025-09-05',
+        genre: 'Terror / Sobrenatural / Misterio',
+        tag: 'Capítulo Final',
+        poster: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=800&auto=format&fit=crop&q=80',
+        youtubeUrl: 'https://www.youtube.com/results?search_query=The+Conjuring+Last+Rites+official+trailer',
+        synopsis: 'Patrick Wilson y Vera Farmiga cierran los expedientes paranormales de Ed y Lorraine Warren en su investigación más estremecedora y peligrosa.'
       }
     ];
+
+    const handleMoviePosterFallback = (e) => {
+      e.target.src = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80';
+    };
 
     const findLegacyStoredData = (keySuffix) => {
       const candidateKeys = [
@@ -686,6 +811,7 @@
       const [historicList, setHistoricList] = useState(TOP_25_HISTORIC);
       const [yearList, setYearList] = useState(TOP_10_YEAR);
       const [moviesList, setMoviesList] = useState(MASTER_MOVIES_EXPANDED);
+      const [movieFilter, setMovieFilter] = useState('all');
       const [emailConfig, setEmailConfig] = useState({
         email: '',
         alertNewEpisodes: true,
@@ -767,6 +893,7 @@
 
           setHistoricList(TOP_25_HISTORIC);
           setYearList(TOP_10_YEAR);
+          setMoviesList(MASTER_MOVIES_EXPANDED);
 
           if (savedEmail) setEmailConfig(JSON.parse(savedEmail));
         } catch (e) {}
@@ -792,6 +919,7 @@
               /* Blindaje: Se aseguran los catálogos oficiales exactos y verificados */
               setHistoricList(TOP_25_HISTORIC);
               setYearList(TOP_10_YEAR);
+              setMoviesList(MASTER_MOVIES_EXPANDED);
               
               if (cloudData.profilePin !== undefined && cloudData.profilePin !== activeProfile.pin) {
                 setProfilesList(prev => prev.map(p => p.id === activeProfile.id ? { ...p, pin: cloudData.profilePin } : p));
@@ -2293,45 +2421,131 @@
             {/* VISTA 6: CINE & TRAILERS */}
             {activeTab === 'movies' && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border border-red-500/30 p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
-                      🍿 Cartelera y Trailers de Cine ({moviesList.length})
-                    </h2>
-                    <p className="text-xs text-slate-300">Próximos estrenos y trailers oficiales de cine.</p>
+                <div className="bg-gradient-to-r from-red-950/70 via-slate-900 to-slate-900 border border-red-500/40 p-5 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🍿</span>
+                      <h2 className="font-display font-black text-lg sm:text-xl text-white">
+                        Cartelera de Cine & Próximos Estrenos ({moviesList.length})
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-300 max-w-xl">
+                      Películas en cartelera de cine actualmente y los grandes estrenos de los próximos 6 meses, con enlaces directos a sus trailers oficiales en YouTube.
+                    </p>
+                  </div>
+
+                  {/* Filtros de la cartelera */}
+                  <div className="flex flex-wrap items-center gap-1.5 bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
+                    {[
+                      { id: 'all', label: 'Todos los Estrenos' },
+                      { id: 'in_theaters', label: '🟢 En Cartelera' },
+                      { id: 'upcoming', label: '⏳ Próximos 6 Meses' }
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setMovieFilter(f.id)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                          movieFilter === f.id
+                            ? 'bg-red-600 text-white shadow-md'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {moviesList.map(movie => (
-                    <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                      <div>
-                        <div className="relative h-64 w-full bg-slate-900">
-                          <img src={movie.poster} alt={movie.title} className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = DEFAULT_FALLBACK_POSTER; }} />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                          <div className="absolute bottom-3 left-3 right-3">
-                            <span className="text-[10px] text-red-400 font-mono font-bold block">{movie.genre}</span>
-                            <h3 className="font-display font-extrabold text-base text-white">{movie.title}</h3>
+                {/* Grid de Películas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {moviesList
+                    .filter(m => {
+                      if (movieFilter === 'all') return true;
+                      if (movieFilter === 'in_theaters') return m.status === 'in_theaters';
+                      if (movieFilter === 'upcoming') return m.status === 'upcoming';
+                      return true;
+                    })
+                    .map(movie => {
+                      const isInTheaters = movie.status === 'in_theaters';
+                      const countdown = !isInTheaters ? getDaysRemainingText(movie.releaseDate) : null;
+
+                      return (
+                        <div key={movie.id} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between group">
+                          <div>
+                            <div className="relative h-72 w-full bg-slate-900 overflow-hidden">
+                              <img
+                                src={movie.poster}
+                                alt={movie.title}
+                                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                onError={handleMoviePosterFallback}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
+
+                              {/* Badges superiores */}
+                              <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                                {isInTheaters ? (
+                                  <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 flex items-center gap-1.5 shadow-lg backdrop-blur">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                    🟢 EN CARTELERA DE CINE
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-amber-950/90 text-amber-300 border border-amber-500/50 flex items-center gap-1.5 shadow-lg backdrop-blur">
+                                    <span>⏳ PRÓXIMAMENTE</span>
+                                    {countdown && <span className="opacity-90 font-mono">({countdown})</span>}
+                                  </span>
+                                )}
+
+                                {movie.tag && (
+                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-slate-950/80 text-slate-300 border border-slate-700/80 backdrop-blur">
+                                    {movie.tag}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Info inferior en poster */}
+                              <div className="absolute bottom-3 left-3 right-3">
+                                <span className="text-[10px] text-red-400 font-mono font-bold block mb-0.5">
+                                  {movie.genre}
+                                </span>
+                                <h3 className="font-display font-black text-base sm:text-lg text-white leading-tight">
+                                  {movie.title}
+                                </h3>
+                              </div>
+                            </div>
+
+                            {/* Contenido y Fecha */}
+                            <div className="p-4 space-y-2.5">
+                              <div className="flex items-center justify-between text-xs font-mono font-bold bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80">
+                                <span className="text-slate-400 flex items-center gap-1">
+                                  📅 Fecha de Estreno:
+                                </span>
+                                <span className={isInTheaters ? 'text-emerald-400' : 'text-amber-300'}>
+                                  {movie.releaseDate}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                                {movie.synopsis}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Botón directo de Trailer */}
+                          <div className="p-4 pt-0">
+                            <a
+                              href={movie.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                              <span>▶</span>
+                              <span>Ver Trailer Oficial en YouTube</span>
+                              <span className="text-[10px] opacity-80">↗</span>
+                            </a>
                           </div>
                         </div>
-                        <div className="p-4 space-y-2">
-                          <div className="text-xs font-mono font-bold text-amber-300">📅 {movie.releaseDate}</div>
-                          <p className="text-xs text-slate-300 line-clamp-3">{movie.synopsis}</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 pt-0">
-                        <a
-                          href={movie.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5"
-                        >
-                          ▶ Ver Trailer Oficial en YouTube ↗
-                        </a>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
                 </div>
               </div>
             )}
