@@ -1,34 +1,27 @@
-name: CineRadar Alertas Diarias 7 AM
-
-on:
+name: CineRadar Daily Scan & Email Alertson:
 schedule:
+# Se ejecuta todos los días a las 12:00 UTC (07:00 AM Colombia / COT)
 - cron: '0 12 * * *'
-workflow_dispatch:
+workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub cuando quieras probarjobs:
+scan-and-notify:
+runs-on: ubuntu-lateststeps:
+  - name: Checkout del repositorio
+    uses: actions/checkout@v4
 
-jobs:
-enviar-reporte:
-name: Despachar Alerta 7 AM
-runs-on: ubuntu-latest
-steps:
-- name: Enviar Reporte Diario a Gmail
-continue-on-error: true
-run: |
-echo "Iniciando despacho matutino de CineRadar Pro..."
-curl -s -L -X POST https://formsubmit.co/luis.e.gonzalezgalvis0523@gmail.com 
+  - name: Configurar Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: '20'
 
--F "_subject=🎬 CineRadar Pro - Resumen Diario 7:00 AM COT" 
+  - name: Instalar dependencias de envío
+    run: |
+      npm init -y
+      npm install nodemailer node-fetch@2
 
--F "_captcha=false" 
-
--F "_template=table" 
-
--F "Horario=07:00 AM COT (Colombia)" 
-
--F "Series_En_Emision=Severance T2 (Apple TV+ - Viernes 02:00 AM COT)" 
-
--F "Proximas_Temporadas=Slow Horses T5 | House of the Dragon T3 | The Last of Us T2 | Silo T3" 
-
--F "Cine_2026_2027=The Mandalorian & Grogu | Supergirl | Dune 3 Messiah | Avengers Doomsday" 
-
--F "Estado=Sincronizado con bases oficiales IMDb y TVMaze para Luis Gonzalez." || true
-echo "Despacho finalizado con exito."
+  - name: Ejecutar escaneo de series y enviar alertas
+    env:
+      EMAIL_USER: ${{ secrets.NOTIFICATION_EMAIL }}
+      EMAIL_PASS: ${{ secrets.NOTIFICATION_APP_PASSWORD }}
+      RECIPIENT_EMAIL: ${{ secrets.USER_EMAIL }}
+    run: |
+      node scripts/scan_and_send.js
