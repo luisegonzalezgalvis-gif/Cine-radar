@@ -205,7 +205,7 @@
       { id: 'IPTV', name: 'IPTV', icon: '📡', color: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 hover:border-emerald-400' }
     ];
 
-    const handlePosterError = (e, titleFallback) => {
+    const handlePosterError = (e, titleFallback, tvmazeId) => {
       const img = e.target;
       if (img.dataset.repairTried) {
         img.src = DEFAULT_FALLBACK_POSTER;
@@ -213,7 +213,11 @@
       }
       img.dataset.repairTried = 'true';
       const cleanTitle = (titleFallback || '').split('(')[0].trim();
-      fetch(`https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(cleanTitle)}`)
+      const endpoint = tvmazeId
+        ? `https://api.tvmaze.com/shows/${tvmazeId}`
+        : `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(cleanTitle)}`;
+
+      fetch(endpoint)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.image && (data.image.original || data.image.medium)) {
@@ -506,44 +510,44 @@
     ];
 
     const TOP_25_HISTORIC = [
-      { id: 'top-1', rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/0/2400.jpg', summary: 'Un profesor de química con cáncer terminal se asocia con un exalumno para fabricar y vender metanfetamina.' },
-      { id: 'top-2', rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/3/9014.jpg', summary: 'La conmovedora historia de la Easy Company del 506º Regimiento Paracaidista durante la Segunda Guerra Mundial.' },
-      { id: 'top-3', rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/198/496924.jpg', summary: 'Dramatización rigurosa de la catástrofe nuclear de Chernóbil en 1986 y el heroico esfuerzo humano para contenerla.' },
-      { id: 'top-4', rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/8/20005.jpg', summary: 'El narcotráfico y la decadencia institucional en Baltimore vistos desde la perspectiva de policías y delincuentes.' },
-      { id: 'top-5', rank: 5, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10315.jpg', summary: 'El capo mafioso de Nueva Jersey, Tony Soprano, lidia con crisis de pánico mientras balancea su familia y su organización.' },
-      { id: 'top-6', rank: 6, title: 'Game of Thrones (Juego de Tronos)', imdbRating: 9.2, votes: '2.4M', platform: 'Max (HBO)', year: '2011-2019', genres: ['Fantasía', 'Drama', 'Acción'], imdbId: 'tt0944947', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/190/476117.jpg', summary: 'Nueve familias nobles se enfrentan a muerte por el control del Trono de Hierro en los Siete Reinos de Poniente.' },
-      { id: 'top-7', rank: 7, title: 'Avatar: The Last Airbender', imdbRating: 9.3, votes: '370K', platform: 'Netflix', year: '2005-2008', genres: ['Animación', 'Aventura', 'Fantasía'], imdbId: 'tt0417299', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/45/114639.jpg', summary: 'En un mundo dividido en cuatro naciones elementales, el joven Aang emprende su viaje para restaurar la paz.' },
-      { id: 'top-8', rank: 8, title: 'Rick and Morty', imdbRating: 9.1, votes: '600K', platform: 'Max (HBO)', year: '2013-Presente', genres: ['Animación', 'Aventura', 'Sci-Fi'], imdbId: 'tt2861424', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/399/999818.jpg', summary: 'Las disparatadas e infinitas aventuras interdimensionales de un científico alcohólico y su nieto.' },
-      { id: 'top-9', rank: 9, title: 'Better Call Saul', imdbRating: 9.0, votes: '660K', platform: 'Netflix', year: '2015-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt3032476', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/414/1036814.jpg', summary: 'La evolución del idealista abogado Jimmy McGill en el pintoresco defensor criminal Saul Goodman.' },
-      { id: 'top-10', rank: 10, title: 'Arcane', imdbRating: 9.0, votes: '300K', platform: 'Netflix', year: '2021-2024', genres: ['Animación', 'Acción', 'Sci-Fi'], imdbId: 'tt11126994', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/494/1236894.jpg', summary: 'La trágica fractura entre las ciudades de Piltover y Zaun que enfrenta a dos hermanas con poderes místicos.' },
-      { id: 'top-11', rank: 11, title: 'Sherlock', imdbRating: 9.1, votes: '1.0M', platform: 'Prime Video', year: '2010-2017', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt1475582', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/3392.jpg', summary: 'Sherlock Holmes y el Dr. John Watson resuelven complejos crímenes en el Londres del siglo XXI.' },
-      { id: 'top-12', rank: 12, title: 'Succession', imdbRating: 8.9, votes: '310K', platform: 'Max (HBO)', year: '2018-2023', genres: ['Drama'], imdbId: 'tt7660850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/449/1124696.jpg', summary: 'La implacable y despiadada guerra interna entre los herederos del imperio de medios Waystar RoyCo.' },
-      { id: 'top-13', rank: 13, title: 'Batman: The Animated Series', imdbRating: 9.0, votes: '120K', platform: 'Max (HBO)', year: '1992-1995', genres: ['Animación', 'Acción', 'Crimen'], imdbId: 'tt0103359', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/28/71358.jpg', summary: 'El Caballero Oscuro patrulla los oscuros rascacielos de Gotham enfrentando a sus villanos más icónicos.' },
-      { id: 'top-14', rank: 14, title: 'Fargo', imdbRating: 8.9, votes: '410K', platform: 'Prime Video', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt2802850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1211100.jpg', summary: 'Relatos antológicos de crímenes absurdos, engaño y violencia en el gélido medio oeste estadounidense.' },
-      { id: 'top-15', rank: 15, title: 'True Detective', imdbRating: 8.9, votes: '680K', platform: 'Max (HBO)', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt2356777', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg', summary: 'Detectives obsesionados investigan crímenes rituales que desentierran los secretos más oscuros de la sociedad.' },
-      { id: 'top-16', rank: 16, title: 'The Last of Us', imdbRating: 8.8, votes: '560K', platform: 'Max (HBO)', year: '2023-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt3581920', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg', summary: 'Joel y la joven Ellie atraviesan unos Estados Unidos devastados tras un apocalipsis fúngico mortal.' },
-      { id: 'top-17', rank: 17, title: 'Peaky Blinders', imdbRating: 8.8, votes: '650K', platform: 'Netflix', year: '2013-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt2442560', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122213.jpg', summary: 'Thomas Shelby y su banda de gánsteres ascienden implacablemente en el Birmingham de postguerra.' },
-      { id: 'top-18', rank: 18, title: 'Narcos', imdbRating: 8.8, votes: '470K', platform: 'Netflix', year: '2015-2017', genres: ['Biografía', 'Crimen', 'Drama'], imdbId: 'tt2707408', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/24/62264.jpg', summary: 'El auge criminal del Cartel de Medellín y los esfuerzos policiales internacionales por detener a Pablo Escobar.' },
-      { id: 'top-19', rank: 19, title: 'Stranger Things', imdbRating: 8.7, votes: '1.4M', platform: 'Netflix', year: '2016-Presente', genres: ['Drama', 'Fantasía', 'Terror'], imdbId: 'tt4574334', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg', summary: 'La extraña desaparición de un niño en Hawkins destapa experimentos secretos y el aterrador Mundo del Revés.' },
-      { id: 'top-20', rank: 20, title: 'Severance (Separación)', imdbRating: 8.7, votes: '240K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Misterio', 'Sci-Fi'], imdbId: 'tt11280740', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg', summary: 'Empleados corporativos cuyos recuerdos laborales y personales han sido quirúrgicamente separados.' },
-      { id: 'top-21', rank: 21, title: 'Dark', imdbRating: 8.7, votes: '460K', platform: 'Netflix', year: '2017-2020', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5753856', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/260/650424.jpg', summary: 'La misteriosa desaparición de niños en Winden destapa una intrincada conspiración de viajes en el tiempo.' },
-      { id: 'top-22', rank: 22, title: 'House of Cards', imdbRating: 8.6, votes: '530K', platform: 'Netflix', year: '2013-2018', genres: ['Drama'], imdbId: 'tt1856010', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/175/439730.jpg', summary: 'Frank Underwood y su calculadora esposa urden implacables maquinaciones para conquistar la Casa Blanca.' },
-      { id: 'top-23', rank: 23, title: 'Mindhunter', imdbRating: 8.6, votes: '340K', platform: 'Netflix', year: '2017-2019', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5290382', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/136/341753.jpg', summary: 'Agentes del FBI desarrollan la psicología criminal moderna entrevistando a los asesinos en serie más peligrosos.' },
-      { id: 'top-24', rank: 24, title: 'The Crown', imdbRating: 8.6, votes: '260K', platform: 'Netflix', year: '2016-2023', genres: ['Biografía', 'Drama', 'Historia'], imdbId: 'tt4786824', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1210870.jpg', summary: 'Las rivalidades políticas, romances y secretos dinásticos de la Reina Isabel II a lo largo de décadas de reinado.' },
-      { id: 'top-25', rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/499/1248065.jpg', summary: 'Un grupo clandestino de rebeldes se propone desenmascarar y frenar a superhéroes corruptos y psicópatas.' }
+      { id: 'top-1', tvmazeId: 169, rank: 1, title: 'Breaking Bad', imdbRating: 9.5, votes: '2.2M', platform: 'Netflix', year: '2008-2013', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0903747', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/0/2400.jpg', summary: 'Un profesor de química con cáncer terminal se asocia con un exalumno para fabricar y vender metanfetamina.' },
+      { id: 'top-2', tvmazeId: 465, rank: 2, title: 'Band of Brothers (Hermanos de Sangre)', imdbRating: 9.4, votes: '530K', platform: 'Max (HBO)', year: '2001', genres: ['Bélico', 'Drama', 'Historia'], imdbId: 'tt0185906', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/465/1163819.jpg', summary: 'La conmovedora historia de la Easy Company del 506º Regimiento Paracaidista durante la Segunda Guerra Mundial.' },
+      { id: 'top-3', tvmazeId: 30770, rank: 3, title: 'Chernobyl', imdbRating: 9.4, votes: '900K', platform: 'Max (HBO)', year: '2019', genres: ['Drama', 'Historia', 'Thriller'], imdbId: 'tt7366338', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/198/496924.jpg', summary: 'Dramatización rigurosa de la catástrofe nuclear de Chernóbil en 1986 y el heroico esfuerzo humano para contenerla.' },
+      { id: 'top-4', tvmazeId: 179, rank: 4, title: 'The Wire (Bajo Escucha)', imdbRating: 9.3, votes: '380K', platform: 'Max (HBO)', year: '2002-2008', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt0306414', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/8/20005.jpg', summary: 'El narcotráfico y la decadencia institucional en Baltimore vistos desde la perspectiva de policías y delincuentes.' },
+      { id: 'top-5', tvmazeId: 527, rank: 5, title: 'The Sopranos (Los Soprano)', imdbRating: 9.2, votes: '470K', platform: 'Max (HBO)', year: '1999-2007', genres: ['Crimen', 'Drama'], imdbId: 'tt0141842', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/4/10315.jpg', summary: 'El capo mafioso de Nueva Jersey, Tony Soprano, lidia con crisis de pánico mientras balancea su familia y su organización.' },
+      { id: 'top-6', tvmazeId: 82, rank: 6, title: 'Game of Thrones (Juego de Tronos)', imdbRating: 9.2, votes: '2.4M', platform: 'Max (HBO)', year: '2011-2019', genres: ['Fantasía', 'Drama', 'Acción'], imdbId: 'tt0944947', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/190/476117.jpg', summary: 'Nueve familias nobles se enfrentan a muerte por el control del Trono de Hierro en los Siete Reinos de Poniente.' },
+      { id: 'top-7', tvmazeId: 555, rank: 7, title: 'Avatar: The Last Airbender', imdbRating: 9.3, votes: '370K', platform: 'Netflix', year: '2005-2008', genres: ['Animación', 'Aventura', 'Fantasía'], imdbId: 'tt0417299', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/45/114639.jpg', summary: 'En un mundo dividido en cuatro naciones elementales, el joven Aang emprende su viaje para restaurar la paz.' },
+      { id: 'top-8', tvmazeId: 216, rank: 8, title: 'Rick and Morty', imdbRating: 9.1, votes: '600K', platform: 'Max (HBO)', year: '2013-Presente', genres: ['Animación', 'Aventura', 'Sci-Fi'], imdbId: 'tt2861424', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/399/999818.jpg', summary: 'Las disparatadas e infinitas aventuras interdimensionales de un científico alcohólico y su nieto.' },
+      { id: 'top-9', tvmazeId: 618, rank: 9, title: 'Better Call Saul', imdbRating: 9.0, votes: '660K', platform: 'Netflix', year: '2015-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt3032476', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/414/1036814.jpg', summary: 'La evolución del idealista abogado Jimmy McGill en el pintoresco defensor criminal Saul Goodman.' },
+      { id: 'top-10', tvmazeId: 44383, rank: 10, title: 'Arcane', imdbRating: 9.0, votes: '300K', platform: 'Netflix', year: '2021-2024', genres: ['Animación', 'Acción', 'Sci-Fi'], imdbId: 'tt11126994', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/494/1236894.jpg', summary: 'La trágica fractura entre las ciudades de Piltover y Zaun que enfrenta a dos hermanas con poderes místicos.' },
+      { id: 'top-11', tvmazeId: 335, rank: 11, title: 'Sherlock', imdbRating: 9.1, votes: '1.0M', platform: 'Prime Video', year: '2010-2017', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt1475582', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/1/3392.jpg', summary: 'Sherlock Holmes y el Dr. John Watson resuelven complejos crímenes en el Londres del siglo XXI.' },
+      { id: 'top-12', tvmazeId: 28160, rank: 12, title: 'Succession', imdbRating: 8.9, votes: '310K', platform: 'Max (HBO)', year: '2018-2023', genres: ['Drama'], imdbId: 'tt7660850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/449/1124696.jpg', summary: 'La implacable y despiadada guerra interna entre los herederos del imperio de medios Waystar RoyCo.' },
+      { id: 'top-13', tvmazeId: 680, rank: 13, title: 'Batman: The Animated Series', imdbRating: 9.0, votes: '120K', platform: 'Max (HBO)', year: '1992-1995', genres: ['Animación', 'Acción', 'Crimen'], imdbId: 'tt0103359', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/28/71358.jpg', summary: 'El Caballero Oscuro patrulla los oscuros rascacielos de Gotham enfrentando a sus villanos más icónicos.' },
+      { id: 'top-14', tvmazeId: 269, rank: 14, title: 'Fargo', imdbRating: 8.9, votes: '410K', platform: 'Prime Video', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt2802850', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1211100.jpg', summary: 'Relatos antológicos de crímenes absurdos, engaño y violencia en el gélido medio oeste estadounidense.' },
+      { id: 'top-15', tvmazeId: 5, rank: 15, title: 'True Detective', imdbRating: 8.9, votes: '680K', platform: 'Max (HBO)', year: '2014-Presente', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt2356777', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/490/1225883.jpg', summary: 'Detectives obsesionados investigan crímenes rituales que desentierran los secretos más oscuros de la sociedad.' },
+      { id: 'top-16', tvmazeId: 46562, rank: 16, title: 'The Last of Us', imdbRating: 8.8, votes: '560K', platform: 'Max (HBO)', year: '2023-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt3581920', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/444/1110756.jpg', summary: 'Joel y la joven Ellie atraviesan unos Estados Unidos devastados tras un apocalipsis fúngico mortal.' },
+      { id: 'top-17', tvmazeId: 2697, rank: 17, title: 'Peaky Blinders', imdbRating: 8.8, votes: '650K', platform: 'Netflix', year: '2013-2022', genres: ['Crimen', 'Drama'], imdbId: 'tt2442560', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/48/122213.jpg', summary: 'Thomas Shelby y su banda de gánsteres ascienden implacablemente en el Birmingham de postguerra.' },
+      { id: 'top-18', tvmazeId: 2705, rank: 18, title: 'Narcos', imdbRating: 8.8, votes: '470K', platform: 'Netflix', year: '2015-2017', genres: ['Biografía', 'Crimen', 'Drama'], imdbId: 'tt2707408', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/24/62264.jpg', summary: 'El auge criminal del Cartel de Medellín y los esfuerzos policiales internacionales por detener a Pablo Escobar.' },
+      { id: 'top-19', tvmazeId: 2993, rank: 19, title: 'Stranger Things', imdbRating: 8.7, votes: '1.4M', platform: 'Netflix', year: '2016-Presente', genres: ['Drama', 'Fantasía', 'Terror'], imdbId: 'tt4574334', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/423/1058422.jpg', summary: 'La extraña desaparición de un niño en Hawkins destapa experimentos secretos y el aterrador Mundo del Revés.' },
+      { id: 'top-20', tvmazeId: 44933, rank: 20, title: 'Severance (Separación)', imdbRating: 8.7, votes: '240K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Misterio', 'Sci-Fi'], imdbId: 'tt11280740', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/400/1000673.jpg', summary: 'Empleados corporativos cuyos recuerdos laborales y personales han sido quirúrgicamente separados.' },
+      { id: 'top-21', tvmazeId: 17861, rank: 21, title: 'Dark', imdbRating: 8.7, votes: '460K', platform: 'Netflix', year: '2017-2020', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5753856', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/260/650424.jpg', summary: 'La misteriosa desaparición de niños en Winden destapa una intrincada conspiración de viajes en el tiempo.' },
+      { id: 'top-22', tvmazeId: 175, rank: 22, title: 'House of Cards', imdbRating: 8.6, votes: '530K', platform: 'Netflix', year: '2013-2018', genres: ['Drama'], imdbId: 'tt1856010', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/175/439730.jpg', summary: 'Frank Underwood y su calculadora esposa urden implacables maquinaciones para conquistar la Casa Blanca.' },
+      { id: 'top-23', tvmazeId: 13545, rank: 23, title: 'Mindhunter', imdbRating: 8.6, votes: '340K', platform: 'Netflix', year: '2017-2019', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt5290382', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/136/341753.jpg', summary: 'Agentes del FBI desarrollan la psicología criminal moderna entrevistando a los asesinos en serie más peligrosos.' },
+      { id: 'top-24', tvmazeId: 5195, rank: 24, title: 'The Crown', imdbRating: 8.6, votes: '260K', platform: 'Netflix', year: '2016-2023', genres: ['Biografía', 'Drama', 'Historia'], imdbId: 'tt4786824', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/484/1210870.jpg', summary: 'Las rivalidades políticas, romances y secretos dinásticos de la Reina Isabel II a lo largo de décadas de reinado.' },
+      { id: 'top-25', tvmazeId: 15299, rank: 25, title: 'The Boys', imdbRating: 8.6, votes: '680K', platform: 'Prime Video', year: '2019-Presente', genres: ['Acción', 'Comedia', 'Crimen'], imdbId: 'tt1190634', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/499/1248065.jpg', summary: 'Un grupo clandestino de rebeldes se propone desenmascarar y frenar a superhéroes corruptos y psicópatas.' }
     ];
 
     const TOP_10_YEAR = [
-      { id: 'yr-1', rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253457.jpg', summary: 'En el Japón feudal de 1600, Lord Toranaga forja una audaz alianza con un náufrago inglés para dominar el shogunato.' },
-      { id: 'yr-2', rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/528/1321743.jpg', summary: 'Tras la gran inundación de Gotham, Oz Cobb desata una sangrienta lucha por el trono criminal de la ciudad.' },
-      { id: 'yr-3', rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/507/1269389.jpg', summary: 'Una ingenua habitante del Refugio 33 sale a la superficie en un Los Ángeles postapocalíptico retrofuturista.' },
-      { id: 'yr-4', rank: 4, title: 'The Bear', imdbRating: 8.6, votes: '300K', platform: 'Disney+', year: '2022-Presente', genres: ['Comedia', 'Drama'], imdbId: 'tt14452776', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/476/1192323.jpg', summary: 'Carmy Berzatto y su apasionado equipo culinario transforman su humilde local en un restaurante de alta cocina.' },
-      { id: 'yr-5', rank: 5, title: 'Slow Horses', imdbRating: 8.3, votes: '95K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Thriller', 'Espionaje'], imdbId: 'tt5875444', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/504/1260189.jpg', summary: 'Jackson Lamb lidera a los agentes marginados del MI5 para desmantelar conspiraciones de seguridad nacional.' },
-      { id: 'yr-6', rank: 6, title: 'House of the Dragon', imdbRating: 8.4, votes: '440K', platform: 'Max (HBO)', year: '2022-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt11198330', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg', summary: 'La brutal guerra civil fratricida entre los Verdes y los Negros desgarra a la Casa Targaryen sobre Poniente.' },
-      { id: 'yr-7', rank: 7, title: 'Baby Reindeer (Mi Reno de Peluche)', imdbRating: 7.8, votes: '210K', platform: 'Netflix', year: '2024-2026', genres: ['Biografía', 'Drama', 'Thriller'], imdbId: 'tt13649692', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/511/1278065.jpg', summary: 'La perturbadora e impactante relación entre un comediante en crisis y una acosadora implacable.' },
-      { id: 'yr-8', rank: 8, title: 'Ripley', imdbRating: 7.9, votes: '65K', platform: 'Netflix', year: '2024-2026', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt11016042', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/506/1266072.jpg', summary: 'Tom Ripley viaja a la Italia de los años 60 en una espiral cautivadora de impostura, fraude y asesinato.' },
-      { id: 'yr-9', rank: 9, title: 'Presumed Innocent (Presunto Inocente)', imdbRating: 7.7, votes: '70K', platform: 'Apple TV+', year: '2024-2026', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt17677860', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/518/1296767.jpg', summary: 'Un prestigioso fiscal de Chicago es acusado del brutal homicidio de una colega con quien tenía un romance secreto.' },
-      { id: 'yr-10', rank: 10, title: 'Industry', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/526/1316209.jpg', summary: 'Jóvenes y ambiciosos analistas financieros compiten ferozmente entre el dinero, el sexo y las drogas en Londres.' }
+      { id: 'yr-1', tvmazeId: 37336, rank: 1, title: 'Shōgun', imdbRating: 8.7, votes: '180K', platform: 'Disney+', year: '2024-2026', genres: ['Aventura', 'Drama', 'Historia'], imdbId: 'tt2788316', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253457.jpg', summary: 'En el Japón feudal de 1600, Lord Toranaga forja una audaz alianza con un náufrago inglés para dominar el shogunato.' },
+      { id: 'yr-2', tvmazeId: 57973, rank: 2, title: 'The Penguin (El Pingüino)', imdbRating: 8.8, votes: '140K', platform: 'Max (HBO)', year: '2024-2026', genres: ['Crimen', 'Drama', 'Fantasía'], imdbId: 'tt15435876', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/528/1321743.jpg', summary: 'Tras la gran inundación de Gotham, Oz Cobb desata una sangrienta lucha por el trono criminal de la ciudad.' },
+      { id: 'yr-3', tvmazeId: 48512, rank: 3, title: 'Fallout', imdbRating: 8.4, votes: '240K', platform: 'Prime Video', year: '2024-Presente', genres: ['Acción', 'Aventura', 'Sci-Fi'], imdbId: 'tt12637874', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/507/1269389.jpg', summary: 'Una ingenua habitante del Refugio 33 sale a la superficie en un Los Ángeles postapocalíptico retrofuturista.' },
+      { id: 'yr-4', tvmazeId: 54198, rank: 4, title: 'The Bear', imdbRating: 8.6, votes: '300K', platform: 'Disney+', year: '2022-Presente', genres: ['Comedia', 'Drama'], imdbId: 'tt14452776', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/476/1192323.jpg', summary: 'Carmy Berzatto y su apasionado equipo culinario transforman su humilde local en un restaurante de alta cocina.' },
+      { id: 'yr-5', tvmazeId: 44058, rank: 5, title: 'Slow Horses', imdbRating: 8.3, votes: '95K', platform: 'Apple TV+', year: '2022-Presente', genres: ['Drama', 'Thriller', 'Espionaje'], imdbId: 'tt5875444', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/504/1260189.jpg', summary: 'Jackson Lamb lidera a los agentes marginados del MI5 para desmantelar conspiraciones de seguridad nacional.' },
+      { id: 'yr-6', tvmazeId: 44778, rank: 6, title: 'House of the Dragon', imdbRating: 8.4, votes: '440K', platform: 'Max (HBO)', year: '2022-Presente', genres: ['Acción', 'Aventura', 'Drama'], imdbId: 'tt11198330', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/516/1291880.jpg', summary: 'La brutal guerra civil fratricida entre los Verdes y los Negros desgarra a la Casa Targaryen sobre Poniente.' },
+      { id: 'yr-7', tvmazeId: 67362, rank: 7, title: 'Baby Reindeer (Mi Reno de Peluche)', imdbRating: 7.8, votes: '210K', platform: 'Netflix', year: '2024-2026', genres: ['Biografía', 'Drama', 'Thriller'], imdbId: 'tt13649692', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/511/1278065.jpg', summary: 'La perturbadora e impactante relación entre un comediante en crisis y una acosadora implacable.' },
+      { id: 'yr-8', tvmazeId: 44379, rank: 8, title: 'Ripley', imdbRating: 7.9, votes: '65K', platform: 'Netflix', year: '2024-2026', genres: ['Crimen', 'Drama', 'Thriller'], imdbId: 'tt11016042', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/506/1266072.jpg', summary: 'Tom Ripley viaja a la Italia de los años 60 en una espiral cautivadora de impostura, fraude y asesinato.' },
+      { id: 'yr-9', tvmazeId: 59714, rank: 9, title: 'Presumed Innocent (Presunto Inocente)', imdbRating: 7.7, votes: '70K', platform: 'Apple TV+', year: '2024-2026', genres: ['Crimen', 'Drama', 'Misterio'], imdbId: 'tt17677860', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/518/1296767.jpg', summary: 'Un prestigioso fiscal de Chicago es acusado del brutal homicidio de una colega con quien tenía un romance secreto.' },
+      { id: 'yr-10', tvmazeId: 43232, rank: 10, title: 'Industry', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/526/1316209.jpg', summary: 'Jóvenes y ambiciosos analistas financieros compiten ferozmente entre el dinero, el sexo y las drogas en Londres.' }
     ];
 
     const MASTER_MOVIES_EXPANDED = [
@@ -691,6 +695,40 @@
 
       const isRemoteUpdateRef = useRef(false);
       const cloudUnsubRef = useRef(null);
+
+      useEffect(() => {
+        const syncRankingPostersLive = async () => {
+          const updatePostersForCatalog = async (list, setList) => {
+            let hasChanges = false;
+            const updated = await Promise.all(
+              list.map(async (item) => {
+                if (!item.tvmazeId) return item;
+                // Si la carátula ya es confirmada de la serie, no sobrecargar
+                try {
+                  const res = await fetch(`https://api.tvmaze.com/shows/${item.tvmazeId}`);
+                  if (res.ok) {
+                    const data = await res.json();
+                    const officialPoster = data.image?.original || data.image?.medium;
+                    if (officialPoster && officialPoster !== item.poster) {
+                      hasChanges = true;
+                      return { ...item, poster: officialPoster };
+                    }
+                  }
+                } catch (e) {}
+                return item;
+              })
+            );
+            if (hasChanges) {
+              setList(updated);
+            }
+          };
+
+          updatePostersForCatalog(historicList, setHistoricList);
+          updatePostersForCatalog(yearList, setYearList);
+        };
+
+        syncRankingPostersLive();
+      }, []);
 
       useEffect(() => {
         try {
@@ -1239,7 +1277,29 @@
       }, [pendingList, pendingPriorityFilter]);
 
       const weeklyAiringSeries = useMemo(() => seriesList.filter(s => s.status === 'airing_weekly'), [seriesList]);
-      const waitingSeasonsList = useMemo(() => seriesList.filter(s => s.status === 'waiting_season'), [seriesList]);
+
+      const waitingSeasonsList = useMemo(() => {
+        return [...seriesList]
+          .filter(s => s.status === 'waiting_season')
+          .sort((a, b) => {
+            const aHasConfirmed = a.hasConfirmedFutureDate && isDateInFuture(a.nextReleaseDate);
+            const bHasConfirmed = b.hasConfirmedFutureDate && isDateInFuture(b.nextReleaseDate);
+
+            // 1. Aquellas con fecha confirmada van SIEMPRE en la parte superior (arriba)
+            if (aHasConfirmed && !bHasConfirmed) return -1;
+            if (!aHasConfirmed && bHasConfirmed) return 1;
+
+            // 2. Si ambas tienen fecha confirmada, ordenar por la fecha más próxima de estreno
+            if (aHasConfirmed && bHasConfirmed) {
+              const timeA = new Date(a.nextReleaseDate).getTime();
+              const timeB = new Date(b.nextReleaseDate).getTime();
+              return timeA - timeB;
+            }
+
+            // 3. Si ambas están pendientes sin fecha confirmada, ordenar alfabéticamente
+            return (a.title || '').localeCompare(b.title || '');
+          });
+      }, [seriesList]);
 
       const currentRankingSource = topRankingType === 'historic' ? historicList : yearList;
       const filteredRankings = useMemo(() => {
@@ -1955,7 +2015,7 @@
                       <span>⏳ Radar de Próximas Temporadas ({waitingSeasonsList.length})</span>
                     </h2>
                     <p className="text-xs text-slate-300">
-                      Temporadas anteriores concluidas. Indica si ya cuenta con fecha oficial confirmada o si se encuentra pendiente en producción.
+                      ⚡ <b>Prioridad automática:</b> Las series con fecha oficial confirmada se muestran siempre en la parte superior (ordenadas por fecha de estreno), seguidas por las producciones con fecha pendiente.
                     </p>
                   </div>
                   <button
@@ -1984,7 +2044,7 @@
                               src={series.poster || DEFAULT_FALLBACK_POSTER}
                               alt={series.title}
                               className="w-24 h-36 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
-                              onError={(e) => handlePosterError(e, series.title)}
+                              onError={(e) => handlePosterError(e, series.title, series.tvmazeId)}
                             />
                             <div className="space-y-1.5 flex-1">
                               <button
@@ -2124,7 +2184,7 @@
                               alt={item.title} 
                               className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105" 
                               loading="lazy"
-                              onError={(e) => handlePosterError(e, item.title)} 
+                              onError={(e) => handlePosterError(e, item.title, item.tvmazeId)} 
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                             
@@ -2189,6 +2249,7 @@
                               }
                               const newSeries = {
                                 id: 'rank-' + Date.now(),
+                                tvmazeId: item.tvmazeId || null,
                                 title: item.title,
                                 imdbId: item.imdbId,
                                 imdbRating: item.imdbRating,
