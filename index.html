@@ -289,7 +289,6 @@
 
         if (hasNext) {
           const daysDiff = (new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24);
-          // Si tiene un episodio programado en los próximos 14 días o emitido esta semana, está en emisión
           if (daysDiff <= 14 && daysDiff >= -2) {
             status = 'airing_weekly';
           }
@@ -1153,7 +1152,20 @@
         }
       };
 
-      const myTrackedSeries = useMemo(() => seriesList.filter(s => s.userTracking), [seriesList]);
+      // ORDENAMIENTO PRIORITARIO: Siempre primero las series en emisión activa ('airing_weekly'), seguidas por las en espera
+      const myTrackedSeries = useMemo(() => {
+        return [...seriesList]
+          .filter(s => s.userTracking)
+          .sort((a, b) => {
+            const aIsAiring = a.status === 'airing_weekly' ? 1 : 0;
+            const bIsAiring = b.status === 'airing_weekly' ? 1 : 0;
+            if (aIsAiring !== bIsAiring) {
+              return bIsAiring - aIsAiring; // 1 (en emisión) va antes que 0 (en espera)
+            }
+            return (a.title || '').localeCompare(b.title || '');
+          });
+      }, [seriesList]);
+
       const filteredPendingList = useMemo(() => {
         return pendingList.filter(p => pendingPriorityFilter === 'all' || p.priority === pendingPriorityFilter);
       }, [pendingList, pendingPriorityFilter]);
@@ -1513,7 +1525,7 @@
                       📺 Series de {activeProfile.name} ({myTrackedSeries.length})
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Temporadas y capítulos consultados en vivo con TVMaze. Puedes ajustar manualmente o presionar <b>Actualizar Ficha</b> en cualquier serie.
+                      ⚡ <b>Prioridad activa:</b> Las series en emisión se muestran al inicio de la lista, seguidas por las que están en espera de temporada o concluidas.
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -1558,8 +1570,8 @@
                           key={series.id} 
                           className={`card-hover rounded-3xl overflow-hidden flex flex-col justify-between border transition-all ${
                             isAiring 
-                              ? 'glass-panel border-emerald-500/50 shadow-xl shadow-emerald-950/40 bg-slate-900/90' 
-                              : 'bg-slate-950/70 border-slate-800/80 backdrop-blur-md'
+                              ? 'glass-panel border-emerald-500/60 shadow-xl shadow-emerald-950/40 bg-slate-900/95 ring-1 ring-emerald-500/30' 
+                              : 'bg-slate-950/70 border-slate-800/80 backdrop-blur-md opacity-95 hover:opacity-100'
                           }`}
                         >
                           <div>
@@ -1598,7 +1610,7 @@
                               <div className="absolute top-3 right-3">
                                 <button
                                   onClick={() => refreshSingleSeries(series.id, series.tvmazeId, series.title)}
-                                  className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all flex items-center gap-1"
+                                  className="bg-slate-950/80 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold px-2 py-1 rounded-xl backdrop-blur transition-all flex items-center gap-1 shadow-md"
                                   title="Consultar novedades oficiales en vivo en TVMaze"
                                 >
                                   🔄 <span>Ficha</span>
