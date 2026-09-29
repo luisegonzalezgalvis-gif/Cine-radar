@@ -1092,7 +1092,6 @@
           }
           setDeferredInstallPrompt(null);
         } else {
-          // Si es iOS o navegador sin prompt automático
           showBanner('📲 Abre el menú de compartir de tu navegador y pulsa "Agregar a pantalla de inicio"');
         }
       };
@@ -1267,7 +1266,7 @@
         showBanner(`🔍 Consultando novedades en vivo de "${title}"...`);
         const liveInfo = await inspectShowDetailsFromTvMaze(tvmazeId, title);
         if (!liveInfo) {
-          showBanner(`⚠️️ No se pudo consultar la API para "${title}".`);
+          showBanner(`⚠️ No se pudo consultar la API para "${title}".`);
           return;
         }
 
@@ -1662,9 +1661,10 @@
         showBanner(`🗑️ Perfil "${name}" y todos sus datos fueron eliminados`);
       };
 
-      // Despacho de Correo Funcional
+      // Despacho de Correo Funcional hacia FormSubmit (sin codificación de @)
       const handleSendAlertEmailTest = async () => {
-        if (!emailConfig.email || !emailConfig.email.includes('@')) {
+        const cleanEmail = (emailConfig.email || '').trim();
+        if (!cleanEmail || !cleanEmail.includes('@')) {
           showBanner('⚠️ Por favor ingresa un correo electrónico válido');
           return;
         }
@@ -1673,16 +1673,16 @@
         showBanner('📨 Conectando con servidor de correo...');
 
         try {
-          const userEmail = emailConfig.email.trim();
+          // El endpoint requiere el '@' literal, NO %40
           const targetEndpoint = (emailConfig.webhookUrl && emailConfig.webhookUrl.trim())
             ? emailConfig.webhookUrl.trim()
-            : `https://formsubmit.co/ajax/${encodeURIComponent(userEmail)}`;
+            : `https://formsubmit.co/ajax/${cleanEmail}`;
 
           const payload = {
             _subject: `🎬 [CineRadar Pro] Alerta de Series para ${activeProfile?.name || 'Usuario'}`,
             _template: 'box',
             _captcha: 'false',
-            email: userEmail,
+            email: cleanEmail,
             perfil: activeProfile?.name || 'Principal',
             series_en_seguimiento: myTrackedSeries.length,
             capitulos_en_emision_activa: weeklyAiringSeries.map(s => `${s.title} (${s.platform} - ${s.airDay})`).join(', ') || 'Ninguna actualmente',
@@ -1703,12 +1703,14 @@
           const resData = await response.json().catch(() => ({}));
 
           if (response.ok && (resData.success === 'true' || resData.success === true || response.status === 200)) {
-            showBanner(`✅ ¡Alerta enviada con éxito a ${userEmail}! Revisa tu bandeja.`);
+            showBanner(`✅ ¡Alerta enviada con éxito a ${cleanEmail}! Revisa tu bandeja.`);
+          } else if (resData.message && resData.message.toLowerCase().includes('activate')) {
+            showBanner(`⚠️ FormSubmit requiere que actives el formulario primero en tu Gmail.`);
           } else {
-            showBanner(`📬 Alerta enviada a ${userEmail} (revisa también tu carpeta de Spam)`);
+            showBanner(`📬 Solicitud despachada a ${cleanEmail} (revisa también tu carpeta de Spam)`);
           }
         } catch (err) {
-          showBanner(`📬 Solicitud despachada a ${emailConfig.email}`);
+          showBanner(`📬 Solicitud despachada a ${cleanEmail}`);
         } finally {
           setIsSendingEmail(false);
         }
@@ -1721,7 +1723,7 @@
           if (!trimmed) {
             localStorage.removeItem('cineradar_custom_firebase_config');
             if (window.CineRadarCloud?.initCloud) await window.CineRadarCloud.initCloud();
-            showBanner('ℹ️ Restaurada la configuración nativa de Cineradar Pro');
+            showBanner('ℹ️️ Restaurada la configuración nativa de Cineradar Pro');
             setShowCloudModal(false);
             return;
           }
@@ -1839,6 +1841,10 @@
           return matchP && matchQ;
         });
       }, [currentRankingSource, selectedPlatform, searchQuery]);
+
+      // Dirección limpia para el form action (con '@' literal, sin %40)
+      const sanitizedUserEmail = (emailConfig.email || 'luis.e.gonzalezgalvis@gmail.com').trim();
+      const formSubmitActionUrl = `https://formsubmit.co/${sanitizedUserEmail}`;
 
       if (!activeProfile) {
         return (
@@ -3103,7 +3109,7 @@
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    <span>✉️</span>
+                    <span>✉️️</span>
                     <span>Alertas por Correo</span>
                   </button>
                 </div>
@@ -3217,7 +3223,7 @@
                       />
                     </div>
 
-                    {/* Formulario de Activación de FormSubmit Oficial */}
+                    {/* Formulario de Activación de FormSubmit Oficial Corregido */}
                     <div className="bg-amber-950/40 p-3.5 rounded-2xl border border-amber-500/40 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
@@ -3229,9 +3235,10 @@
                         FormSubmit exige confirmar tu correo la primera vez. Pulsa el botón abajo para abrir la activación; luego abre tu Gmail y pulsa <b>"Activate Form"</b> (revisa también tu carpeta de Spam).
                       </p>
 
-                      <form action={`https://formsubmit.co/${encodeURIComponent((emailConfig.email || 'luis.e.gonzalezgalvis@gmail.com').trim())}`} method="POST" target="_blank" className="pt-1">
+                      <form action={formSubmitActionUrl} method="POST" target="_blank" className="pt-1">
                         <input type="hidden" name="_subject" value="🎬 [CineRadar Pro] Activación de Alertas de Series" />
                         <input type="hidden" name="_template" value="box" />
+                        <input type="hidden" name="email" value={sanitizedUserEmail} />
                         <input type="hidden" name="mensaje" value="¡Felicidades! Tu correo ha sido activado con éxito en CineRadar Pro. Ya recibirás alertas de nuevos capítulos y temporadas." />
                         <button
                           type="submit"
@@ -3626,7 +3633,7 @@
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-5 shadow-2xl my-auto">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">⚙️</span>
+                    <span className="text-xl">⚙️️</span>
                     <div>
                       <h3 className="font-display font-extrabold text-base text-white">Panel de Administración General</h3>
                       <p className="text-[11px] text-slate-400">Control maestro de perfiles, PINs y accesos para Luis.</p>
@@ -3743,7 +3750,7 @@
                                 onClick={() => requestDeleteProfile(p)}
                                 className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold text-[11px]"
                               >
-                                🗑️️
+                                🗑
                               </button>
                             )}
                           </div>
