@@ -1,36 +1,79 @@
-    updates = []
+name: CineRadar Daily & Weekly Scan
+
+on:
+schedule:
+# Se ejecuta todos los lunes a las 13:00 UTC (08:00 AM hora de Colombia/COT)
+- cron: '0 13 * * 1'
+workflow_dispatch: {}
+push:
+paths:
+- '.github/workflows/cineradar-daily-scan.yml'
+
+permissions:
+contents: read
+
+jobs:
+scan-and-notify:
+name: Escaneo de Series y Notificaciones
+runs-on: ubuntu-latest
+steps:
+- name: Descargar repositorio
+uses: actions/checkout@v4
+
+  - name: Configurar Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
+
+  - name: Instalar libreria HTTP
+    run: pip install requests
+
+  - name: Ejecutar escaneo y despacho de correo
+    env:
+      TARGET_EMAIL: luisegonzalezgalvis@gmail.com
+    run: |
+      python -c "
+      import os, requests
+      from datetime import datetime
+
+      target = os.environ.get('TARGET_EMAIL', 'luisegonzalezgalvis@gmail.com')
+      print(f'Iniciando escaneo para: {target}')
+
+      watchlist = [
+          {'name': 'Severance', 'id': 44933},
+          {'name': 'Ted Lasso', 'id': 44458},
+          {'name': 'Slow Horses', 'id': 44058},
+          {'name': 'House of the Dragon', 'id': 44778},
+          {'name': 'The Last of Us', 'id': 46562}
+      ]
+
+      updates = []
       for show in watchlist:
-          url = f"https://api.tvmaze.com/shows/{show['tvmaze_id']}?embed[]=nextepisode&embed[]=previousepisode"
+          url = f'https://api.tvmaze.com/shows/{show[\"id\"]}?embed[]=nextepisode&embed[]=previousepisode'
           try:
               res = requests.get(url, timeout=10)
               if res.status_code == 200:
                   data = res.json()
                   next_ep = data.get('_embedded', {}).get('nextepisode')
                   if next_ep and next_ep.get('airdate'):
-                      updates.append(f"• {data['name']}: Próximo estreno el {next_ep['airdate']} (T{next_ep.get('season')}E{next_ep.get('number')} - {next_ep.get('name')})")
+                      updates.append(f'• {data[\"name\"]}: Proximo estreno {next_ep[\"airdate\"]} (T{next_ep.get(\"season\")}E{next_ep.get(\"number\")} - {next_ep.get(\"name\")})')
                   else:
-                      updates.append(f"• {data['name']}: Estado actual: {data.get('status', 'En espera')}")
+                      updates.append(f'• {data[\"name\"]}: Estado: {data.get(\"status\", \"En espera\")}')
           except Exception as e:
-              print(f"Error consultando {show['name']}: {e}")
+              print(f'Error en {show[\"name\"]}: {e}')
 
-      summary_text = "\n".join(updates)
-      print("Resumen obtenido:\n", summary_text)
+      resumen = '\n'.join(updates)
+      print('Reporte compilado:\n', resumen)
 
-      # Despacho mediante el servicio FormSubmit
-      endpoint = f"https://formsubmit.co/ajax/{target_email}"
+      endpoint = f'https://formsubmit.co/ajax/{target}'
       payload = {
-          "_subject": f"🎬 [CineRadar Pro] Resumen Semanal de Series ({datetime.now().strftime('%d/%m/%Y')})",
-          "_template": "box",
-          "_captcha": "false",
-          "email": target_email,
-          "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-          "reporte_novedades": summary_text
+          '_subject': f'🎬 [CineRadar Pro] Resumen Semanal de Series ({datetime.now().strftime(\"%d/%m/%Y\")})',
+          '_template': 'box',
+          'email': target,
+          'fecha': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+          'reporte_novedades': resumen
       }
 
-      try:
-          resp = requests.post(endpoint, json=payload, timeout=15)
-          print(f"Respuesta del despacho: {resp.status_code} - {resp.text}")
-      except Exception as e:
-          print(f"Fallo al despachar correo: {e}")
-
-      EOF
+      resp = requests.post(endpoint, json=payload, timeout=15)
+      print(f'Respuesta servidor de correo: {resp.status_code} - {resp.text}')
+      "
