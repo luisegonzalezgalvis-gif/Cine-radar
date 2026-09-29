@@ -45,7 +45,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
     
     .glass-panel {
-      background: rgba(15, 23, 42, 0.78);
+      background: rgba(15, 23, 42, 0.82);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -73,28 +73,63 @@
 <body>
   <div id="root"></div>
 
-  <!-- Firebase Cloud Sync Bridge -->
+  <!-- Firebase Cloud Sync Bridge (Multi-Device Laptop & Mobile) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'cineradar-pro';
+    const defaultAppId = typeof __app_id !== 'undefined' ? __app_id : 'cineradar-pro';
     
     window.CineRadarCloud = {
       isReady: false,
       auth: null,
       db: null,
+      app: null,
+      lastSyncTime: null,
       saveUserData: null,
-      subscribeUserData: null
+      subscribeUserData: null,
+      deleteUserProfileData: null,
+      initCloud: null
     };
 
-    try {
-      if (typeof __firebase_config !== 'undefined') {
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
+    const triggerCloudStatusEvent = (status, lastSync = null) => {
+      window.dispatchEvent(new CustomEvent('cineradar-cloud-status', {
+        detail: { isReady: status, lastSync: lastSync || window.CineRadarCloud.lastSyncTime }
+      }));
+    };
+
+    window.CineRadarCloud.initCloud = async (customConfigRaw = null) => {
+      try {
+        let rawConfig = customConfigRaw || localStorage.getItem('cineradar_custom_firebase_config');
+        if (!rawConfig && typeof __firebase_config !== 'undefined') {
+          rawConfig = __firebase_config;
+        }
+
+        if (!rawConfig) {
+          window.CineRadarCloud.isReady = false;
+          triggerCloudStatusEvent(false);
+          return false;
+        }
+
+        const config = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
+        if (!config || !config.apiKey || !config.projectId) {
+          window.CineRadarCloud.isReady = false;
+          triggerCloudStatusEvent(false);
+          return false;
+        }
+
+        // Limpiar app anterior si existía
+        const existingApps = getApps();
+        if (existingApps.length > 0) {
+          await Promise.all(existingApps.map(a => deleteApp(a).catch(() => {})));
+        }
+
+        const app = initializeApp(config);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        window.CineRadarCloud.app = app;
         window.CineRadarCloud.auth = auth;
         window.CineRadarCloud.db = db;
 
@@ -102,68 +137,88 @@
           ? signInWithCustomToken(auth, __initial_auth_token)
           : signInAnonymously(auth);
 
-        authPromise.then(async () => {
-          window.CineRadarCloud.isReady = true;
+        await authPromise;
 
-          window.CineRadarCloud.saveUserData = async (data, profileId) => {
-            if (!auth.currentUser || !profileId) return;
-            try {
-              const docRef = doc(db, 'artifacts', appId, 'users', profileId, 'library', 'current');
-              await setDoc(docRef, {
-                series: JSON.stringify(data.series || []),
-                pending: JSON.stringify(data.pending || []),
-                historic: JSON.stringify(data.historic || []),
-                year: JSON.stringify(data.year || []),
-                movies: JSON.stringify(data.movies || []),
-                emailConfig: JSON.stringify(data.emailConfig || {}),
-                profileName: data.profileName || 'Mi Perfil',
-                profileAvatar: data.profileAvatar || '🍿',
-                profilePin: data.profilePin || '',
-                updatedAt: new Date().toISOString(),
-                updatedBy: profileId
-              }, { merge: true });
-            } catch (err) {
-              console.warn("Cloud save warning:", err);
-            }
-          };
+        window.CineRadarCloud.isReady = true;
+        window.CineRadarCloud.lastSyncTime = new Date().toLocaleTimeString();
 
-          window.CineRadarCloud.subscribeUserData = (profileId, callback) => {
-            if (!auth.currentUser || !profileId) return () => {};
-            try {
-              const docRef = doc(db, 'artifacts', appId, 'users', profileId, 'library', 'current');
-              return onSnapshot(docRef, (snapshot) => {
-                if (snapshot.exists()) {
-                  const cloudData = snapshot.data();
-                  callback({
-                    series: cloudData.series ? JSON.parse(cloudData.series) : null,
-                    pending: cloudData.pending ? JSON.parse(cloudData.pending) : null,
-                    historic: cloudData.historic ? JSON.parse(cloudData.historic) : null,
-                    year: cloudData.year ? JSON.parse(cloudData.year) : null,
-                    movies: cloudData.movies ? JSON.parse(cloudData.movies) : null,
-                    emailConfig: cloudData.emailConfig ? JSON.parse(cloudData.emailConfig) : null,
-                    profileName: cloudData.profileName,
-                    profileAvatar: cloudData.profileAvatar,
-                    profilePin: cloudData.profilePin,
-                    updatedAt: cloudData.updatedAt
-                  });
-                }
-              }, (error) => {
-                console.warn("Snapshot notice:", error);
-              });
-            } catch (err) {
-              console.warn("Subscribe notice:", err);
-              return () => {};
-            }
-          };
+        window.CineRadarCloud.saveUserData = async (data, profileId) => {
+          if (!auth.currentUser || !profileId) return;
+          try {
+            const docRef = doc(db, 'artifacts', defaultAppId, 'users', profileId, 'library', 'current');
+            await setDoc(docRef, {
+              series: JSON.stringify(data.series || []),
+              pending: JSON.stringify(data.pending || []),
+              historic: JSON.stringify(data.historic || []),
+              year: JSON.stringify(data.year || []),
+              movies: JSON.stringify(data.movies || []),
+              emailConfig: JSON.stringify(data.emailConfig || {}),
+              profileName: data.profileName || 'Mi Perfil',
+              profileAvatar: data.profileAvatar || '🍿',
+              profilePin: data.profilePin || '',
+              updatedAt: new Date().toISOString(),
+              updatedBy: profileId
+            }, { merge: true });
+            window.CineRadarCloud.lastSyncTime = new Date().toLocaleTimeString();
+            triggerCloudStatusEvent(true, window.CineRadarCloud.lastSyncTime);
+          } catch (err) {
+            console.warn("Cloud save warning:", err);
+          }
+        };
 
-          window.dispatchEvent(new CustomEvent('cineradar-cloud-ready'));
-        }).catch(err => {
-          console.warn("Auth warning:", err);
-        });
+        window.CineRadarCloud.subscribeUserData = (profileId, callback) => {
+          if (!auth.currentUser || !profileId) return () => {};
+          try {
+            const docRef = doc(db, 'artifacts', defaultAppId, 'users', profileId, 'library', 'current');
+            return onSnapshot(docRef, (snapshot) => {
+              if (snapshot.exists()) {
+                const cloudData = snapshot.data();
+                window.CineRadarCloud.lastSyncTime = new Date().toLocaleTimeString();
+                triggerCloudStatusEvent(true, window.CineRadarCloud.lastSyncTime);
+                callback({
+                  series: cloudData.series ? JSON.parse(cloudData.series) : null,
+                  pending: cloudData.pending ? JSON.parse(cloudData.pending) : null,
+                  historic: cloudData.historic ? JSON.parse(cloudData.historic) : null,
+                  year: cloudData.year ? JSON.parse(cloudData.year) : null,
+                  movies: cloudData.movies ? JSON.parse(cloudData.movies) : null,
+                  emailConfig: cloudData.emailConfig ? JSON.parse(cloudData.emailConfig) : null,
+                  profileName: cloudData.profileName,
+                  profileAvatar: cloudData.profileAvatar,
+                  profilePin: cloudData.profilePin,
+                  updatedAt: cloudData.updatedAt
+                });
+              }
+            }, (error) => {
+              console.warn("Snapshot notice:", error);
+            });
+          } catch (err) {
+            console.warn("Subscribe notice:", err);
+            return () => {};
+          }
+        };
+
+        window.CineRadarCloud.deleteUserProfileData = async (profileId) => {
+          if (!auth.currentUser || !profileId) return;
+          try {
+            const docRef = doc(db, 'artifacts', defaultAppId, 'users', profileId, 'library', 'current');
+            await deleteDoc(docRef);
+          } catch (e) {
+            console.warn("Error deleting profile data on cloud:", e);
+          }
+        };
+
+        triggerCloudStatusEvent(true, window.CineRadarCloud.lastSyncTime);
+        return true;
+      } catch (e) {
+        console.warn("Cloud init error:", e);
+        window.CineRadarCloud.isReady = false;
+        triggerCloudStatusEvent(false);
+        return false;
       }
-    } catch (e) {
-      console.warn("Cloud init notice:", e);
-    }
+    };
+
+    // Auto-arranque al cargar la página
+    window.CineRadarCloud.initCloud();
   </script>
 
   <script>
@@ -267,7 +322,6 @@
       return `Faltan ${diffDays} días`;
     };
 
-    // Función auxiliar para inspeccionar TVMaze y obtener temporadas y episodios exactos en vivo
     const inspectShowDetailsFromTvMaze = async (tvmazeId, showTitle) => {
       try {
         const endpoint = tvmazeId
@@ -282,7 +336,6 @@
         const prevEp = data._embedded?.previousepisode;
         const seasons = data._embedded?.seasons || [];
 
-        // Temporada máxima registrada en el catálogo
         let maxSeason = 1;
         if (Array.isArray(seasons) && seasons.length > 0) {
           maxSeason = Math.max(...seasons.map(s => s.number || 1));
@@ -304,7 +357,6 @@
         let nextReleaseDate = null;
         let hasConfirmedFutureDate = false;
 
-        // Verificar si el próximo episodio tiene fecha futura
         if (hasNext && isDateInFuture(nextEp.airdate)) {
           const daysDiff = (new Date(nextEp.airdate) - new Date()) / (1000 * 60 * 60 * 24);
           if (daysDiff <= 14 && daysDiff >= -1) {
@@ -316,7 +368,6 @@
           hasConfirmedFutureDate = true;
           latestEpText = `Nuevo ep: T${nextEp.season}E${nextEp.number} ("${nextEp.name}")`;
         } else {
-          // Si no hay nextepisode, verificar si alguna temporada futura registrada en seasons tiene premiereDate
           const upcomingSeason = seasons.find(s => s.number > (prevEp?.season || 1) && s.premiereDate && isDateInFuture(s.premiereDate));
           if (upcomingSeason) {
             hasConfirmedFutureDate = true;
@@ -550,7 +601,6 @@
       { id: 'yr-10', tvmazeId: 45501, rank: 10, title: 'Industry', imdbRating: 7.6, votes: '30K', platform: 'Max (HBO)', year: '2020-Presente', genres: ['Drama'], imdbId: 'tt7631058', poster: 'https://static.tvmaze.com/uploads/images/original_untouched/526/1316209.jpg', summary: 'Jóvenes y ambiciosos analistas financieros compiten ferozmente entre el dinero, el sexo y las drogas en Londres.' }
     ];
 
-    // Catálogo actualizado de estrenos en cartelera actual y próximos 6 meses
     const MASTER_MOVIES_EXPANDED = [
       {
         id: 'mov-superman-2025',
@@ -770,6 +820,7 @@
       const [pinError, setPinError] = useState(false);
       const [showManageProfilesModal, setShowManageProfilesModal] = useState(false);
       const [editingProfileData, setEditingProfileData] = useState(null);
+      const [deleteConfirmProfile, setDeleteConfirmProfile] = useState(null);
 
       const [showMyProfileModal, setShowMyProfileModal] = useState(false);
       const [myProfileName, setMyProfileName] = useState('');
@@ -789,6 +840,13 @@
       const [searchQuery, setSearchQuery] = useState('');
       const [bannerMessage, setBannerMessage] = useState(null);
       const [isSyncingLiveAll, setIsSyncingLiveAll] = useState(false);
+
+      // Sincronización en la Nube Multi-Dispositivo
+      const [cloudStatus, setCloudStatus] = useState({ isReady: false, lastSync: null });
+      const [showCloudModal, setShowCloudModal] = useState(false);
+      const [customFirebaseInput, setCustomFirebaseInput] = useState(() => {
+        return localStorage.getItem('cineradar_custom_firebase_config') || '';
+      });
 
       const [showNewSeriesModal, setShowNewSeriesModal] = useState(false);
       const [showEmailModal, setShowEmailModal] = useState(false);
@@ -821,6 +879,23 @@
 
       const isRemoteUpdateRef = useRef(false);
       const cloudUnsubRef = useRef(null);
+
+      // Escuchar eventos de estado de sincronización en la nube
+      useEffect(() => {
+        const handler = (e) => {
+          if (e.detail) {
+            setCloudStatus({
+              isReady: !!e.detail.isReady,
+              lastSync: e.detail.lastSync || null
+            });
+          }
+        };
+        window.addEventListener('cineradar-cloud-status', handler);
+        if (window.CineRadarCloud?.isReady) {
+          setCloudStatus({ isReady: true, lastSync: window.CineRadarCloud.lastSyncTime });
+        }
+        return () => window.removeEventListener('cineradar-cloud-status', handler);
+      }, []);
 
       const syncAllRankingPosters = async (showFeedback = false) => {
         if (showFeedback) showBanner('🔄 Revalidando pósteres oficiales con TVMaze...');
@@ -916,7 +991,6 @@
               if (cloudData.pending) setPendingList(cloudData.pending);
               if (cloudData.emailConfig) setEmailConfig(cloudData.emailConfig);
               
-              /* Blindaje: Se aseguran los catálogos oficiales exactos y verificados */
               setHistoricList(TOP_25_HISTORIC);
               setYearList(TOP_10_YEAR);
               setMoviesList(MASTER_MOVIES_EXPANDED);
@@ -1008,7 +1082,6 @@
         }
       };
 
-      // Función para actualizar en vivo una serie específica
       const refreshSingleSeries = async (seriesId, tvmazeId, title) => {
         showBanner(`🔍 Consultando novedades en vivo de "${title}"...`);
         const liveInfo = await inspectShowDetailsFromTvMaze(tvmazeId, title);
@@ -1040,7 +1113,6 @@
         showBanner(`✅ "${title}" actualizada: T${liveInfo.currentSeason} • Próx: T${liveInfo.nextSeasonNumber}`);
       };
 
-      // Función para actualizar en vivo TODAS las series
       const refreshAllSeriesLive = async () => {
         setIsSyncingLiveAll(true);
         showBanner('🔄 Inspeccionando capítulos y temporadas oficiales en vivo...');
@@ -1080,7 +1152,6 @@
         }
       };
 
-      // Importar serie con inspección profunda en TVMaze
       const handleImportChosen = async (item) => {
         const show = item.show;
         if (!show) return;
@@ -1088,7 +1159,6 @@
         setIsImportingDeep(true);
         showBanner(`🔍 Analizando temporadas y emisión de "${show.name}"...`);
 
-        // Inspeccionar estado real, última temporada emitida y próxima entrega
         const liveInfo = await inspectShowDetailsFromTvMaze(show.id, show.name);
 
         const detectedNet = show.webChannel ? show.webChannel.name : (show.network ? show.network.name : '');
@@ -1372,14 +1442,112 @@
         showBanner(`💾 Perfil actualizado correctamente`);
       };
 
-      const handleDeleteProfile = (profileId, profileName) => {
-        if (confirm(`¿Estás seguro de que deseas eliminar el perfil de "${profileName}"?`)) {
-          setProfilesList(prev => prev.filter(p => p.id !== profileId));
-          showBanner(`🗑️ Perfil "${profileName}" eliminado`);
+      const requestDeleteProfile = (profile) => {
+        setDeleteConfirmProfile(profile);
+      };
+
+      // CORRECCIÓN PRIORIDAD ALTA: Eliminación limpia sin dejar claves huérfanas en localStorage ni en la nube
+      const confirmDeleteProfile = async () => {
+        if (!deleteConfirmProfile) return;
+        const { id, name } = deleteConfirmProfile;
+
+        // Limpieza de claves locales
+        try {
+          localStorage.removeItem(`cineradar_usr_${id}_series`);
+          localStorage.removeItem(`cineradar_usr_${id}_pending`);
+          localStorage.removeItem(`cineradar_usr_${id}_email`);
+        } catch (e) {}
+
+        // Limpieza en la base de datos remota
+        if (window.CineRadarCloud?.deleteUserProfileData) {
+          try {
+            await window.CineRadarCloud.deleteUserProfileData(id);
+          } catch (e) {}
+        }
+
+        setProfilesList(prev => prev.filter(p => p.id !== id));
+        setDeleteConfirmProfile(null);
+        showBanner(`🗑️ Perfil "${name}" y todos sus datos fueron eliminados`);
+      };
+
+      // Guardar configuración de Firebase desde el modal
+      const handleSaveCustomCloudConfig = async (e) => {
+        e.preventDefault();
+        try {
+          const trimmed = customFirebaseInput.trim();
+          if (!trimmed) {
+            localStorage.removeItem('cineradar_custom_firebase_config');
+            if (window.CineRadarCloud?.initCloud) await window.CineRadarCloud.initCloud();
+            showBanner('ℹ️ Modo local activado (sin sincronización en la nube)');
+            setShowCloudModal(false);
+            return;
+          }
+          const parsed = JSON.parse(trimmed);
+          if (!parsed.apiKey || !parsed.projectId) {
+            showBanner('⚠️ JSON inválido: debe contener apiKey y projectId.');
+            return;
+          }
+          localStorage.setItem('cineradar_custom_firebase_config', trimmed);
+          showBanner('🔄 Conectando con tu base de datos Firebase...');
+          const success = await window.CineRadarCloud.initCloud(trimmed);
+          if (success) {
+            showBanner('🟢 ¡Nube conectada! Tus dispositivos PC y Celular están sincronizados.');
+            setShowCloudModal(false);
+          } else {
+            showBanner('⚠️ Error conectando. Verifica tus credenciales de Firebase.');
+          }
+        } catch (err) {
+          showBanner('⚠️ Error en formato JSON. Verifica las comillas y comas.');
         }
       };
 
-      // ORDENAMIENTO PRIORITARIO: Siempre primero las series en emisión activa ('airing_weekly'), seguidas por las en espera
+      // Exportar copia de seguridad JSON
+      const exportBackupJSON = () => {
+        const backup = {
+          version: 'cineradar-pro-v16',
+          exportDate: new Date().toISOString(),
+          profiles: profilesList,
+          activeProfile: activeProfile?.id,
+          series: seriesList,
+          pending: pendingList,
+          emailConfig: emailConfig
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cineradar-backup-${activeProfile?.id || 'all'}-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showBanner('📁 Copia de seguridad descargada con éxito');
+      };
+
+      // Importar copia de seguridad JSON
+      const importBackupJSON = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.series && Array.isArray(data.series)) {
+              setSeriesList(data.series);
+            }
+            if (data.pending && Array.isArray(data.pending)) {
+              setPendingList(data.pending);
+            }
+            if (data.profiles && Array.isArray(data.profiles)) {
+              setProfilesList(data.profiles);
+            }
+            showBanner('🎉 ¡Datos restaurados con éxito desde el archivo!');
+            setShowCloudModal(false);
+          } catch (err) {
+            showBanner('⚠️ Error leyendo el archivo JSON.');
+          }
+        };
+        reader.readAsText(file);
+      };
+
       const myTrackedSeries = useMemo(() => {
         return [...seriesList]
           .filter(s => s.userTracking)
@@ -1387,7 +1555,7 @@
             const aIsAiring = a.status === 'airing_weekly' ? 1 : 0;
             const bIsAiring = b.status === 'airing_weekly' ? 1 : 0;
             if (aIsAiring !== bIsAiring) {
-              return bIsAiring - aIsAiring; // 1 (en emisión) va antes que 0 (en espera)
+              return bIsAiring - aIsAiring;
             }
             return (a.title || '').localeCompare(b.title || '');
           });
@@ -1406,34 +1574,32 @@
             const aHasConfirmed = a.hasConfirmedFutureDate && isDateInFuture(a.nextReleaseDate);
             const bHasConfirmed = b.hasConfirmedFutureDate && isDateInFuture(b.nextReleaseDate);
 
-            // 1. Aquellas con fecha confirmada van SIEMPRE en la parte superior (arriba)
             if (aHasConfirmed && !bHasConfirmed) return -1;
             if (!aHasConfirmed && bHasConfirmed) return 1;
 
-            // 2. Si ambas tienen fecha confirmada, ordenar por la fecha más próxima de estreno
             if (aHasConfirmed && bHasConfirmed) {
               const timeA = new Date(a.nextReleaseDate).getTime();
               const timeB = new Date(b.nextReleaseDate).getTime();
               return timeA - timeB;
             }
 
-            // 3. Si ambas están pendientes sin fecha confirmada, ordenar alfabéticamente
             return (a.title || '').localeCompare(b.title || '');
           });
       }, [seriesList]);
 
       const currentRankingSource = topRankingType === 'historic' ? historicList : yearList;
+
+      // Filtrado interactivo en tiempo real para Rankings
       const filteredRankings = useMemo(() => {
         return currentRankingSource.filter(item => {
           const matchP = selectedPlatform === 'all' || item.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
-          const matchQ = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchQ = !searchQuery.trim() || 
+            item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (item.genres && item.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())));
           return matchP && matchQ;
         });
       }, [currentRankingSource, selectedPlatform, searchQuery]);
 
-      // ========================================================
-      // 1. PANTALLA DE PERFILES («¿QUIÉN ESTÁ VIENDO?»)
-      // ========================================================
       if (!activeProfile) {
         return (
           <div className="min-h-screen bg-[#060a13] text-white flex flex-col items-center justify-center p-6 select-none font-sans relative overflow-hidden">
@@ -1448,7 +1614,7 @@
                   CineRadar Pro
                 </h1>
                 <p className="text-slate-400 text-sm max-w-md mx-auto">
-                  ¿Quién está viendo hoy? Selecciona tu perfil para ingresar a tu espacio sincronizado.
+                  ¿Quién está viendo hoy? Selecciona tu perfil para ingresar a tu espacio sincronizado entre portátil y celular.
                 </p>
               </div>
 
@@ -1493,8 +1659,24 @@
                   <span className="font-bold text-xs">Crear Perfil</span>
                 </div>
               </div>
+
+              {/* Indicador de estado de la nube en la pantalla de inicio */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowCloudModal(true)}
+                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold border transition-all ${
+                    cloudStatus.isReady
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60'
+                      : 'bg-amber-950/60 text-amber-300 border-amber-500/40 hover:bg-amber-900/60'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${cloudStatus.isReady ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
+                  <span>{cloudStatus.isReady ? '🟢 Nube Activa (PC ⇄ Celular)' : '🟡 Modo Local (Toca para conectar Nube)'}</span>
+                </button>
+              </div>
             </div>
 
+            {/* Modal PIN */}
             {pinModalTarget && (
               <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full space-y-4 shadow-2xl text-center">
@@ -1547,6 +1729,7 @@
               </div>
             )}
 
+            {/* Modal Crear Perfil */}
             {showCreateProfileModal && (
               <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
@@ -1601,7 +1784,7 @@
                       <label className="text-slate-300 font-bold block mb-1">ID de Sincronización en la Nube (Opcional):</label>
                       <input
                         type="text"
-                        placeholder="Ej: sofia2026 (úsalo igual en celular y PC)"
+                        placeholder="Ej: luis, sofa (úsalo igual en celular y PC)"
                         value={newProfileId}
                         onChange={(e) => setNewProfileId(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-400 text-xs"
@@ -1622,15 +1805,12 @@
         );
       }
 
-      // ========================================================
-      // 2. APLICACIÓN PRINCIPAL
-      // ========================================================
       const isUserAdmin = activeProfile?.isAdmin === true || activeProfile?.id === 'luis';
 
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-24 sm:pb-10">
           
-          {/* Header Superior */}
+          {/* Header Superior con Indicador de Nube Activa */}
           <header className="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 sm:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div 
@@ -1665,7 +1845,23 @@
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Botón para Sincronizar y Actualizar Todas las Temporadas en Vivo */}
+              {/* Badge Dinámico de Estado en la Nube */}
+              <button
+                onClick={() => setShowCloudModal(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all shadow-sm ${
+                  cloudStatus.isReady
+                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 hover:bg-emerald-900/90'
+                    : 'bg-amber-950/80 text-amber-300 border-amber-500/50 hover:bg-amber-900/90'
+                }`}
+                title="Toca para abrir el panel de sincronización PC ⇄ Móvil"
+              >
+                <span className={`w-2 h-2 rounded-full ${cloudStatus.isReady ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
+                <span className="hidden sm:inline">
+                  {cloudStatus.isReady ? 'Nube Sincronizada' : 'Modo Local'}
+                </span>
+                <span className="sm:hidden">☁️</span>
+              </button>
+
               <button
                 onClick={refreshAllSeriesLive}
                 disabled={isSyncingLiveAll}
@@ -1762,7 +1958,6 @@
             </div>
           </div>
 
-          {/* Contenido Principal */}
           <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-5 flex-1 space-y-6">
 
             {/* VISTA 1: MIS SERIES */}
@@ -2197,7 +2392,7 @@
                             </div>
                           </div>
 
-                          {/* RECUADRO INFORMATIVO DE FECHA DE ESTRENO */}
+                          {/* Recuadro de fecha de estreno */}
                           {hasConfirmedDate ? (
                             <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-3 space-y-1.5 shadow-inner">
                               <div className="flex items-center justify-between">
@@ -2253,7 +2448,7 @@
               </div>
             )}
 
-            {/* VISTA 5: TOP CALIFICADAS */}
+            {/* VISTA 5: TOP CALIFICADAS (CON FILTROS Y BÚSQUEDA INTERACTIVA RESTAURADOS) */}
             {activeTab === 'explore' && (
               <div className="space-y-4">
                 <div className="bg-slate-900/70 p-5 rounded-3xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2280,7 +2475,7 @@
                     </button>
                     <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
                       <button
-                        onClick={() => setTopRankingType('historic')}
+                        onClick={() => { setTopRankingType('historic'); setSearchQuery(''); setSelectedPlatform('all'); }}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                           topRankingType === 'historic' ? 'bg-amber-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
                         }`}
@@ -2288,7 +2483,7 @@
                         🏆 Top 25 ({historicList.length})
                       </button>
                       <button
-                        onClick={() => setTopRankingType('year')}
+                        onClick={() => { setTopRankingType('year'); setSearchQuery(''); setSelectedPlatform('all'); }}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                           topRankingType === 'year' ? 'bg-amber-500 text-slate-950 shadow-md font-black' : 'text-slate-400 hover:text-white'
                         }`}
@@ -2299,122 +2494,196 @@
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredRankings.map(item => {
-                    const platInfo = getPlatformInfo(item.platform);
-                    const isAlreadyTracked = seriesList.some(s => s.userTracking && (s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId)));
+                {/* CORRECCIÓN PRIORIDAD ALTA: Barra de Búsqueda y Chips de Plataformas */}
+                <div className="glass-panel p-4 rounded-3xl border border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="relative flex-1 w-full">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                      <input
+                        type="text"
+                        placeholder="Buscar por título o género (ej: Breaking Bad, Sci-Fi, Drama)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-2xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none placeholder-slate-500 transition-colors"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold"
+                          title="Limpiar búsqueda"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                      <span className="text-[11px] font-mono text-slate-400">
+                        Resultados: <b className="text-amber-400">{filteredRankings.length}</b> de {currentRankingSource.length}
+                      </span>
+                    </div>
+                  </div>
 
-                    return (
-                      <div key={item.id || item.title} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
-                        <div>
-                          {/* Contenedor de Póster Vertical de Alta Fidelidad */}
-                          <div className="relative h-80 sm:h-96 w-full bg-slate-900 overflow-hidden">
-                            <img 
-                              src={item.poster} 
-                              alt={item.title} 
-                              className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105" 
-                              loading="lazy"
-                              onError={(e) => handlePosterError(e, item.title, item.tvmazeId)} 
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-                            
-                            <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                              <span className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1 rounded-xl shadow-lg">
-                                #{item.rank}
-                              </span>
-                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border backdrop-blur shadow-md flex items-center gap-1 ${platInfo.color}`}>
-                                <span>{platInfo.icon}</span>
-                                <span>{item.platform}</span>
-                              </span>
-                            </div>
-
-                            <div className="absolute top-3 right-3 flex items-center gap-1">
-                              {item.imdbId ? (
-                                <a
-                                  href={`https://www.imdb.com/title/${item.imdbId}/`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md flex items-center gap-1 transition-transform active:scale-95"
-                                  title="Ver ficha en IMDb"
-                                >
-                                  <span>IMDb</span>
-                                  <span>★ {item.imdbRating}</span>
-                                </a>
-                              ) : (
-                                <div className="bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md">
-                                  ★ {item.imdbRating}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="absolute bottom-3 left-3 right-3">
-                              <div className="text-[10px] font-mono text-amber-300 font-bold mb-0.5">
-                                <span>{item.year}</span> • <span>{item.genres?.join(' • ')}</span>
-                              </div>
-                              <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
-                                {item.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          <div className="p-4 space-y-2">
-                            <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
-                              {item.summary}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-4 pt-0">
-                          <button
-                            onClick={() => {
-                              const existing = seriesList.find(s => s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId));
-                              if (existing) {
-                                if (!existing.userTracking) {
-                                  setSeriesList(prev => prev.map(s => s.id === existing.id ? { ...s, userTracking: true } : s));
-                                  showBanner(`✓ "${item.title}" reincorporada a Mis Series`);
-                                } else {
-                                  showBanner(`ℹ️ "${item.title}" ya está en tu radar.`);
-                                }
-                                return;
-                              }
-                              const newSeries = {
-                                id: 'rank-' + Date.now(),
-                                tvmazeId: item.tvmazeId || null,
-                                title: item.title,
-                                imdbId: item.imdbId,
-                                imdbRating: item.imdbRating,
-                                platform: item.platform,
-                                genres: item.genres,
-                                status: 'waiting_season',
-                                currentSeason: 1,
-                                nextSeasonNumber: 2,
-                                nextReleaseDate: null,
-                                hasConfirmedFutureDate: false,
-                                releaseSchedule: item.summary,
-                                airDay: 'Viernes',
-                                airTime: '02:00 AM COT',
-                                poster: item.poster,
-                                userTracking: true,
-                                userProgressSeason: 1,
-                                userProgressEpisode: 1,
-                                notes: 'Agregada desde el Top de IMDb.'
-                              };
-                              setSeriesList(prev => [newSeries, ...prev]);
-                              showBanner(`🎉 "${item.title}" agregada a Mis Series`);
-                            }}
-                            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md ${
-                              isAlreadyTracked
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white'
-                            }`}
-                          >
-                            <span>{isAlreadyTracked ? '✓ En Mis Series' : '➕ Seguir Serie en mi Radar'}</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {/* Filtro por Plataformas */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-1 text-xs">
+                    <span className="text-slate-400 font-bold shrink-0 text-[11px]">Plataforma:</span>
+                    <button
+                      onClick={() => setSelectedPlatform('all')}
+                      className={`px-3 py-1 rounded-xl font-bold transition-all border shrink-0 text-[11px] ${
+                        selectedPlatform === 'all'
+                          ? 'bg-amber-500 text-slate-950 border-amber-400'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {SUPPORTED_PLATFORMS.map(plat => (
+                      <button
+                        key={plat.id}
+                        onClick={() => setSelectedPlatform(plat.name)}
+                        className={`px-2.5 py-1 rounded-xl font-bold transition-all border shrink-0 flex items-center gap-1 text-[11px] ${
+                          selectedPlatform.toLowerCase() === plat.name.toLowerCase()
+                            ? 'bg-indigo-600 text-white border-indigo-400 shadow'
+                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <span>{plat.icon}</span>
+                        <span>{plat.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {filteredRankings.length === 0 ? (
+                  <div className="text-center py-16 glass-panel rounded-3xl border border-slate-800 space-y-3">
+                    <div className="text-4xl">🔍</div>
+                    <h3 className="font-display font-bold text-white text-base">No hay series que coincidan con tu filtro</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Intenta buscar con otro término o selecciona "Todas" en el filtro de plataformas.
+                    </p>
+                    <button
+                      onClick={() => { setSearchQuery(''); setSelectedPlatform('all'); }}
+                      className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl transition-all"
+                    >
+                      Restablecer Filtros
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {filteredRankings.map(item => {
+                      const platInfo = getPlatformInfo(item.platform);
+                      const isAlreadyTracked = seriesList.some(s => s.userTracking && (s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId)));
+
+                      return (
+                        <div key={item.id || item.title} className="glass-panel card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                          <div>
+                            <div className="relative h-80 sm:h-96 w-full bg-slate-900 overflow-hidden">
+                              <img 
+                                src={item.poster} 
+                                alt={item.title} 
+                                className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105" 
+                                loading="lazy"
+                                onError={(e) => handlePosterError(e, item.title, item.tvmazeId)} 
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                              
+                              <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                                <span className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1 rounded-xl shadow-lg">
+                                  #{item.rank}
+                                </span>
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border backdrop-blur shadow-md flex items-center gap-1 ${platInfo.color}`}>
+                                  <span>{platInfo.icon}</span>
+                                  <span>{item.platform}</span>
+                                </span>
+                              </div>
+
+                              <div className="absolute top-3 right-3 flex items-center gap-1">
+                                {item.imdbId ? (
+                                  <a
+                                    href={`https://www.imdb.com/title/${item.imdbId}/`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md flex items-center gap-1 transition-transform active:scale-95"
+                                    title="Ver ficha en IMDb"
+                                  >
+                                    <span>IMDb</span>
+                                    <span>★ {item.imdbRating}</span>
+                                  </a>
+                                ) : (
+                                  <div className="bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-1 rounded-xl shadow-md">
+                                    ★ {item.imdbRating}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="absolute bottom-3 left-3 right-3">
+                                <div className="text-[10px] font-mono text-amber-300 font-bold mb-0.5">
+                                  <span>{item.year}</span> • <span>{item.genres?.join(' • ')}</span>
+                                </div>
+                                <h3 className="font-display font-extrabold text-base sm:text-lg text-white leading-tight">
+                                  {item.title}
+                                </h3>
+                              </div>
+                            </div>
+
+                            <div className="p-4 space-y-2">
+                              <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                                {item.summary}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 pt-0">
+                            <button
+                              onClick={() => {
+                                const existing = seriesList.find(s => s.title.toLowerCase() === item.title.toLowerCase() || (item.imdbId && s.imdbId === item.imdbId));
+                                if (existing) {
+                                  if (!existing.userTracking) {
+                                    setSeriesList(prev => prev.map(s => s.id === existing.id ? { ...s, userTracking: true } : s));
+                                    showBanner(`✓ "${item.title}" reincorporada a Mis Series`);
+                                  } else {
+                                    showBanner(`ℹ️ "${item.title}" ya está en tu radar.`);
+                                  }
+                                  return;
+                                }
+                                const newSeries = {
+                                  id: 'rank-' + Date.now(),
+                                  tvmazeId: item.tvmazeId || null,
+                                  title: item.title,
+                                  imdbId: item.imdbId,
+                                  imdbRating: item.imdbRating,
+                                  platform: item.platform,
+                                  genres: item.genres,
+                                  status: 'waiting_season',
+                                  currentSeason: 1,
+                                  nextSeasonNumber: 2,
+                                  nextReleaseDate: null,
+                                  hasConfirmedFutureDate: false,
+                                  releaseSchedule: item.summary,
+                                  airDay: 'Viernes',
+                                  airTime: '02:00 AM COT',
+                                  poster: item.poster,
+                                  userTracking: true,
+                                  userProgressSeason: 1,
+                                  userProgressEpisode: 1,
+                                  notes: 'Agregada desde el Top de IMDb.'
+                                };
+                                setSeriesList(prev => [newSeries, ...prev]);
+                                showBanner(`🎉 "${item.title}" agregada a Mis Series`);
+                              }}
+                              className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md ${
+                                isAlreadyTracked
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white'
+                              }`}
+                            >
+                              <span>{isAlreadyTracked ? '✓ En Mis Series' : '➕ Seguir Serie en mi Radar'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2434,7 +2703,6 @@
                     </p>
                   </div>
 
-                  {/* Filtros de la cartelera */}
                   <div className="flex flex-wrap items-center gap-1.5 bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
                     {[
                       { id: 'all', label: 'Todos los Estrenos' },
@@ -2456,7 +2724,6 @@
                   </div>
                 </div>
 
-                {/* Grid de Películas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {moviesList
                     .filter(m => {
@@ -2481,7 +2748,6 @@
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
 
-                              {/* Badges superiores */}
                               <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
                                 {isInTheaters ? (
                                   <span className="text-[10px] font-black px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 flex items-center gap-1.5 shadow-lg backdrop-blur">
@@ -2502,7 +2768,6 @@
                                 )}
                               </div>
 
-                              {/* Info inferior en poster */}
                               <div className="absolute bottom-3 left-3 right-3">
                                 <span className="text-[10px] text-red-400 font-mono font-bold block mb-0.5">
                                   {movie.genre}
@@ -2513,7 +2778,6 @@
                               </div>
                             </div>
 
-                            {/* Contenido y Fecha */}
                             <div className="p-4 space-y-2.5">
                               <div className="flex items-center justify-between text-xs font-mono font-bold bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80">
                                 <span className="text-slate-400 flex items-center gap-1">
@@ -2530,7 +2794,6 @@
                             </div>
                           </div>
 
-                          {/* Botón directo de Trailer */}
                           <div className="p-4 pt-0">
                             <a
                               href={movie.youtubeUrl}
@@ -2551,6 +2814,118 @@
             )}
 
           </main>
+
+          {/* MODAL DE SINCRONIZACIÓN EN LA NUBE (PC ⇄ CELULAR) */}
+          {showCloudModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-5 shadow-2xl my-auto">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">☁️</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">
+                        Sincronización en la Nube (PC & Celular)
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Mantén tus series y progreso actualizados en todos tus dispositivos en tiempo real.
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowCloudModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
+                </div>
+
+                {/* Tarjeta de Estado Actual */}
+                <div className={`p-4 rounded-2xl border space-y-2 ${
+                  cloudStatus.isReady 
+                    ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200' 
+                    : 'bg-amber-950/50 border-amber-500/50 text-amber-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold flex items-center gap-2 text-xs">
+                      <span className={`w-2.5 h-2.5 rounded-full ${cloudStatus.isReady ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
+                      {cloudStatus.isReady ? '🟢 Conectado y Sincronizado en Tiempo Real' : '🟡 Modo Solo Local (Sin Nube Conectada)'}
+                    </span>
+                    <span className="text-[10px] font-mono opacity-80">
+                      Perfil ID: <b>{activeProfile.id}</b>
+                    </span>
+                  </div>
+                  <p className="text-[11px] opacity-90 leading-relaxed">
+                    {cloudStatus.isReady 
+                      ? `Cualquier cambio que realices en tu portátil o teléfono se refleja automáticamente en el otro dispositivo. Última sinc: ${cloudStatus.lastSync || 'Ahora'}.`
+                      : 'Actualmente tus datos solo se guardan en el almacenamiento local de este navegador. Para sincronizar tu celular y tu portátil, ingresa la configuración de Firebase.'}
+                  </p>
+                </div>
+
+                {/* Formulario de Configuración de Firebase */}
+                <form onSubmit={handleSaveCustomCloudConfig} className="space-y-3 text-xs">
+                  <div>
+                    <label className="text-slate-300 font-bold block mb-1">
+                      Credenciales de Firebase Firestore (JSON):
+                    </label>
+                    <textarea
+                      rows="4"
+                      placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "tu-proyecto.firebaseapp.com",\n  "projectId": "tu-proyecto",\n  "storageBucket": "tu-proyecto.appspot.com",\n  "messagingSenderId": "...",\n  "appId": "..."\n}`}
+                      value={customFirebaseInput}
+                      onChange={(e) => setCustomFirebaseInput(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-400"
+                    ></textarea>
+                    <span className="text-[10px] text-slate-500 block mt-1">
+                      💡 Copia y pega esta misma configuración en tu celular y en tu portátil para que ambos utilicen la misma base de datos.
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md"
+                    >
+                      💾 Guardar y Conectar Nube
+                    </button>
+                    {customFirebaseInput && (
+                      <button
+                        type="button"
+                        onClick={() => { setCustomFirebaseInput(''); }}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-2.5 rounded-xl"
+                        title="Borrar configuración"
+                      >
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Respaldo / Restauración Offline */}
+                <div className="border-t border-slate-800 pt-3 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 block">
+                    Copia de Seguridad Manual (Archivo JSON):
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={exportBackupJSON}
+                      className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                    >
+                      📥 <span>Descargar Respaldo</span>
+                    </button>
+
+                    <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 text-center">
+                      📤 <span>Restaurar Archivo</span>
+                      <input type="file" accept=".json" onChange={importBackupJSON} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex justify-end">
+                  <button
+                    onClick={() => setShowCloudModal(false)}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* MODAL PARA CAMBIAR PLATAFORMA */}
           {platformModalItem && (
@@ -2864,7 +3239,7 @@
 
                             {!isMainLuis && (
                               <button
-                                onClick={() => handleDeleteProfile(p.id, p.name)}
+                                onClick={() => requestDeleteProfile(p)}
                                 className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold text-[11px]"
                               >
                                 🗑️
@@ -2892,6 +3267,37 @@
                   </button>
                 </div>
 
+              </div>
+            </div>
+          )}
+
+          {/* Modal Confirmación de Eliminación Limpia */}
+          {deleteConfirmProfile && (
+            <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full space-y-4 shadow-2xl text-center">
+                <div className="w-12 h-12 rounded-2xl bg-rose-950/80 border border-rose-500/50 flex items-center justify-center text-2xl mx-auto shadow-inner">
+                  🗑️
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">¿Eliminar Perfil?</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    ¿Estás seguro de que deseas eliminar el perfil de <b>{deleteConfirmProfile.name}</b>? Se borrará todo su historial asociado para no dejar archivos residuales.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => setDeleteConfirmProfile(null)}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDeleteProfile}
+                    className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-xl text-xs shadow-md"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           )}
