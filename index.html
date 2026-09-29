@@ -11,7 +11,7 @@
   <meta name="apple-web-app-capable" content="yes">
   <meta name="apple-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-web-app-title" content="CineRadar">
-  <meta name="description" content="Tracker inteligente de series y cine con sincronización en la nube entre PC y móvil, selector de perfiles de inicio y rankings IMDb.">
+  <meta name="description" content="Tracker inteligente de series y cine con sincronización en la nube entre PC y móvil, selector de perfiles de inicio y notificaciones.">
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
@@ -79,7 +79,6 @@
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Configuración nativa del proyecto Cineradar Pro
     const BUILTIN_FIREBASE_CONFIG = {
       apiKey: "AIzaSyCl75LduBoGfagvPFF7ZVRGEvu9UU-xS2k",
       authDomain: "cineradar-pro.firebaseapp.com",
@@ -229,20 +228,24 @@
     window.CineRadarCloud.initCloud();
   </script>
 
+  <!-- PWA Manifest Injection -->
   <script>
     const manifestData = {
       name: "CineRadar Pro",
       short_name: "CineRadar",
+      description: "Tracker inteligente de series y cine con alertas de emisión",
       start_url: "./index.html",
+      scope: "./",
       display: "standalone",
       background_color: "#030712",
       theme_color: "#030712",
       orientation: "portrait-primary",
       icons: [
         {
-          src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>",
+          src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text y='.78em' x='10' font-size='72'>🎬</text></svg>",
           sizes: "192x192 512x512",
-          type: "image/svg+xml"
+          type: "image/svg+xml",
+          purpose: "any maskable"
         }
       ]
     };
@@ -253,16 +256,14 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // Placeholder vectorial SVG ultra-ligero para optimización de rendimiento y pre-carga
     const PLACEHOLDER_POSTER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450' fill='%230f172a'%3E%3Crect width='300' height='450' fill='%230b1120'/%3E%3Ctext x='50%25' y='50%25' fill='%23334155' font-family='sans-serif' font-size='38' text-anchor='middle' dominant-baseline='middle'%3E🎬%3C/text%3E%3C/svg%3E";
     const DEFAULT_FALLBACK_POSTER = 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253457.jpg';
     const AVAILABLE_AVATARS = ['👑', '🍿', '🎬', '🦇', '🐉', '🚀', '⚡', '🕵️', '🧟', '⚔️', '🦁', '🌟'];
+    const DAYS_SPANISH = ['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábados'];
 
-    // Funciones de Hashing Criptográfico SHA-256 para el PIN mediante crypto.subtle
     const hashPin = async (rawPin) => {
       if (!rawPin || typeof rawPin !== 'string' || rawPin.trim() === '') return '';
       const trimmed = rawPin.trim();
-      // Si ya es un hash SHA-256 hexadecimal de 64 caracteres, mantenerlo
       if (/^[a-f0-9]{64}$/i.test(trimmed)) return trimmed;
       try {
         const msgUint8 = new TextEncoder().encode(trimmed);
@@ -278,13 +279,11 @@
       if (!storedPinOrHash || storedPinOrHash.trim() === '') return true;
       const trimmedInput = (inputPin || '').trim();
       const trimmedStored = storedPinOrHash.trim();
-      // Compatibilidad hacia atrás si el PIN anterior estaba en texto plano
       if (trimmedInput === trimmedStored) return true;
       const hashedInput = await hashPin(trimmedInput);
       return hashedInput === trimmedStored;
     };
 
-    // Catálogo oficial de plataformas soportadas
     const SUPPORTED_PLATFORMS = [
       { id: 'Netflix', name: 'Netflix', icon: '🔴', color: 'bg-red-950/80 text-red-300 border-red-500/40 hover:border-red-400' },
       { id: 'Apple TV+', name: 'Apple TV+', icon: '🍏', color: 'bg-slate-900 text-slate-200 border-slate-600/50 hover:border-slate-400' },
@@ -383,7 +382,6 @@
           maxSeason = nextEp.season;
         }
 
-        const isRunning = data.status === 'Running';
         const hasNext = !!(nextEp && nextEp.airdate);
         
         let status = 'waiting_season';
@@ -884,9 +882,20 @@
         return localStorage.getItem('cineradar_custom_firebase_config') || JSON.stringify(window.CineRadarCloud?.builtinConfig || {}, null, 2);
       });
 
+      // Modales y Controles
       const [showNewSeriesModal, setShowNewSeriesModal] = useState(false);
-      const [showEmailModal, setShowEmailModal] = useState(false);
+      const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+      const [activeNotifModalTab, setActiveNotifModalTab] = useState('phone'); // 'phone' | 'email'
       const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
+
+      // Notificaciones Push y PWA Móvil
+      const [notificationPermission, setNotificationPermission] = useState(() => {
+        return typeof Notification !== 'undefined' ? Notification.permission : 'default';
+      });
+      const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+      const [isStandaloneApp, setIsStandaloneApp] = useState(() => {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      });
 
       const [newProfileName, setNewProfileName] = useState('');
       const [newProfileAvatar, setNewProfileAvatar] = useState('🍿');
@@ -909,7 +918,7 @@
 
       // Configuración de Correo y Webhook funcional
       const [emailConfig, setEmailConfig] = useState({
-        email: '',
+        email: 'luis.e.gonzalezgalvis@gmail.com',
         alertNewEpisodes: true,
         weeklyDigest: true,
         digestDay: 'Lunes',
@@ -919,7 +928,29 @@
 
       const isRemoteUpdateRef = useRef(false);
       const cloudUnsubRef = useRef(null);
+      const hasAutoCheckedEpisodesToday = useRef(false);
 
+      // Escuchar eventos PWA e instalación
+      useEffect(() => {
+        const installHandler = (e) => {
+          e.preventDefault();
+          setDeferredInstallPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', installHandler);
+
+        const standaloneHandler = (e) => {
+          setIsStandaloneApp(e.matches);
+        };
+        const mediaQuery = window.matchMedia('(display-mode: standalone)');
+        mediaQuery.addEventListener('change', standaloneHandler);
+
+        return () => {
+          window.removeEventListener('beforeinstallprompt', installHandler);
+          mediaQuery.removeEventListener('change', standaloneHandler);
+        };
+      }, []);
+
+      // Monitoreo de estado de Firebase
       useEffect(() => {
         const handler = (e) => {
           if (e.detail) {
@@ -981,6 +1012,89 @@
         setBannerMessage(msg);
         playChime();
         setTimeout(() => setBannerMessage(null), 4000);
+      };
+
+      // Disparador de Notificaciones Nativas del Celular / Navegador
+      const triggerDeviceNotification = (title, body, tag = 'cineradar-alert') => {
+        if (typeof Notification === 'undefined') {
+          showBanner('⚠️ Este navegador no soporta Notificaciones Push del sistema');
+          return;
+        }
+
+        if (Notification.permission === 'granted') {
+          try {
+            const notif = new Notification(title, {
+              body,
+              icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text y='.78em' x='10' font-size='72'>🎬</text></svg>",
+              badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text y='.78em' x='10' font-size='72'>🎬</text></svg>",
+              tag,
+              renotify: true
+            });
+            notif.onclick = () => {
+              window.focus();
+              notif.close();
+            };
+            playChime();
+          } catch (e) {
+            console.warn("Notification error:", e);
+          }
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            setNotificationPermission(permission);
+            if (permission === 'granted') {
+              triggerDeviceNotification(title, body, tag);
+            }
+          });
+        }
+      };
+
+      // Actualizar Insignia Numérica en el Ícono del Celular (App Badging API)
+      const updateAppBadge = (count) => {
+        try {
+          if ('setAppBadge' in navigator) {
+            if (count > 0) navigator.setAppBadge(count).catch(() => {});
+            else navigator.clearAppBadge().catch(() => {});
+          }
+        } catch (e) {}
+      };
+
+      // Solicitar Permiso de Notificación
+      const handleRequestNotificationPermission = async () => {
+        if (typeof Notification === 'undefined') {
+          showBanner('⚠️ Tu dispositivo no tiene soporte nativo para Notificaciones');
+          return;
+        }
+
+        try {
+          const perm = await Notification.requestPermission();
+          setNotificationPermission(perm);
+          if (perm === 'granted') {
+            showBanner('🔔 ¡Notificaciones activadas en este dispositivo!');
+            triggerDeviceNotification(
+              '🎬 CineRadar Pro Activado',
+              '¡Listo! Recibirás avisos en tu pantalla de inicio cuando haya nuevos capítulos y estrenos.'
+            );
+          } else if (perm === 'denied') {
+            showBanner('🔕 Notificaciones bloqueadas en los ajustes del navegador');
+          }
+        } catch (e) {
+          showBanner('⚠️ No se pudo solicitar permiso');
+        }
+      };
+
+      // Disparador de Instalación en Celular (PWA)
+      const handleTriggerInstall = async () => {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            showBanner('🎉 ¡CineRadar se está instalando en tu menú principal!');
+          }
+          setDeferredInstallPrompt(null);
+        } else {
+          // Si es iOS o navegador sin prompt automático
+          showBanner('📲 Abre el menú de compartir de tu navegador y pulsa "Agregar a pantalla de inicio"');
+        }
       };
 
       const loadProfileData = (profile) => {
@@ -1073,6 +1187,32 @@
         } catch (e) {}
       }, [seriesList, pendingList, emailConfig, activeProfile]);
 
+      // Verificación automática de estrenos del día al iniciar la sesión
+      useEffect(() => {
+        if (!activeProfile || hasAutoCheckedEpisodesToday.current) return;
+        hasAutoCheckedEpisodesToday.current = true;
+
+        const todayIdx = new Date().getDay();
+        const todayName = DAYS_SPANISH[todayIdx];
+
+        const airingToday = seriesList.filter(s => 
+          s.userTracking && 
+          s.status === 'airing_weekly' && 
+          (s.airDay || '').toLowerCase().includes(todayName.slice(0, 4).toLowerCase())
+        );
+
+        updateAppBadge(airingToday.length);
+
+        if (airingToday.length > 0 && Notification.permission === 'granted') {
+          const names = airingToday.map(s => s.title).join(', ');
+          triggerDeviceNotification(
+            `🎬 ¡Hoy hay nuevo capítulo! (${airingToday.length})`,
+            `Nuevos episodios disponibles hoy: ${names}. Toca para abrir CineRadar.`,
+            'cineradar-today-airing'
+          );
+        }
+      }, [activeProfile, seriesList]);
+
       const handleProfileClick = (profile) => {
         if (profile.pin && profile.pin.trim().length > 0) {
           setPinModalTarget(profile);
@@ -1127,7 +1267,7 @@
         showBanner(`🔍 Consultando novedades en vivo de "${title}"...`);
         const liveInfo = await inspectShowDetailsFromTvMaze(tvmazeId, title);
         if (!liveInfo) {
-          showBanner(`⚠️ No se pudo consultar la API para "${title}".`);
+          showBanner(`⚠️️ No se pudo consultar la API para "${title}".`);
           return;
         }
 
@@ -1412,7 +1552,6 @@
           }
         }
 
-        // Cifrado SHA-256 del nuevo PIN
         let finalPinHash = currentStoredPin;
         if (myPinNew.trim().length > 0) {
           finalPinHash = await hashPin(myPinNew.trim());
@@ -1468,7 +1607,6 @@
         const inputPin = (editingProfileData.pin || '').trim();
         let finalPin = '';
         if (inputPin) {
-          // Si el usuario ingresó un nuevo PIN plano o ya era hash
           finalPin = await hashPin(inputPin);
         }
 
@@ -1524,7 +1662,7 @@
         showBanner(`🗑️ Perfil "${name}" y todos sus datos fueron eliminados`);
       };
 
-      // Despacho de Correo / Webhook Funcional
+      // Despacho de Correo Funcional
       const handleSendAlertEmailTest = async () => {
         if (!emailConfig.email || !emailConfig.email.includes('@')) {
           showBanner('⚠️ Por favor ingresa un correo electrónico válido');
@@ -1536,7 +1674,6 @@
 
         try {
           const userEmail = emailConfig.email.trim();
-          // Si el usuario especificó un Webhook propio lo usa; si no, despacha directo a su Gmail mediante FormSubmit
           const targetEndpoint = (emailConfig.webhookUrl && emailConfig.webhookUrl.trim())
             ? emailConfig.webhookUrl.trim()
             : `https://formsubmit.co/ajax/${encodeURIComponent(userEmail)}`;
@@ -1590,7 +1727,7 @@
           }
           const parsed = JSON.parse(trimmed);
           if (!parsed.apiKey || !parsed.projectId) {
-            showBanner('⚠️️ JSON inválido: debe contener apiKey y projectId.');
+            showBanner('⚠ JSON inválido: debe contener apiKey y projectId.');
             return;
           }
           localStorage.setItem('cineradar_custom_firebase_config', trimmed);
@@ -1763,7 +1900,7 @@
                 </div>
               </div>
 
-              {/* Indicador de estado de la nube en la pantalla de inicio */}
+              {/* Botón de Nube en Inicio */}
               <div className="pt-2">
                 <button
                   onClick={() => setShowCloudModal(true)}
@@ -1915,7 +2052,7 @@
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white pb-24 sm:pb-10">
           
-          {/* Header Superior con Indicador de Nube Activa */}
+          {/* Header Superior con Indicador de Nube y Alertas */}
           <header className="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 sm:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div 
@@ -2003,12 +2140,17 @@
                 </button>
               )}
 
+              {/* Botón Unificado de Notificaciones (Celular Push & Correo) */}
               <button
-                onClick={() => setShowEmailModal(true)}
-                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                title="Configurar Alertas por Correo"
+                onClick={() => setShowNotificationsModal(true)}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-amber-600/30 to-orange-600/30 hover:from-amber-600/50 hover:to-orange-600/50 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                title="Configurar Notificaciones en Móvil y Correo"
               >
-                ✉️ <span className="hidden sm:inline">Alertas Correo</span>
+                <span>🔔</span>
+                <span className="hidden sm:inline">Alertas & Móvil</span>
+                {notificationPermission === 'granted' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                )}
               </button>
 
               <button
@@ -2925,6 +3067,256 @@
 
           </main>
 
+          {/* MODAL UNIFICADO: ALERTAS EN MÓVIL (PUSH & PWA) Y CORREO */}
+          {showNotificationsModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-5 shadow-2xl my-auto">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🔔</span>
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-white">Centro de Alertas & Notificaciones</h3>
+                      <p className="text-[11px] text-slate-400">Recibe avisos cuando estrene un nuevo capítulo o temporada.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowNotificationsModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
+                </div>
+
+                {/* Selector de Pestañas en el Modal */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+                  <button
+                    onClick={() => setActiveNotifModalTab('phone')}
+                    className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                      activeNotifModalTab === 'phone'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>📲</span>
+                    <span>Celular & Notificaciones</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveNotifModalTab('email')}
+                    className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                      activeNotifModalTab === 'email'
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>✉️</span>
+                    <span>Alertas por Correo</span>
+                  </button>
+                </div>
+
+                {/* SUB-SECCIÓN 1: NOTIFICACIONES NATIVAS EN EL CELULAR & PWA */}
+                {activeNotifModalTab === 'phone' && (
+                  <div className="space-y-4 text-xs">
+                    {/* Tarjeta de Estado de Notificaciones Nativas */}
+                    <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                      notificationPermission === 'granted'
+                        ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200'
+                        : notificationPermission === 'denied'
+                          ? 'bg-rose-950/50 border-rose-500/50 text-rose-200'
+                          : 'bg-amber-950/50 border-amber-500/50 text-amber-200'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${
+                            notificationPermission === 'granted' ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'
+                          }`}></span>
+                          {notificationPermission === 'granted'
+                            ? '🟢 Notificaciones en el Celular Habilitadas'
+                            : notificationPermission === 'denied'
+                              ? '🔴 Notificaciones Bloqueadas en el Navegador'
+                              : '🟡 Permiso de Notificación Pendiente'}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/40">
+                          {notificationPermission.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed opacity-90">
+                        {notificationPermission === 'granted'
+                          ? 'Tu dispositivo recibirá alertas emergentes con sonido cuando haya episodios disponibles y se actualizará la insignia numérica en el ícono del celular.'
+                          : 'Activa los permisos para que tu celular te alerte en la barra de notificaciones y pantalla de bloqueo al estrenar un nuevo capítulo.'}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        {notificationPermission !== 'granted' ? (
+                          <button
+                            type="button"
+                            onClick={handleRequestNotificationPermission}
+                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs shadow-md col-span-2 flex items-center justify-center gap-1.5"
+                          >
+                            <span>🔔</span>
+                            <span>Habilitar Notificaciones en este Celular</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              triggerDeviceNotification(
+                                '🎬 ¡Prueba CineRadar Pro Exitosa!',
+                                'Las notificaciones nativas funcionan perfectamente en tu pantalla y menú principal.'
+                              );
+                              showBanner('🔔 Notificación de prueba despachada a tu celular');
+                            }}
+                            className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 font-bold py-2 rounded-xl text-xs col-span-2 flex items-center justify-center gap-1.5"
+                          >
+                            <span>🔔</span>
+                            <span>Probar Notificación en Pantalla de Bloqueo</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Instalación en el Menú Principal (Pantalla de Inicio) */}
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <span>📲</span>
+                          <span>Anclar al Menú Principal del Celular</span>
+                        </span>
+                        <span className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                          {isStandaloneApp ? 'Instalada como App' : 'Modo Navegador'}
+                        </span>
+                      </div>
+                      
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Instala CineRadar como aplicación independiente para tener su ícono con contador en la pantalla de inicio de tu celular, sin barras de navegación y a pantalla completa.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={handleTriggerInstall}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        <span>➕</span>
+                        <span>{isStandaloneApp ? 'App ya anclada (Volver a Guardar)' : 'Agregar a Pantalla de Inicio del Celular'}</span>
+                      </button>
+
+                      {/* Guía rápida para iPhone y Android */}
+                      <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
+                        <div><b>• En Android (Chrome):</b> Toca el botón de arriba o los 3 puntos ⋮ > <i>"Instalar aplicación"</i>.</div>
+                        <div><b>• En iPhone (Safari):</b> Toca el botón Compartir ⎋ (abajo al centro) > baja y selecciona <i>"Agregar a pantalla de inicio ➕"</i>.</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-SECCIÓN 2: ALERTAS POR CORREO ELECTRÓNICO */}
+                {activeNotifModalTab === 'email' && (
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <label className="text-slate-300 font-bold block mb-1">Tu Correo Electrónico:</label>
+                      <input
+                        type="email"
+                        placeholder="tu@correo.com"
+                        value={emailConfig.email || ''}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400 text-xs"
+                      />
+                    </div>
+
+                    {/* Formulario de Activación de FormSubmit Oficial */}
+                    <div className="bg-amber-950/40 p-3.5 rounded-2xl border border-amber-500/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                          <span>⚠️</span>
+                          <span>Paso 1: Activación Antispam de Gmail (1 Sola Vez)</span>
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-snug">
+                        FormSubmit exige confirmar tu correo la primera vez. Pulsa el botón abajo para abrir la activación; luego abre tu Gmail y pulsa <b>"Activate Form"</b> (revisa también tu carpeta de Spam).
+                      </p>
+
+                      <form action={`https://formsubmit.co/${encodeURIComponent((emailConfig.email || 'luis.e.gonzalezgalvis@gmail.com').trim())}`} method="POST" target="_blank" className="pt-1">
+                        <input type="hidden" name="_subject" value="🎬 [CineRadar Pro] Activación de Alertas de Series" />
+                        <input type="hidden" name="_template" value="box" />
+                        <input type="hidden" name="mensaje" value="¡Felicidades! Tu correo ha sido activado con éxito en CineRadar Pro. Ya recibirás alertas de nuevos capítulos y temporadas." />
+                        <button
+                          type="submit"
+                          className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs shadow transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <span>🔗</span>
+                          <span>Abrir y Enviar Correo de Activación</span>
+                        </button>
+                      </form>
+
+                      <div className="text-[10px] text-amber-200/80 pt-1">
+                        💡 ¿No lo ves en Gmail? Busca arriba: <code className="bg-black/40 px-1 py-0.5 rounded text-amber-300 font-mono">in:anywhere formsubmit</code>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={emailConfig.alertNewEpisodes}
+                          onChange={(e) => setEmailConfig(prev => ({ ...prev, alertNewEpisodes: e.target.checked }))}
+                          className="w-4 h-4 rounded text-amber-500 bg-slate-900"
+                        />
+                        <span className="text-white">Avisar cuando haya un nuevo capítulo en emisión</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer pt-1">
+                        <input
+                          type="checkbox"
+                          checked={emailConfig.weeklyDigest}
+                          onChange={(e) => setEmailConfig(prev => ({ ...prev, weeklyDigest: e.target.checked }))}
+                          className="w-4 h-4 rounded text-amber-500 bg-slate-900"
+                        />
+                        <span className="text-white">Resumen semanal de novedades (Lunes 08:00 AM)</span>
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-400 font-bold block mb-1">
+                        Webhook Personalizado (Opcional - Formspree/Zapier/Discord):
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://formspree.io/f/..."
+                        value={emailConfig.webhookUrl || ''}
+                        onChange={(e) => setEmailConfig(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-400"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button 
+                        type="button"
+                        disabled={isSendingEmail}
+                        onClick={handleSendAlertEmailTest} 
+                        className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        <span className={isSendingEmail ? 'animate-spin' : ''}>📨</span>
+                        <span>{isSendingEmail ? 'Enviando...' : 'Paso 2: Probar Envío'}</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => { 
+                          showBanner('💾 Preferencias guardadas'); 
+                          setShowNotificationsModal(false); 
+                        }} 
+                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl shadow"
+                      >
+                        ✓ Guardar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <button
+                    onClick={() => setShowNotificationsModal(false)}
+                    className="text-xs bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* MODAL DE SINCRONIZACIÓN EN LA NUBE (PC ⇄ CELULAR) */}
           {showCloudModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
@@ -2944,7 +3336,6 @@
                   <button onClick={() => setShowCloudModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
                 </div>
 
-                {/* Tarjeta de Estado Actual */}
                 <div className={`p-4 rounded-2xl border space-y-2 ${
                   cloudStatus.isReady 
                     ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200' 
@@ -2966,7 +3357,6 @@
                   </p>
                 </div>
 
-                {/* Formulario de Configuración de Firebase */}
                 <form onSubmit={handleSaveCustomCloudConfig} className="space-y-3 text-xs">
                   <div>
                     <label className="text-slate-300 font-bold block mb-1">
@@ -3006,7 +3396,6 @@
                   </div>
                 </form>
 
-                {/* Respaldo / Restauración Offline */}
                 <div className="border-t border-slate-800 pt-3 space-y-2">
                   <span className="text-[11px] font-bold text-slate-400 block">
                     Copia de Seguridad Manual (Archivo JSON):
@@ -3235,7 +3624,6 @@
           {showManageProfilesModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-5 shadow-2xl my-auto">
-                
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">⚙️</span>
@@ -3355,7 +3743,7 @@
                                 onClick={() => requestDeleteProfile(p)}
                                 className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold text-[11px]"
                               >
-                                🗑️
+                                🗑️️
                               </button>
                             )}
                           </div>
@@ -3379,7 +3767,6 @@
                     Cerrar
                   </button>
                 </div>
-
               </div>
             </div>
           )}
@@ -3522,91 +3909,6 @@
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal Alertas Correo (Con Webhook y Despacho Funcional) */}
-          {showEmailModal && (
-            <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">✉️</span>
-                    <h3 className="font-display font-extrabold text-base text-white">Alertas por Correo & Webhook</h3>
-                  </div>
-                  <button onClick={() => setShowEmailModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
-                </div>
-
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <label className="text-slate-300 font-bold block mb-1">Tu Correo Electrónico:</label>
-                    <input
-                      type="email"
-                      placeholder="tu@correo.com"
-                      value={emailConfig.email || ''}
-                      onChange={(e) => setEmailConfig(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-slate-400 font-bold block mb-1">
-                      URL de Webhook Personalizada (Opcional - Formspree/Resend/Zapier):
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://formspree.io/f/..."
-                      value={emailConfig.webhookUrl || ''}
-                      onChange={(e) => setEmailConfig(prev => ({ ...prev, webhookUrl: e.target.value }))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-400"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">Si se deja vacío, se utilizará el conector web integrado.</span>
-                  </div>
-
-                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={emailConfig.alertNewEpisodes}
-                        onChange={(e) => setEmailConfig(prev => ({ ...prev, alertNewEpisodes: e.target.checked }))}
-                        className="w-4 h-4 rounded text-amber-500 bg-slate-900"
-                      />
-                      <span className="text-white">Avisar con nuevo capítulo en emisión</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer pt-1">
-                      <input
-                        type="checkbox"
-                        checked={emailConfig.weeklyDigest}
-                        onChange={(e) => setEmailConfig(prev => ({ ...prev, weeklyDigest: e.target.checked }))}
-                        className="w-4 h-4 rounded text-amber-500 bg-slate-900"
-                      />
-                      <span className="text-white">Resumen semanal de novedades</span>
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      type="button"
-                      disabled={isSendingEmail}
-                      onClick={handleSendAlertEmailTest} 
-                      className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    >
-                      <span className={isSendingEmail ? 'animate-spin' : ''}>📨</span>
-                      <span>{isSendingEmail ? 'Enviando...' : 'Probar Envío Real'}</span>
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => { 
-                        showBanner('💾 Preferencias de alerta guardadas en tu perfil'); 
-                        setShowEmailModal(false); 
-                      }} 
-                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl"
-                    >
-                      ✓ Guardar
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
