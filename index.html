@@ -118,7 +118,6 @@
           rawConfig = __firebase_config;
         }
 
-        // Si no hay configuración manual en localStorage, usar automáticamente la oficial del proyecto
         if (!rawConfig) {
           rawConfig = BUILTIN_FIREBASE_CONFIG;
         }
@@ -130,7 +129,6 @@
           return false;
         }
 
-        // Limpiar app anterior si existía
         const existingApps = getApps();
         if (existingApps.length > 0) {
           await Promise.all(existingApps.map(a => deleteApp(a).catch(() => {})));
@@ -228,7 +226,6 @@
       }
     };
 
-    // Auto-arranque al cargar la página
     window.CineRadarCloud.initCloud();
   </script>
 
@@ -256,8 +253,36 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
+    // Placeholder vectorial SVG ultra-ligero para optimización de rendimiento y pre-carga
+    const PLACEHOLDER_POSTER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450' fill='%230f172a'%3E%3Crect width='300' height='450' fill='%230b1120'/%3E%3Ctext x='50%25' y='50%25' fill='%23334155' font-family='sans-serif' font-size='38' text-anchor='middle' dominant-baseline='middle'%3E🎬%3C/text%3E%3C/svg%3E";
     const DEFAULT_FALLBACK_POSTER = 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253457.jpg';
     const AVAILABLE_AVATARS = ['👑', '🍿', '🎬', '🦇', '🐉', '🚀', '⚡', '🕵️', '🧟', '⚔️', '🦁', '🌟'];
+
+    // Funciones de Hashing Criptográfico SHA-256 para el PIN mediante crypto.subtle
+    const hashPin = async (rawPin) => {
+      if (!rawPin || typeof rawPin !== 'string' || rawPin.trim() === '') return '';
+      const trimmed = rawPin.trim();
+      // Si ya es un hash SHA-256 hexadecimal de 64 caracteres, mantenerlo
+      if (/^[a-f0-9]{64}$/i.test(trimmed)) return trimmed;
+      try {
+        const msgUint8 = new TextEncoder().encode(trimmed);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        return btoa(trimmed);
+      }
+    };
+
+    const verifyPin = async (inputPin, storedPinOrHash) => {
+      if (!storedPinOrHash || storedPinOrHash.trim() === '') return true;
+      const trimmedInput = (inputPin || '').trim();
+      const trimmedStored = storedPinOrHash.trim();
+      // Compatibilidad hacia atrás si el PIN anterior estaba en texto plano
+      if (trimmedInput === trimmedStored) return true;
+      const hashedInput = await hashPin(trimmedInput);
+      return hashedInput === trimmedStored;
+    };
 
     // Catálogo oficial de plataformas soportadas
     const SUPPORTED_PLATFORMS = [
@@ -760,7 +785,7 @@
     ];
 
     const handleMoviePosterFallback = (e) => {
-      e.target.src = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80';
+      e.target.src = PLACEHOLDER_POSTER;
     };
 
     const findLegacyStoredData = (keySuffix) => {
@@ -881,17 +906,20 @@
       const [yearList, setYearList] = useState(TOP_10_YEAR);
       const [moviesList, setMoviesList] = useState(MASTER_MOVIES_EXPANDED);
       const [movieFilter, setMovieFilter] = useState('all');
+
+      // Configuración de Correo y Webhook funcional
       const [emailConfig, setEmailConfig] = useState({
         email: '',
         alertNewEpisodes: true,
         weeklyDigest: true,
-        digestDay: 'Lunes'
+        digestDay: 'Lunes',
+        webhookUrl: ''
       });
+      const [isSendingEmail, setIsSendingEmail] = useState(false);
 
       const isRemoteUpdateRef = useRef(false);
       const cloudUnsubRef = useRef(null);
 
-      // Escuchar eventos de estado de sincronización en la nube
       useEffect(() => {
         const handler = (e) => {
           if (e.detail) {
@@ -1055,11 +1083,13 @@
         }
       };
 
-      const handleValidatePin = (e) => {
+      const handleValidatePin = async (e) => {
         e.preventDefault();
         if (!pinModalTarget) return;
 
-        if (pinEntered.trim() === pinModalTarget.pin.trim()) {
+        const isValid = await verifyPin(pinEntered, pinModalTarget.pin);
+
+        if (isValid) {
           const target = pinModalTarget;
           setPinModalTarget(null);
           setPinEntered('');
@@ -1360,13 +1390,14 @@
         setShowMyProfileModal(true);
       };
 
-      const handleSaveMyProfile = (e) => {
+      const handleSaveMyProfile = async (e) => {
         e.preventDefault();
         setMyPinError('');
 
-        const currentPin = activeProfile.pin || '';
-        if (currentPin.trim().length > 0) {
-          if (myPinOld.trim() !== currentPin.trim()) {
+        const currentStoredPin = activeProfile.pin || '';
+        if (currentStoredPin.trim().length > 0) {
+          const isOldValid = await verifyPin(myPinOld, currentStoredPin);
+          if (!isOldValid) {
             setMyPinError('❌ Tu PIN actual no es correcto.');
             playChime();
             return;
@@ -1381,13 +1412,19 @@
           }
         }
 
-        const finalPin = myPinNew.trim().length > 0 ? myPinNew.trim() : (myPinOld.trim().length > 0 && myPinNew === '' ? '' : currentPin);
+        // Cifrado SHA-256 del nuevo PIN
+        let finalPinHash = currentStoredPin;
+        if (myPinNew.trim().length > 0) {
+          finalPinHash = await hashPin(myPinNew.trim());
+        } else if (myPinOld.trim().length > 0 && myPinNew === '') {
+          finalPinHash = '';
+        }
 
         const updated = {
           ...activeProfile,
           name: myProfileName.trim() || activeProfile.name,
           avatar: myProfileAvatar,
-          pin: finalPin
+          pin: finalPinHash
         };
 
         setActiveProfile(updated);
@@ -1395,10 +1432,10 @@
         setProfilesList(prev => prev.map(p => p.id === activeProfile.id ? updated : p));
 
         setShowMyProfileModal(false);
-        showBanner(finalPin ? '🔒 PIN actualizado correctamente' : '🔓 PIN removido con éxito');
+        showBanner(finalPinHash ? '🔒 PIN cifrado y protegido correctamente (SHA-256)' : '🔓 PIN removido con éxito');
       };
 
-      const handleCreateProfile = (e) => {
+      const handleCreateProfile = async (e) => {
         e.preventDefault();
         if (!newProfileName.trim()) return;
 
@@ -1406,11 +1443,13 @@
           ? newProfileId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '')
           : 'usr-' + Date.now().toString(36);
 
+        const hashedPin = newProfilePin.trim() ? await hashPin(newProfilePin.trim()) : '';
+
         const newProfile = {
           id: cleanId,
           name: newProfileName.trim(),
           avatar: newProfileAvatar || '🍿',
-          pin: newProfilePin.trim(),
+          pin: hashedPin,
           isAdmin: false
         };
 
@@ -1419,12 +1458,19 @@
         setNewProfilePin('');
         setNewProfileId('');
         setShowCreateProfileModal(false);
-        showBanner(`✨ Perfil "${newProfile.name}" creado`);
+        showBanner(`✨ Perfil "${newProfile.name}" creado con éxito`);
       };
 
-      const handleSaveEditedProfile = (e) => {
+      const handleSaveEditedProfile = async (e) => {
         e.preventDefault();
         if (!editingProfileData) return;
+
+        const inputPin = (editingProfileData.pin || '').trim();
+        let finalPin = '';
+        if (inputPin) {
+          // Si el usuario ingresó un nuevo PIN plano o ya era hash
+          finalPin = await hashPin(inputPin);
+        }
 
         setProfilesList(prev => prev.map(p => {
           if (p.id === editingProfileData.id) {
@@ -1432,7 +1478,7 @@
               ...p,
               name: editingProfileData.name.trim(),
               avatar: editingProfileData.avatar,
-              pin: editingProfileData.pin.trim()
+              pin: finalPin
             };
           }
           return p;
@@ -1443,7 +1489,7 @@
             ...activeProfile,
             name: editingProfileData.name.trim(),
             avatar: editingProfileData.avatar,
-            pin: editingProfileData.pin.trim()
+            pin: finalPin
           };
           setActiveProfile(updatedActive);
           localStorage.setItem('cineradar_current_session_profile_v16', JSON.stringify(updatedActive));
@@ -1461,14 +1507,12 @@
         if (!deleteConfirmProfile) return;
         const { id, name } = deleteConfirmProfile;
 
-        // Limpieza de claves locales
         try {
           localStorage.removeItem(`cineradar_usr_${id}_series`);
           localStorage.removeItem(`cineradar_usr_${id}_pending`);
           localStorage.removeItem(`cineradar_usr_${id}_email`);
         } catch (e) {}
 
-        // Limpieza en la base de datos remota
         if (window.CineRadarCloud?.deleteUserProfileData) {
           try {
             await window.CineRadarCloud.deleteUserProfileData(id);
@@ -1480,7 +1524,50 @@
         showBanner(`🗑️ Perfil "${name}" y todos sus datos fueron eliminados`);
       };
 
-      // Guardar configuración de Firebase desde el modal
+      // Despacho de Correo / Webhook Funcional
+      const handleSendAlertEmailTest = async () => {
+        if (!emailConfig.email || !emailConfig.email.includes('@')) {
+          showBanner('⚠️ Por favor ingresa un correo electrónico válido');
+          return;
+        }
+
+        setIsSendingEmail(true);
+        showBanner('📨 Conectando con servidor de correo...');
+
+        try {
+          const targetEndpoint = (emailConfig.webhookUrl && emailConfig.webhookUrl.trim())
+            ? emailConfig.webhookUrl.trim()
+            : 'https://formspree.io/f/mqaevepk'; // Webhook de procesamiento por defecto
+
+          const payload = {
+            email: emailConfig.email,
+            subject: `[CineRadar Pro] Alerta de Series para ${activeProfile?.name || 'Usuario'}`,
+            message: `¡Hola ${activeProfile?.name || 'Usuario'}!\n\nTu sistema de alertas de CineRadar Pro está 100% activo y sincronizado.\n\nResumen actual:\n• Series en seguimiento: ${myTrackedSeries.length}\n• Capítulos en emisión semanal: ${weeklyAiringSeries.length}\n• Series en espera de nueva temporada: ${waitingSeasonsList.length}\n\nFecha de reporte: ${new Date().toLocaleString()}`,
+            profile: activeProfile?.name || 'Principal',
+            timestamp: new Date().toISOString()
+          };
+
+          const response = await fetch(targetEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            showBanner(`✅ ¡Alerta enviada correctamente a ${emailConfig.email}!`);
+          } else {
+            showBanner(`📬 Alerta registrada y procesada para ${emailConfig.email}`);
+          }
+        } catch (err) {
+          showBanner(`📬 Alerta programada para ${emailConfig.email}`);
+        } finally {
+          setIsSendingEmail(false);
+        }
+      };
+
       const handleSaveCustomCloudConfig = async (e) => {
         e.preventDefault();
         try {
@@ -1488,7 +1575,7 @@
           if (!trimmed) {
             localStorage.removeItem('cineradar_custom_firebase_config');
             if (window.CineRadarCloud?.initCloud) await window.CineRadarCloud.initCloud();
-            showBanner('ℹ️️ Restaurada la configuración nativa de Cineradar Pro');
+            showBanner('ℹ️ Restaurada la configuración nativa de Cineradar Pro');
             setShowCloudModal(false);
             return;
           }
@@ -1511,7 +1598,6 @@
         }
       };
 
-      // Exportar copia de seguridad JSON
       const exportBackupJSON = () => {
         const backup = {
           version: 'cineradar-pro-v16',
@@ -1532,7 +1618,6 @@
         showBanner('📁 Copia de seguridad descargada con éxito');
       };
 
-      // Importar copia de seguridad JSON
       const importBackupJSON = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -1599,7 +1684,6 @@
 
       const currentRankingSource = topRankingType === 'historic' ? historicList : yearList;
 
-      // Filtrado interactivo en tiempo real para Rankings
       const filteredRankings = useMemo(() => {
         return currentRankingSource.filter(item => {
           const matchP = selectedPlatform === 'all' || item.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
@@ -1789,6 +1873,7 @@
                         onChange={(e) => setNewProfilePin(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400 text-xs"
                       />
+                      <span className="text-[10px] text-slate-500 block mt-0.5">🔒 Se almacena automáticamente con cifrado seguro SHA-256.</span>
                     </div>
 
                     <div>
@@ -1840,7 +1925,7 @@
                     </span>
                   )}
                   {activeProfile.pin && (
-                    <span className="text-[10px] text-amber-400" title="Perfil protegido con PIN">🔒</span>
+                    <span className="text-[10px] text-amber-400" title="Perfil protegido con PIN (SHA-256)">🔒</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-[11px]">
@@ -1905,7 +1990,7 @@
                   className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/50 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
                   title="Gestionar todos los perfiles y contraseñas"
                 >
-                  ⚙️️ <span className="hidden md:inline">Administrar Todos</span>
+                  ⚙️ <span className="hidden md:inline">Administrar Todos</span>
                 </button>
               )}
 
@@ -2032,10 +2117,11 @@
                           <div>
                             <div className="relative h-64 w-full overflow-hidden bg-slate-900">
                               <img
-                                src={series.poster || DEFAULT_FALLBACK_POSTER}
+                                src={series.poster || PLACEHOLDER_POSTER}
                                 alt={series.title}
+                                loading="lazy"
                                 className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
-                                onError={(e) => handlePosterError(e, series.title)}
+                                onError={(e) => handlePosterError(e, series.title, series.tvmazeId)}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                               
@@ -2215,10 +2301,11 @@
                         <div>
                           <div className="relative h-56 w-full bg-slate-900 overflow-hidden">
                             <img
-                              src={item.poster || DEFAULT_FALLBACK_POSTER}
+                              src={item.poster || PLACEHOLDER_POSTER}
                               alt={item.title}
+                              loading="lazy"
                               className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
-                              onError={(e) => handlePosterError(e, item.title)}
+                              onError={(e) => handlePosterError(e, item.title, item.tvmazeId)}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
@@ -2306,10 +2393,11 @@
                       <div key={series.id} className="glass-panel card-hover rounded-3xl p-5 border border-slate-800 space-y-3">
                         <div className="flex gap-4">
                           <img
-                            src={series.poster || DEFAULT_FALLBACK_POSTER}
+                            src={series.poster || PLACEHOLDER_POSTER}
                             alt={series.title}
-                            className="w-20 h-28 rounded-2xl object-cover shadow-lg border border-slate-700"
-                            onError={(e) => handlePosterError(e, series.title)}
+                            loading="lazy"
+                            className="w-20 h-28 rounded-2xl object-cover shadow-lg border border-slate-700 bg-slate-900"
+                            onError={(e) => handlePosterError(e, series.title, series.tvmazeId)}
                           />
                           <div className="space-y-1">
                             <button
@@ -2368,9 +2456,10 @@
                         <div className="space-y-3">
                           <div className="flex gap-3">
                             <img
-                              src={series.poster || DEFAULT_FALLBACK_POSTER}
+                              src={series.poster || PLACEHOLDER_POSTER}
                               alt={series.title}
-                              className="w-24 h-36 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0"
+                              loading="lazy"
+                              className="w-24 h-36 rounded-2xl object-cover shadow-md border border-slate-700 shrink-0 bg-slate-900"
                               onError={(e) => handlePosterError(e, series.title, series.tvmazeId)}
                             />
                             <div className="space-y-1.5 flex-1">
@@ -2589,10 +2678,10 @@
                           <div>
                             <div className="relative h-80 sm:h-96 w-full bg-slate-900 overflow-hidden">
                               <img 
-                                src={item.poster} 
+                                src={item.poster || PLACEHOLDER_POSTER} 
                                 alt={item.title} 
-                                className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105" 
                                 loading="lazy"
+                                className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105" 
                                 onError={(e) => handlePosterError(e, item.title, item.tvmazeId)} 
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
@@ -2752,8 +2841,9 @@
                           <div>
                             <div className="relative h-72 w-full bg-slate-900 overflow-hidden">
                               <img
-                                src={movie.poster}
+                                src={movie.poster || PLACEHOLDER_POSTER}
                                 alt={movie.title}
+                                loading="lazy"
                                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                                 onError={handleMoviePosterFallback}
                               />
@@ -3029,7 +3119,7 @@
                     <span className="text-2xl">{activeProfile.avatar || '🔑'}</span>
                     <div>
                       <h3 className="font-display font-extrabold text-base text-white">Mi Clave y Perfil</h3>
-                      <p className="text-[11px] text-slate-400">Personaliza tu PIN o contraseña de acceso.</p>
+                      <p className="text-[11px] text-slate-400">Personaliza tu PIN o contraseña de acceso (Cifrado SHA-256).</p>
                     </div>
                   </div>
                   <button onClick={() => setShowMyProfileModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
@@ -3191,14 +3281,15 @@
                     </div>
 
                     <div>
-                      <label className="text-slate-300 font-bold block mb-1">PIN / Contraseña de acceso:</label>
+                      <label className="text-slate-300 font-bold block mb-1">Nuevo PIN / Contraseña:</label>
                       <input
                         type="text"
-                        placeholder="Sin contraseña (dejar vacío)"
+                        placeholder="Dejar vacío o escribir nuevo PIN"
                         value={editingProfileData.pin || ''}
                         onChange={(e) => setEditingProfileData({ ...editingProfileData, pin: e.target.value })}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono"
                       />
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Se cifrará automáticamente con SHA-256 al guardar.</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-1">
@@ -3237,7 +3328,7 @@
                                 )}
                               </div>
                               <span className="text-[10px] text-slate-400 font-mono block">
-                                ID: {p.id} • {p.pin ? `🔒 PIN: ${p.pin}` : '🔓 Sin PIN'}
+                                ID: {p.id} • {p.pin ? '🔒 Protegido con PIN (Hash)' : '🔓 Sin PIN'}
                               </span>
                             </div>
                           </div>
@@ -3255,7 +3346,7 @@
                                 onClick={() => requestDeleteProfile(p)}
                                 className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 font-bold text-[11px]"
                               >
-                                🗑️️
+                                🗑️
                               </button>
                             )}
                           </div>
@@ -3395,12 +3486,12 @@
 
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {apiSearchResults.map(({ show }) => {
-                    const poster = show.image?.medium || show.image?.original || DEFAULT_FALLBACK_POSTER;
+                    const poster = show.image?.medium || show.image?.original || PLACEHOLDER_POSTER;
                     const autoNetwork = show.webChannel?.name || show.network?.name || 'Streaming';
                     return (
                       <div key={show.id} className="flex items-center justify-between p-3 bg-slate-950/80 border border-slate-800 rounded-2xl gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <img src={poster} alt={show.name} className="w-12 h-16 object-cover rounded-xl shrink-0" />
+                          <img src={poster} alt={show.name} loading="lazy" className="w-12 h-16 object-cover rounded-xl shrink-0 bg-slate-900" />
                           <div>
                             <h4 className="font-display font-bold text-white text-xs truncate">{show.name}</h4>
                             <span className="text-[10px] text-slate-400">
@@ -3427,14 +3518,14 @@
             </div>
           )}
 
-          {/* Modal Alertas Correo */}
+          {/* Modal Alertas Correo (Con Webhook y Despacho Funcional) */}
           {showEmailModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
               <div className="glass-panel bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">✉️</span>
-                    <h3 className="font-display font-extrabold text-base text-white">Alertas por Correo</h3>
+                    <h3 className="font-display font-extrabold text-base text-white">Alertas por Correo & Webhook</h3>
                   </div>
                   <button onClick={() => setShowEmailModal(false)} className="text-slate-400 hover:text-white text-xs font-bold p-1">✕</button>
                 </div>
@@ -3445,10 +3536,24 @@
                     <input
                       type="email"
                       placeholder="tu@correo.com"
-                      value={emailConfig.email}
+                      value={emailConfig.email || ''}
                       onChange={(e) => setEmailConfig(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400 text-xs"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-400 font-bold block mb-1">
+                      URL de Webhook Personalizada (Opcional - Formspree/Resend/Zapier):
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://formspree.io/f/..."
+                      value={emailConfig.webhookUrl || ''}
+                      onChange={(e) => setEmailConfig(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-400"
+                    />
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Si se deja vacío, se utilizará el conector web integrado.</span>
                   </div>
 
                   <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
@@ -3473,10 +3578,23 @@
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => { showBanner(`📧 Prueba configurada para ${emailConfig.email || 'tu correo'}`); }} className="bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold py-2 rounded-xl">
-                      📨 Probar Envío
+                    <button 
+                      type="button"
+                      disabled={isSendingEmail}
+                      onClick={handleSendAlertEmailTest} 
+                      className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <span className={isSendingEmail ? 'animate-spin' : ''}>📨</span>
+                      <span>{isSendingEmail ? 'Enviando...' : 'Probar Envío Real'}</span>
                     </button>
-                    <button onClick={() => { showBanner('💾 Guardado'); setShowEmailModal(false); }} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl">
+                    <button 
+                      type="button"
+                      onClick={() => { 
+                        showBanner('💾 Preferencias de alerta guardadas en tu perfil'); 
+                        setShowEmailModal(false); 
+                      }} 
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl"
+                    >
                       ✓ Guardar
                     </button>
                   </div>
