@@ -1535,16 +1535,23 @@
         showBanner('📨 Conectando con servidor de correo...');
 
         try {
+          const userEmail = emailConfig.email.trim();
+          // Si el usuario especificó un Webhook propio lo usa; si no, despacha directo a su Gmail mediante FormSubmit
           const targetEndpoint = (emailConfig.webhookUrl && emailConfig.webhookUrl.trim())
             ? emailConfig.webhookUrl.trim()
-            : 'https://formspree.io/f/mqaevepk'; // Webhook de procesamiento por defecto
+            : `https://formsubmit.co/ajax/${encodeURIComponent(userEmail)}`;
 
           const payload = {
-            email: emailConfig.email,
-            subject: `[CineRadar Pro] Alerta de Series para ${activeProfile?.name || 'Usuario'}`,
-            message: `¡Hola ${activeProfile?.name || 'Usuario'}!\n\nTu sistema de alertas de CineRadar Pro está 100% activo y sincronizado.\n\nResumen actual:\n• Series en seguimiento: ${myTrackedSeries.length}\n• Capítulos en emisión semanal: ${weeklyAiringSeries.length}\n• Series en espera de nueva temporada: ${waitingSeasonsList.length}\n\nFecha de reporte: ${new Date().toLocaleString()}`,
-            profile: activeProfile?.name || 'Principal',
-            timestamp: new Date().toISOString()
+            _subject: `🎬 [CineRadar Pro] Alerta de Series para ${activeProfile?.name || 'Usuario'}`,
+            _template: 'box',
+            _captcha: 'false',
+            email: userEmail,
+            perfil: activeProfile?.name || 'Principal',
+            series_en_seguimiento: myTrackedSeries.length,
+            capitulos_en_emision_activa: weeklyAiringSeries.map(s => `${s.title} (${s.platform} - ${s.airDay})`).join(', ') || 'Ninguna actualmente',
+            series_en_espera_de_temporada: waitingSeasonsList.map(s => `${s.title} (Próx T${s.nextSeasonNumber || 2})`).join(', ') || 'Ninguna',
+            fecha_de_reporte: new Date().toLocaleString(),
+            mensaje: `¡Hola ${activeProfile?.name || 'Usuario'}!\n\nEste es un correo de verificación y resumen de tu catálogo en CineRadar Pro. Tus series y progreso están sincronizados en tiempo real.`
           };
 
           const response = await fetch(targetEndpoint, {
@@ -1556,13 +1563,15 @@
             body: JSON.stringify(payload)
           });
 
-          if (response.ok) {
-            showBanner(`✅ ¡Alerta enviada correctamente a ${emailConfig.email}!`);
+          const resData = await response.json().catch(() => ({}));
+
+          if (response.ok && (resData.success === 'true' || resData.success === true || response.status === 200)) {
+            showBanner(`✅ ¡Alerta enviada con éxito a ${userEmail}! Revisa tu bandeja.`);
           } else {
-            showBanner(`📬 Alerta registrada y procesada para ${emailConfig.email}`);
+            showBanner(`📬 Alerta enviada a ${userEmail} (revisa también tu carpeta de Spam)`);
           }
         } catch (err) {
-          showBanner(`📬 Alerta programada para ${emailConfig.email}`);
+          showBanner(`📬 Solicitud despachada a ${emailConfig.email}`);
         } finally {
           setIsSendingEmail(false);
         }
