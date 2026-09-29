@@ -1,27 +1,36 @@
-name: CineRadar Daily Scan & Email Alertson:
-schedule:
-# Se ejecuta todos los días a las 12:00 UTC (07:00 AM Colombia / COT)
-- cron: '0 12 * * *'
-workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub cuando quieras probarjobs:
-scan-and-notify:
-runs-on: ubuntu-lateststeps:
-  - name: Checkout del repositorio
-    uses: actions/checkout@v4
+    updates = []
+      for show in watchlist:
+          url = f"https://api.tvmaze.com/shows/{show['tvmaze_id']}?embed[]=nextepisode&embed[]=previousepisode"
+          try:
+              res = requests.get(url, timeout=10)
+              if res.status_code == 200:
+                  data = res.json()
+                  next_ep = data.get('_embedded', {}).get('nextepisode')
+                  if next_ep and next_ep.get('airdate'):
+                      updates.append(f"• {data['name']}: Próximo estreno el {next_ep['airdate']} (T{next_ep.get('season')}E{next_ep.get('number')} - {next_ep.get('name')})")
+                  else:
+                      updates.append(f"• {data['name']}: Estado actual: {data.get('status', 'En espera')}")
+          except Exception as e:
+              print(f"Error consultando {show['name']}: {e}")
 
-  - name: Configurar Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: '20'
+      summary_text = "\n".join(updates)
+      print("Resumen obtenido:\n", summary_text)
 
-  - name: Instalar dependencias de envío
-    run: |
-      npm init -y
-      npm install nodemailer node-fetch@2
+      # Despacho mediante el servicio FormSubmit
+      endpoint = f"https://formsubmit.co/ajax/{target_email}"
+      payload = {
+          "_subject": f"🎬 [CineRadar Pro] Resumen Semanal de Series ({datetime.now().strftime('%d/%m/%Y')})",
+          "_template": "box",
+          "_captcha": "false",
+          "email": target_email,
+          "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+          "reporte_novedades": summary_text
+      }
 
-  - name: Ejecutar escaneo de series y enviar alertas
-    env:
-      EMAIL_USER: ${{ secrets.NOTIFICATION_EMAIL }}
-      EMAIL_PASS: ${{ secrets.NOTIFICATION_APP_PASSWORD }}
-      RECIPIENT_EMAIL: ${{ secrets.USER_EMAIL }}
-    run: |
-      node scripts/scan_and_send.js
+      try:
+          resp = requests.post(endpoint, json=payload, timeout=15)
+          print(f"Respuesta del despacho: {resp.status_code} - {resp.text}")
+      except Exception as e:
+          print(f"Fallo al despachar correo: {e}")
+
+      EOF
